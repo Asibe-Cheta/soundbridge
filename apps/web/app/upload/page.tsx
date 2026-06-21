@@ -19,6 +19,12 @@ import { fetchWithSupabaseAuth } from '../../src/lib/fetch-with-supabase-auth';
 import { MAX_MOOD_TAGS_PER_TRACK, MOOD_TAG_OPTIONS } from '../../src/lib/discovery-intelligence';
 import { PUBLIC_TIER_LIMITS } from '../../src/constants/public-tier-limits';
 import { createBrowserClient } from '../../src/lib/supabase';
+import {
+  AUDIO_DURATION_PENDING_ERROR,
+  isShortPodcastDuration,
+  PODCAST_SHORT_CONFIRMATION_MESSAGE,
+  validateContentCategoryDuration,
+} from '../../src/lib/content-category-duration';
 import { toast as hotToast } from 'react-hot-toast';
 import { Upload, Music, Mic, Disc, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search, BookOpen } from 'lucide-react';
 
@@ -99,6 +105,8 @@ export default function UnifiedUploadPage() {
   
   // Rights verification states
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showShortPodcastConfirm, setShowShortPodcastConfirm] = useState(false);
+  const [shortPodcastConfirmed, setShortPodcastConfirmed] = useState(false);
   const [showRightsVerification, setShowRightsVerification] = useState(false);
   const [rightsVerified, setRightsVerified] = useState(false);
   const [verificationData, setVerificationData] = useState<any>(null);
@@ -375,7 +383,22 @@ export default function UnifiedUploadPage() {
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!uploadState.coverArtFile) return 'Cover art is required';
     if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
-    
+
+    if (contentType === 'podcast') {
+      const audioDuration = uploadState.audioMetadata?.duration ?? 0;
+      if (audioDuration <= 0) {
+        return AUDIO_DURATION_PENDING_ERROR;
+      }
+    }
+
+    if (contentType === 'audio_book') {
+      const audioDuration = uploadState.audioMetadata?.duration ?? 0;
+      const durationCheck = validateContentCategoryDuration(contentType, audioDuration);
+      if (!durationCheck.valid) {
+        return durationCheck.message;
+      }
+    }
+
     // ACRCloud + ISRC validation (music only)
     if (contentType === 'music') {
       // Still block while ACRCloud is running
@@ -714,6 +737,10 @@ export default function UnifiedUploadPage() {
   }, [uploadState.audioFile?.id, contentType]); // Only re-run when file ID changes
 
   useEffect(() => {
+    setShortPodcastConfirmed(false);
+  }, [uploadState.audioFile?.id, contentType]);
+
+  useEffect(() => {
     if (contentType !== 'music') {
       setAcrcloudStatus('idle');
       setAcrcloudData(null);
@@ -835,6 +862,17 @@ export default function UnifiedUploadPage() {
     }
 
     uploadDebug('✅ Validation passed');
+
+    const audioDuration = uploadState.audioMetadata?.duration ?? 0;
+    if (
+      contentType === 'podcast' &&
+      isShortPodcastDuration(audioDuration) &&
+      !shortPodcastConfirmed
+    ) {
+      setShowShortPodcastConfirm(true);
+      return;
+    }
+
     // Show education modal first
     setShowEducationModal(true);
   };
@@ -2104,6 +2142,46 @@ export default function UnifiedUploadPage() {
 
       {/* Validation Modal */}
       <ValidationModal />
+
+      {/* Short podcast confirmation */}
+      {showShortPodcastConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <AlertTriangle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {PODCAST_SHORT_CONFIRMATION_MESSAGE}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShortPodcastConfirmed(true);
+                    setShowShortPodcastConfirm(false);
+                    setShowEducationModal(true);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Yes, this is a podcast
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowShortPodcastConfirm(false);
+                    setShortPodcastConfirmed(false);
+                    setContentType('music');
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+                >
+                  No, change to Music
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Education Modal */}
       <UploadEducationModal

@@ -109,6 +109,7 @@ export async function GET() {
         .select(trackSelect)
         .eq('is_public', true)
         .eq('content_type', 'podcast')
+        .gte('duration', 480)
         .in('moderation_status', ALLOWED_MODERATION)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -117,6 +118,7 @@ export async function GET() {
         .select(trackSelect)
         .eq('is_public', true)
         .eq('content_type', 'audio_book')
+        .gte('duration', 900)
         .in('moderation_status', ALLOWED_MODERATION)
         .order('created_at', { ascending: false })
         .limit(20),

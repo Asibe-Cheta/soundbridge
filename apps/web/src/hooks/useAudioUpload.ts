@@ -63,10 +63,17 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       const url = URL.createObjectURL(file);
       
       audio.addEventListener('loadedmetadata', () => {
+        const duration = Math.round(audio.duration);
         URL.revokeObjectURL(url);
         setState(prev => ({
           ...prev,
-          audioMetadata: { duration: Math.round(audio.duration) }
+          audioMetadata: { duration },
+          audioFile: prev.audioFile
+            ? {
+                ...prev.audioFile,
+                metadata: { duration },
+              }
+            : prev.audioFile,
         }));
       });
       

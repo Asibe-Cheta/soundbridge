@@ -2,16 +2,23 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { ImageUpload } from '../../../src/components/ui/ImageUpload';
 import Image from 'next/image';
 import { useAudioUpload } from '../../../src/hooks/useAudioUpload';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import {
+  AUDIO_DURATION_PENDING_ERROR,
+  isShortPodcastDuration,
+  PODCAST_SHORT_CONFIRMATION_MESSAGE,
+} from '../../../src/lib/content-category-duration';
 import { UploadValidator } from '../../../src/components/upload/UploadValidator';
 import type { UploadValidationResult } from '../../../src/lib/types/upload-validation';
 import { Upload, Mic, FileAudio, Globe, Users, Lock, Calendar, Save, Play, Pause, CheckCircle, AlertTriangle, Loader2, User, Headphones, ArrowLeft, Menu, Home, Bell, Settings, LogOut, Search } from 'lucide-react';
 
 export default function PodcastUploadPage() {
+  const router = useRouter();
   const { user, loading, signOut } = useAuth();
   const [uploadState, uploadActions] = useAudioUpload();
   const [dragActive, setDragActive] = useState(false);
@@ -36,6 +43,8 @@ export default function PodcastUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<UploadValidationResult | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showShortPodcastConfirm, setShowShortPodcastConfirm] = useState(false);
+  const [shortPodcastConfirmed, setShortPodcastConfirmed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -132,6 +141,27 @@ export default function PodcastUploadPage() {
       return;
     }
 
+    if (!uploadState.audioFile) {
+      alert('Please select an audio file');
+      return;
+    }
+
+    const audioDuration = uploadState.audioMetadata?.duration ?? Math.round(duration) ?? 0;
+    if (audioDuration <= 0) {
+      alert(AUDIO_DURATION_PENDING_ERROR);
+      return;
+    }
+    if (isShortPodcastDuration(audioDuration) && !shortPodcastConfirmed) {
+      setShowShortPodcastConfirm(true);
+      return;
+    }
+
+    await performPodcastUpload();
+  };
+
+  const performPodcastUpload = async () => {
+    if (!user) return;
+
     try {
       // Check if user has a profile, create one if not
       const profileResponse = await fetch('/api/profile/create', {
@@ -156,6 +186,7 @@ export default function PodcastUploadPage() {
       // Now proceed with upload
       const podcastData = {
         title: title.trim(),
+        contentType: 'podcast' as const,
         artistName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Podcast Creator',
         description: description.trim(),
         genre: 'podcast', // This identifies it as a podcast
@@ -1368,6 +1399,44 @@ export default function PodcastUploadPage() {
             </div>
           </div>
         </div>
+
+        {showShortPodcastConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-start gap-3 mb-5">
+                  <AlertTriangle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {PODCAST_SHORT_CONFIRMATION_MESSAGE}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShortPodcastConfirmed(true);
+                      setShowShortPodcastConfirm(false);
+                      void performPodcastUpload();
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    Yes, this is a podcast
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowShortPodcastConfirm(false);
+                      router.push('/upload');
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+                  >
+                    No, change to Music
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <Footer />

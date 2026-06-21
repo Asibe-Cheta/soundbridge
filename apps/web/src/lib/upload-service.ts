@@ -11,6 +11,7 @@ import type {
 import { copyrightService } from './copyright-service';
 import type { AudioQualitySettings } from './types/audio-quality';
 import { audioProcessingService } from './audio-processing-service';
+import { validateContentCategoryDuration } from './content-category-duration';
 
 function isLikelyR2CorsFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -520,6 +521,31 @@ export class AudioUploadService {
     onProgress?: (type: 'audio' | 'cover' | 'processing', progress: UploadProgress) => void
   ): Promise<{ success: boolean; trackId?: string; error?: any }> {
     try {
+      const uploadCategory =
+        (trackData.contentType as 'music' | 'podcast' | 'mixtape' | 'audio_book') || 'music';
+
+      let trackDuration =
+        (trackData.audioFile.metadata as AudioMetadata | undefined)?.duration ?? 0;
+      if (trackDuration <= 0) {
+        try {
+          const meta = await this.extractAudioMetadata(trackData.audioFile.file);
+          trackDuration = meta.duration;
+        } catch {
+          /* validated below if category requires duration */
+        }
+      }
+
+      const categoryDurationCheck = validateContentCategoryDuration(uploadCategory, trackDuration);
+      if (!categoryDurationCheck.valid) {
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: categoryDurationCheck.message,
+          },
+        };
+      }
+
       // Copyright check before processing
       console.log('🔍 Performing copyright check...');
       onProgress?.('processing', {
@@ -664,7 +690,7 @@ export class AudioUploadService {
         artist_name: trackData.artistName?.trim() || 'Unknown Artist',
         file_url: audioResult.url!,
         cover_art_url: coverArtUrl,
-        duration: (trackData.audioFile.metadata as AudioMetadata)?.duration || 0,
+        duration: trackDuration,
         genre: trackData.genre,
         mood_tags: (trackData as TrackUploadData).moodTags?.length
           ? (trackData as TrackUploadData).moodTags

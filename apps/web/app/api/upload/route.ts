@@ -12,6 +12,7 @@ import {
   fetchProfileAndActiveSubscriptionTier,
 } from '@/src/lib/upload-entitlement';
 import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
+import { validateContentCategoryDuration } from '@/src/lib/content-category-duration';
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,6 +92,16 @@ export async function POST(request: NextRequest) {
     }
     if (isMixtapeUpload && !tracklist?.trim()) {
       return NextResponse.json({ error: 'tracklist is required for mixtape uploads' }, { status: 400 });
+    }
+
+    const resolvedDuration =
+      typeof duration === 'number' && Number.isFinite(duration) ? Math.round(duration) : 0;
+    const categoryDurationCheck = validateContentCategoryDuration(
+      normalizedContentType,
+      resolvedDuration,
+    );
+    if (!categoryDurationCheck.valid) {
+      return NextResponse.json({ error: categoryDurationCheck.message }, { status: 400 });
     }
 
     let resolvedAudioFileUrl = typeof audioFileUrl === 'string' ? audioFileUrl : '';
@@ -388,7 +399,7 @@ export async function POST(request: NextRequest) {
       creator_id: user.id,
       file_url: resolvedAudioFileUrl,
       cover_art_url: coverArtUrl || null,
-      duration: duration || 0,
+      duration: resolvedDuration || duration || 0,
       genre: genre || null,
       tags: tags || null,
       lyrics: lyrics?.trim() || null,
