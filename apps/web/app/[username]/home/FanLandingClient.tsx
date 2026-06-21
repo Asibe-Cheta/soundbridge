@@ -6,9 +6,12 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
-import { ChevronDown, ChevronUp, Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
+import { Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
+import { Playfair_Display } from 'next/font/google';
+
+const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'] });
 
 export type FanLandingTrack = {
   id: string;
@@ -61,6 +64,13 @@ function currencySymbol(c: string): string {
   if (x === 'EUR') return '€';
   if (x === 'NGN') return '₦';
   return `${x} `;
+}
+
+function formatFanCount(count: number): string {
+  if (count >= 1_000_000) return `+${(count / 1_000_000).toFixed(count >= 10_000_000 ? 0 : 1).replace(/\.0$/, '')}m`;
+  if (count >= 1_000) return `+${Math.round(count / 1_000)}k`;
+  if (count > 8) return `+${count - 8}`;
+  return '';
 }
 
 function FanTipPaymentForm({
@@ -142,13 +152,9 @@ export function FanLandingClient({
   genres,
   tracks,
   followerAvatars,
-  joinCommunityUrl,
   schemeArtistUrl,
   tipCurrency,
 }: FanLandingClientProps) {
-  const [activeTrackIndex, setActiveTrackIndex] = useState(0);
-  const [shuffleDir, setShuffleDir] = useState(0);
-  const shuffleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [bioExpanded, setBioExpanded] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
   const [thanks, setThanks] = useState(false);
@@ -203,63 +209,15 @@ export function FanLandingClient({
     a.onended = () => setPlayingId(null);
   };
 
-  useEffect(() => {
-    return () => {
-      if (shuffleTimerRef.current) clearTimeout(shuffleTimerRef.current);
-    };
-  }, []);
-
-  const cycle = useCallback(
-    (dir: number) => {
-      if (tracks.length === 0 || shuffleDir !== 0) return;
-      setShuffleDir(dir);
-      stopPreview();
-      if (shuffleTimerRef.current) clearTimeout(shuffleTimerRef.current);
-      shuffleTimerRef.current = setTimeout(() => {
-        setActiveTrackIndex((i) => (i + dir + tracks.length) % tracks.length);
-        shuffleTimerRef.current = setTimeout(() => setShuffleDir(0), 300);
-      }, 320);
-    },
-    [tracks.length, shuffleDir, stopPreview],
-  );
-
-  const cardShuffleMotion = (offset: number) => {
-    const z = 30 - offset * 10;
-    const idle = {
-      y: offset * 8,
-      scale: 1 - offset * 0.04,
-      opacity: offset === 0 ? 1 : 0.55,
-      rotate: 0,
-      x: 0,
-      zIndex: z,
-    };
-    if (shuffleDir === 0) return idle;
-
-    const spread = 18;
-    if (shuffleDir === 1) {
-      if (offset === 0) {
-        return { y: 72, x: spread, rotate: 22, opacity: 0, scale: 0.8, zIndex: 5 };
-      }
-      if (offset === 1) {
-        return { y: -8, x: -spread * 0.5, rotate: -10, opacity: 1, scale: 1, zIndex: 30 };
-      }
-      return { y: 2, x: spread * 0.35, rotate: 8, opacity: 0.62, scale: 0.95, zIndex: 20 };
-    }
-
-    if (offset === 0) {
-      return { y: -58, x: -spread, rotate: -20, opacity: 0, scale: 0.82, zIndex: 5 };
-    }
-    if (offset === 1) {
-      return { y: -6, x: spread * 0.45, rotate: 9, opacity: 1, scale: 1, zIndex: 30 };
-    }
-    return { y: 8, x: -spread * 0.3, rotate: -6, opacity: 0.6, scale: 0.94, zIndex: 20 };
-  };
-
   const bioSnippet = bio
     ? bio.length > 150 && !bioExpanded
       ? `${bio.slice(0, 150)}…`
       : bio
     : '';
+
+  const signupHref = `/signup?community_creator=${encodeURIComponent(canonicalUsername)}`;
+  const fanCluster = followerAvatars.slice(0, 8);
+  const extraFansLabel = formatFanCount(followerCount);
 
   const openTip = () => {
     trackFanLanding(creatorId, 'tip_button_tapped');
@@ -373,22 +331,40 @@ export function FanLandingClient({
             </div>
           </div>
 
-          <div className="mt-5 flex min-h-[44px] max-w-[280px] flex-wrap justify-center gap-2">
-            {Array.from({ length: 12 }).map((_, i) => {
-              const f = followerAvatars[i];
-              return (
-                <motion.div
-                  key={f?.id ?? `fan-pad-${i}`}
-                  className="relative h-9 w-9 overflow-hidden rounded-full border border-white/15 bg-gradient-to-br from-rose-600/35 to-pink-700/25"
-                  animate={{ y: [0, -4, 0] }}
-                  transition={{ duration: 2.6 + (i % 4) * 0.2, repeat: Infinity, delay: i * 0.1 }}
+          <div className="mt-5 flex max-w-[240px] flex-col items-center gap-2">
+            <div className="flex justify-center gap-2">
+              {fanCluster.slice(0, 5).map((f) => (
+                <div
+                  key={f.id}
+                  className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-[#d81b60]/80 bg-gradient-to-br from-rose-600/35 to-pink-700/25"
                 >
-                  {f?.avatar_url ? (
-                    <Image src={f.avatar_url} alt="" fill className="object-cover" sizes="36px" unoptimized />
-                  ) : null}
-                </motion.div>
-              );
-            })}
+                  {f.avatar_url ? (
+                    <Image src={f.avatar_url} alt="" fill className="object-cover" sizes="40px" unoptimized />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-rose-100/70">♪</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-2">
+              {fanCluster.slice(5, 8).map((f) => (
+                <div
+                  key={f.id}
+                  className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-[#d81b60]/80 bg-gradient-to-br from-rose-600/35 to-pink-700/25"
+                >
+                  {f.avatar_url ? (
+                    <Image src={f.avatar_url} alt="" fill className="object-cover" sizes="40px" unoptimized />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-rose-100/70">♪</div>
+                  )}
+                </div>
+              ))}
+              {extraFansLabel ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#d81b60]/80 bg-white/10 text-[11px] font-semibold text-gray-300">
+                  {extraFansLabel}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <AnimatePresence>
@@ -414,201 +390,147 @@ export function FanLandingClient({
             )}
           </AnimatePresence>
 
-          <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">{displayName}</h1>
-          <p className="mt-2 text-sm text-rose-100/90 sm:text-base">
+          <h1 className={`mt-6 text-4xl font-bold tracking-tight sm:text-[2.75rem] ${playfair.className}`}>{displayName}</h1>
+          <p className="mt-2 text-sm text-gray-400 sm:text-base">
             Welcome to {displayName}&apos;s home on SoundBridge
           </p>
         </header>
 
+        {!thanks ? (
+          <section className="mt-8">
+            <button
+              type="button"
+              onClick={openTip}
+              className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#d81b60] via-[#e91e63] to-[#ec4899] py-4 text-lg font-semibold text-white shadow-[0_8px_32px_rgba(216,27,96,0.45)] transition hover:brightness-110"
+            >
+              ✨ Join {displayName} · {defaultTipLabel}
+            </button>
+
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+              <p className="flex-1 text-sm leading-relaxed text-gray-400">
+                Tell {displayName} you love them and be part of {displayName}&apos;s family today. Members would get
+                notified every time {displayName} releases new music or announce an event near you.
+              </p>
+              <Link
+                href={signupHref}
+                onClick={() => {
+                  persistCommunityEntryCreatorClient(canonicalUsername, creatorId);
+                  trackFanLanding(creatorId, 'free_join_cta_tapped');
+                }}
+                className="inline-flex shrink-0 items-center justify-center rounded-xl border border-[#d81b60]/60 bg-[#d81b60]/15 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d81b60]/25 sm:mt-0.5"
+              >
+                Join
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center backdrop-blur-md"
+          >
+            <Sparkles className="mx-auto mb-3 h-10 w-10 text-amber-300" />
+            <p className="text-lg font-medium leading-relaxed text-gray-100">
+              You just supported {displayName} directly. Every penny goes straight to them. Thank you for being part of
+              this. 🙏🏾
+            </p>
+            <a
+              href={schemeArtistUrl}
+              onClick={() => trackFanLanding(creatorId, 'app_download_cta_tapped')}
+              className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#d81b60] to-[#ec4899] py-4 text-base font-semibold text-white shadow-lg shadow-rose-900/35"
+            >
+              Join {displayName}&apos;s community on SoundBridge
+            </a>
+            <p className="mt-3 text-sm leading-relaxed text-gray-400">
+              Get notified every time they release new music or announce an event near you.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href={iosStore}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-white/15 bg-black/40 px-4 py-2 text-sm hover:bg-black/60"
+              >
+                App Store
+              </a>
+              <a
+                href={androidStore}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-white/15 bg-black/40 px-4 py-2 text-sm hover:bg-black/60"
+              >
+                Google Play
+              </a>
+            </div>
+            <Link
+              href={signupHref}
+              onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
+              className="mt-5 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
+            >
+              Or join on web at soundbridge.live
+            </Link>
+          </motion.section>
+        )}
+
         <section className="mt-10">
-          <h2 className="sr-only">Music</h2>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-white">Latest Tracks</h2>
+            {tracks.length > 0 ? (
+              <a
+                href={schemeArtistUrl}
+                onClick={() => trackFanLanding(creatorId, 'see_all_tracks_tapped')}
+                className="text-sm font-medium text-[#ec4899] hover:text-pink-300"
+              >
+                See all
+              </a>
+            ) : null}
+          </div>
           {tracks.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-md">
               <Music className="mx-auto mb-3 h-10 w-10 text-rose-300/80" />
               <p className="text-gray-200">Music coming soon</p>
             </div>
           ) : (
-            <div className="relative mx-auto w-full max-w-sm">
-              <div className="relative min-h-[200px]">
-                {[2, 1, 0].map((offset) => {
-                  const idx = (activeTrackIndex - offset + tracks.length) % tracks.length;
-                  const t = tracks[idx];
-                  if (!t) return null;
-                  const motionProps = cardShuffleMotion(offset);
-                  return (
-                    <motion.button
-                      key={`${t.id}-${offset}`}
-                      type="button"
-                      onClick={() => {
-                        if (shuffleDir !== 0) return;
-                        if (offset === 0) togglePlay(t);
-                        else {
-                          setActiveTrackIndex(idx);
-                          stopPreview();
-                        }
-                      }}
-                      animate={motionProps}
-                      transition={{
-                        duration: shuffleDir !== 0 ? 0.34 : 0.28,
-                        ease: shuffleDir !== 0 ? [0.32, 0.72, 0, 1] : [0.25, 0.1, 0.25, 1],
-                      }}
-                      className="absolute left-0 right-0 mx-auto w-full origin-center rounded-2xl border border-white/10 bg-white/10 p-4 text-left shadow-xl backdrop-blur-md"
-                      style={{ zIndex: motionProps.zIndex }}
-                    >
-                      <div className="flex gap-3">
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-black/40">
-                          {t.cover_art_url ? (
-                            <Image src={t.cover_art_url} alt="" fill className="object-cover" sizes="64px" unoptimized />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <Music className="h-6 w-6 text-rose-200/60" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold">{t.title}</p>
-                          <p className="truncate text-sm text-gray-400">{displayName}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                            <span>{formatDuration(t.duration)}</span>
-                            {t.genre ? (
-                              <span className="rounded-full bg-white/10 px-2 py-0.5 text-badge uppercase tracking-wide text-rose-100/90">
-                                {t.genre}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-center justify-center gap-1">
-                          {offset === 0 ? (
-                            playingId === t.id ? (
-                              <Pause className="h-8 w-8 text-pink-300" />
-                            ) : (
-                              <Play className="h-8 w-8 text-pink-300" />
-                            )
-                          ) : null}
-                        </div>
+            <div className="space-y-3">
+              {tracks.slice(0, 6).map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur-sm"
+                >
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#d81b60]/30 to-[#831843]/40">
+                    {t.cover_art_url ? (
+                      <Image src={t.cover_art_url} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Music className="h-6 w-6 text-pink-300/80" />
                       </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              <div className="-mt-1 flex flex-col items-center justify-center gap-1.5">
-                <button
-                  type="button"
-                  aria-label="Previous track"
-                  disabled={shuffleDir !== 0}
-                  onClick={() => cycle(-1)}
-                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10 disabled:opacity-40"
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next track"
-                  disabled={shuffleDir !== 0}
-                  onClick={() => cycle(1)}
-                  className="rounded-full border border-white/15 bg-white/5 p-2 hover:bg-white/10 disabled:opacity-40"
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </button>
-              </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-white">{t.title}</p>
+                    <p className="truncate text-sm text-gray-400">{displayName}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {t.genre ? (
+                        <span className="rounded-full bg-[#d81b60]/25 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-pink-100">
+                          {t.genre}
+                        </span>
+                      ) : null}
+                      <span className="text-xs text-gray-500">{formatDuration(t.duration)}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => togglePlay(t)}
+                    disabled={!t.file_url}
+                    aria-label={playingId === t.id ? 'Pause' : 'Play'}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d81b60] to-[#ec4899] text-white shadow-md shadow-rose-900/30 disabled:opacity-40"
+                  >
+                    {playingId === t.id ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 pl-0.5" />}
+                  </button>
+                </div>
+              ))}
             </div>
           )}
-        </section>
-
-        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-inner backdrop-blur-md">
-          {!thanks ? (
-            <>
-              <h2 className="text-center text-xl font-semibold leading-snug sm:text-2xl">
-                Support {displayName} and join their community.
-              </h2>
-              <p className="mt-3 text-center text-sm leading-relaxed text-gray-400">
-                Be one of the first. Let them know you were here.
-              </p>
-              <button
-                type="button"
-                onClick={openTip}
-                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-pink-500 py-4 text-lg font-semibold shadow-lg shadow-rose-900/40 transition hover:brightness-110"
-              >
-                Support with {defaultTipLabel}
-              </button>
-              <p className="mt-2 text-center text-xs text-gray-500">
-                You choose the amount. {defaultTipLabel} is just the start.
-              </p>
-              <Link
-                href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
-                onClick={() => {
-                  persistCommunityEntryCreatorClient(canonicalUsername, creatorId);
-                  trackFanLanding(creatorId, 'free_join_cta_tapped');
-                }}
-                className="mt-4 block text-center text-xs text-gray-500 underline underline-offset-2 transition hover:text-gray-400"
-              >
-                Join for free and follow their journey
-              </Link>
-            </>
-          ) : (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-              <Sparkles className="mx-auto mb-3 h-10 w-10 text-amber-300" />
-              <p className="text-lg font-medium leading-relaxed text-gray-100">
-                You just supported {displayName} directly. Every penny goes straight to them. Thank you for being part
-                of this. 🙏🏾
-              </p>
-              <a
-                href={schemeArtistUrl}
-                onClick={() => trackFanLanding(creatorId, 'app_download_cta_tapped')}
-                className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-rose-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-rose-900/35"
-              >
-                Join {displayName}&apos;s community on SoundBridge
-              </a>
-              <p className="mt-3 text-sm leading-relaxed text-gray-400">
-                Get notified every time they release new music or announce an event near you.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <a
-                  href={iosStore}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl border border-white/15 bg-black/40 px-4 py-2 text-sm hover:bg-black/60"
-                >
-                  App Store
-                </a>
-                <a
-                  href={androidStore}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl border border-white/15 bg-black/40 px-4 py-2 text-sm hover:bg-black/60"
-                >
-                  Google Play
-                </a>
-              </div>
-              <Link
-                href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
-                onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
-                className="mt-5 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
-              >
-                Or join on web at soundbridge.live
-              </Link>
-            </motion.div>
-          )}
-        </section>
-
-        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-inner backdrop-blur-md">
-          <a
-            href={schemeArtistUrl}
-            onClick={() => trackFanLanding(creatorId, 'join_community_cta_tapped')}
-            className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 py-4 text-base font-semibold text-white shadow-lg shadow-purple-900/35 transition hover:brightness-110"
-          >
-            Join {displayName}&apos;s community on SoundBridge
-          </a>
-          <p className="mt-3 text-sm leading-relaxed text-gray-400">
-            Get notified every time they release new music or announce an event near you.
-          </p>
-          <Link
-            href={`/signup?community_creator=${encodeURIComponent(canonicalUsername)}`}
-            onClick={() => trackFanLanding(creatorId, 'web_signup_cta_tapped')}
-            className="mt-4 inline-block text-sm text-pink-300 underline underline-offset-4 hover:text-pink-200"
-          >
-            Or join on web at soundbridge.live
-          </Link>
         </section>
 
         <section className="mt-12">
