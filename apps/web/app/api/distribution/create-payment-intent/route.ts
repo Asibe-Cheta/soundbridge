@@ -16,26 +16,29 @@ const corsHeaders = {
     'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
 };
 
-/** @deprecated Use POST /api/distribution/create-payment-intent */
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-/** @deprecated Use POST /api/distribution/create-payment-intent */
+/** POST /api/distribution/create-payment-intent — mobile Payment Sheet (£15.79) */
 export async function POST(request: NextRequest) {
   try {
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: corsHeaders });
     }
+
     if (!stripe) {
       return NextResponse.json({ error: 'Stripe not configured' }, { status: 500, headers: corsHeaders });
     }
 
     const body = await request.json().catch(() => ({}));
-    const creatorId = String(body.creatorId ?? body.creator_id ?? user.id).trim();
+    const creatorId = String(body.creatorId ?? body.creator_id ?? '').trim();
     const trackId = String(body.trackId ?? body.track_id ?? '').trim();
 
+    if (!creatorId || !DISTRIBUTION_UUID_RE.test(creatorId)) {
+      return NextResponse.json({ error: 'Invalid creatorId' }, { status: 400, headers: corsHeaders });
+    }
     if (!trackId || !DISTRIBUTION_UUID_RE.test(trackId)) {
       return NextResponse.json({ error: 'Invalid trackId' }, { status: 400, headers: corsHeaders });
     }
@@ -54,15 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      {
-        success: true,
-        clientSecret: result.clientSecret,
-        paymentIntentId: result.paymentIntentId,
-      },
+      { clientSecret: result.clientSecret, paymentIntentId: result.paymentIntentId },
       { headers: corsHeaders },
     );
   } catch (e) {
-    console.error('[distribution/create-payment]', e);
+    console.error('[distribution/create-payment-intent]', e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: corsHeaders });
   }
 }

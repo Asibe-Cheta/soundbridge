@@ -29,7 +29,7 @@ export default function MBGSonicsDistributionPage() {
           <p className="text-sm text-gray-400 mb-1">Distribution fee</p>
           <p className="text-2xl font-bold text-white">£{DISTRIBUTION_FEE_GBP}</p>
           <p className="text-xs text-gray-500 mt-2">
-            Placeholder pricing — will be updated after partner confirmation.
+            One-time facilitation fee. Streaming royalty terms are separate between you and MBG Sonics.
           </p>
         </div>
 
