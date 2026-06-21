@@ -1,57 +1,69 @@
-# MBG Sonics Distribution — Web Team Handoff
+# MBG Sonics Distribution — What You Need To Do (SendGrid only)
 
-Mobile distribution flow is live. Web must deploy the following.
+No Resend. No Supabase edge functions. Uses your existing **SendGrid** setup on Vercel.
 
-## 1. SQL migration
+---
 
-Run in Supabase SQL editor (if not already applied by mobile):
+## Checklist
+
+### 1. Database (you already ran this)
 
 `supabase/migrations/20260621000002_distribution_requests.sql`
 
-Also configure trigger URL in `app_settings` (replace project ref):
+### 2. One SQL snippet in Supabase (go-live creator email)
+
+Run in **Supabase → SQL editor**. Replace `YOUR_SERVICE_ROLE_KEY` with the same value as `SUPABASE_SERVICE_ROLE_KEY` on Vercel (Settings → API → service_role):
 
 ```sql
 INSERT INTO public.app_settings (key, value) VALUES
-  ('distribution_creator_live_email_url', 'https://YOUR_PROJECT.supabase.co/functions/v1/send-distribution-creator-live-email'),
+  (
+    'distribution_creator_live_email_url',
+    'https://www.soundbridge.live/api/distribution/on-track-live'
+  ),
   ('service_role_key', 'YOUR_SERVICE_ROLE_KEY')
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 ```
 
-## 2. Deploy edge functions
+This lets the DB trigger email creators via SendGrid when an admin marks a request **live** in the mobile app.
 
-```bash
-supabase functions deploy send-distribution-email
-supabase functions deploy send-distribution-creator-live-email
-supabase secrets set RESEND_API_KEY=<key>
-supabase secrets set MBG_PARTNER_EMAIL=israeldmy@gmail.com
-# Optional — for 7-day R2 audio download links in partner email:
-supabase secrets set CLOUDFLARE_ACCOUNT_ID=<id>
-supabase secrets set CLOUDFLARE_ACCESS_KEY_ID=<key>
-supabase secrets set CLOUDFLARE_SECRET_ACCESS_KEY=<secret>
-supabase secrets set R2_BUCKET_NAME=<bucket>
-supabase secrets set R2_PUBLIC_URL=<public base url>
-```
+### 3. Vercel env (you likely already have these)
 
-## 3. API endpoints (deployed with web app)
+| Variable | Purpose |
+|----------|---------|
+| `SENDGRID_API_KEY` | Sends all distribution emails |
+| `SUPABASE_SERVICE_ROLE_KEY` | DB trigger → web webhook auth |
+| `STRIPE_SECRET_KEY` | Payment intents |
+| R2 vars (`CLOUDFLARE_*`, `R2_*`) | 7-day signed download links in partner email |
 
-### POST `/api/distribution/create-payment-intent`
+Optional override:
 
-- Auth: Bearer required
-- Body: `{ "creatorId": "uuid", "trackId": "uuid" }`
-- Returns: `{ "clientSecret": "...", "paymentIntentId": "pi_..." }`
-- Stripe: `1579` GBP, metadata `{ creator_id, track_id, type: mbg_distribution }`
+| Variable | Default |
+|----------|---------|
+| `MBG_PARTNER_EMAIL` | `israeldmy@gmail.com` |
 
-### POST `/api/distribution/confirm`
+### 4. Deploy web app
 
-- Auth: Bearer required (after Payment Sheet succeeds)
-- Body: full distribution form + `paymentIntentId`
-- Verifies PI succeeded, inserts `distribution_requests`, invokes `send-distribution-email`
-- Returns: `{ "requestId": "uuid", "releaseDate": "YYYY-MM-DD" }`
+Push to `main` → Vercel redeploys. Mobile needs these live routes:
 
-## 4. Creator go-live email
+- `POST /api/distribution/create-payment-intent`
+- `POST /api/distribution/confirm`
 
-When admin sets `track_status = 'live'` (mobile admin screen via Supabase), DB trigger calls `send-distribution-creator-live-email` edge function (requires `app_settings` rows above).
+### 5. Ignore / skip
+
+- Resend account
+- `supabase login` / edge function deploy
+- `RESEND_API_KEY`
+
+---
+
+## What happens automatically
+
+1. Creator pays £15.79 in mobile app → Stripe Payment Sheet  
+2. Mobile calls **`/api/distribution/confirm`** → row saved + **SendGrid email to `israeldmy@gmail.com`** with track/cover download links  
+3. Admin marks **live** in mobile → DB trigger → **`/api/distribution/on-track-live`** → **SendGrid email to creator**
+
+---
 
 ## Fee
 
-£15.79 fixed — SoundBridge keeps 100%. No partner split fields.
+£15.79 fixed — SoundBridge keeps 100%.

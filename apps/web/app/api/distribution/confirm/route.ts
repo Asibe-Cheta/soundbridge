@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
-import { invokeDistributionEdgeFunction } from '@/src/lib/distribution-edge';
+import { sendPartnerDistributionEmailForRequest } from '@/src/lib/distribution-email-service';
 import {
   DISTRIBUTION_FEE_GBP,
   DISTRIBUTION_MIN_RELEASE_DAYS,
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       if (!existing.email_sent_to_partner) {
-        await invokeDistributionEdgeFunction('send-distribution-email', { requestId: existing.id });
+        await sendPartnerDistributionEmailForRequest(service, existing.id);
       }
       return NextResponse.json(
         {
@@ -168,20 +168,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create distribution request' }, { status: 500, headers: corsHeaders });
     }
 
-    const emailResult = await invokeDistributionEdgeFunction('send-distribution-email', {
-      requestId: inserted.id,
-    });
-
-    if (emailResult.ok) {
-      await service
-        .from('distribution_requests')
-        .update({
-          email_sent_to_partner: true,
-          email_sent_at: new Date().toISOString(),
-        })
-        .eq('id', inserted.id);
-    } else {
-      console.error('[distribution/confirm] partner email failed:', emailResult.error);
+    const emailSent = await sendPartnerDistributionEmailForRequest(service, inserted.id);
+    if (!emailSent) {
+      console.error('[distribution/confirm] partner email failed for request', inserted.id);
     }
 
     return NextResponse.json(
