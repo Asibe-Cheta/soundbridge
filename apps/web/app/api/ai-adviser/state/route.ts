@@ -5,7 +5,7 @@ import {
   buildUsageSummary,
   getAdviserUsageState,
 } from '@/src/lib/ai-adviser-usage-service';
-import type { AdviserChatMessage } from '@/src/lib/ai-adviser-gemini';
+import { normalizeAdviserAnalysis, type AdviserChatMessage } from '@/src/lib/ai-adviser-gemini';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         latestAnalysis: latestAnalysis
           ? {
               id: latestAnalysis.id,
-              analysis: latestAnalysis.analysis_json,
+              analysis: normalizeAdviserAnalysis(latestAnalysis.analysis_json),
               generatedAt: latestAnalysis.generated_at,
             }
           : null,

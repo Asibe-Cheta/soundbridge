@@ -73,33 +73,41 @@ async function callGemini(args: {
   return text;
 }
 
+/** Coerce persisted or partial API payloads into a safe render shape. */
+export function normalizeAdviserAnalysis(raw: unknown): AdviserAnalysisResult {
+  const obj = (raw && typeof raw === 'object' ? raw : {}) as Partial<AdviserAnalysisResult>;
+  const fallbackText =
+    typeof obj.rawText === 'string'
+      ? obj.rawText
+      : typeof raw === 'string'
+        ? raw
+        : 'Analysis complete.';
+
+  return {
+    summary: String(obj.summary ?? fallbackText),
+    insights: Array.isArray(obj.insights)
+      ? obj.insights.map((i) => ({
+          title: String(i?.title ?? 'Insight'),
+          detail: String(i?.detail ?? ''),
+          hint: i?.hint ? String(i.hint) : undefined,
+        }))
+      : [],
+    whatToDoToday: obj.whatToDoToday
+      ? {
+          title: String(obj.whatToDoToday.title ?? 'Today'),
+          subtitle: String(obj.whatToDoToday.subtitle ?? ''),
+        }
+      : undefined,
+    rawText: typeof obj.rawText === 'string' ? obj.rawText : fallbackText,
+  };
+}
+
 function parseAnalysisJson(raw: string): AdviserAnalysisResult {
   const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
-    const parsed = JSON.parse(cleaned) as Partial<AdviserAnalysisResult>;
-    return {
-      summary: String(parsed.summary ?? cleaned),
-      insights: Array.isArray(parsed.insights)
-        ? parsed.insights.map((i) => ({
-            title: String(i.title ?? 'Insight'),
-            detail: String(i.detail ?? ''),
-            hint: i.hint ? String(i.hint) : undefined,
-          }))
-        : [],
-      whatToDoToday: parsed.whatToDoToday
-        ? {
-            title: String(parsed.whatToDoToday.title ?? 'Today'),
-            subtitle: String(parsed.whatToDoToday.subtitle ?? ''),
-          }
-        : undefined,
-      rawText: raw,
-    };
+    return normalizeAdviserAnalysis({ ...JSON.parse(cleaned), rawText: raw });
   } catch {
-    return {
-      summary: raw,
-      insights: [],
-      rawText: raw,
-    };
+    return normalizeAdviserAnalysis({ summary: raw, rawText: raw });
   }
 }
 

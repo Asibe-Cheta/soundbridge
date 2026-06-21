@@ -14,7 +14,11 @@ import {
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import { useAuth } from '@/src/contexts/AuthContext';
-import type { AdviserAnalysisResult, AdviserChatMessage } from '@/src/lib/ai-adviser-gemini';
+import {
+  normalizeAdviserAnalysis,
+  type AdviserAnalysisResult,
+  type AdviserChatMessage,
+} from '@/src/lib/ai-adviser-gemini';
 
 type Phase = 'idle' | 'scanning' | 'results';
 
@@ -236,7 +240,7 @@ export function AiAdvisorClient() {
       }
       setUsage(data.usage);
       if (data.latestAnalysis?.analysis) {
-        setAnalysis(data.latestAnalysis.analysis as AdviserAnalysisResult);
+        setAnalysis(normalizeAdviserAnalysis(data.latestAnalysis.analysis));
         setPhase('results');
       }
       if (Array.isArray(data.conversation?.messages)) {
@@ -276,7 +280,7 @@ export function AiAdvisorClient() {
         setError(data.error || 'Analysis failed');
         return;
       }
-      setAnalysis(data.analysis);
+      setAnalysis(normalizeAdviserAnalysis(data.analysis));
       setUsage(data.usage);
       setPhase('results');
     } catch (e) {
@@ -461,7 +465,7 @@ export function AiAdvisorClient() {
               )}
             </div>
 
-            {analysis.insights.length > 0 && (
+            {(analysis.insights?.length ?? 0) > 0 && (
               <div className="rounded-3xl bg-white/5 border border-white/10 p-6">
                 <h2 className="text-lg font-semibold mb-4">Career insights</h2>
                 <div className="space-y-3">
