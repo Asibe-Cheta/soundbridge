@@ -15,6 +15,7 @@ import { useAuth } from '../../../src/contexts/AuthContext';
 import { useTheme } from '../../../src/contexts/ThemeContext';
 import { WaitlistEmailCampaignsPanel } from '../../../src/components/admin/WaitlistEmailCampaignsPanel';
 import { ProResourcesAnalyticsPanel } from '../../../src/components/admin/ProResourcesAnalyticsPanel';
+import { PartnerResourceClicksPanel } from '../../../src/components/admin/PartnerResourceClicksPanel';
 import { UserGrowthTrendChart } from '../../../src/components/admin/UserGrowthTrendChart';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
@@ -2147,6 +2148,7 @@ function AnalyticsTab({
       </div>
 
       <ProResourcesAnalyticsPanel theme={theme} />
+      <PartnerResourceClicksPanel theme={theme} />
     </div>
   );
 }

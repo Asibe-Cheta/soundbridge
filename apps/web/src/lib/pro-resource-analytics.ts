@@ -14,6 +14,16 @@ export type ProResourceKey =
   | 'herts_website'
   | 'mbg_distribute';
 
+/** Exact partner_name values stored in partner_resource_clicks (mobile parity). */
+export const PARTNER_RESOURCE_NAMES = [
+  'Sound Academy',
+  'Talk2Dan',
+  'University of Hertfordshire',
+  'MBG Sonics',
+] as const;
+
+export type PartnerResourceName = (typeof PARTNER_RESOURCE_NAMES)[number];
+
 export const PRO_RESOURCE_LABELS: Record<string, string> = {
   screen_view: 'Screen views',
   explore_courses_tap: 'Explore Courses (feed banner)',
@@ -59,4 +69,31 @@ export async function trackProResource(
   } catch {
     /* non-blocking */
   }
+}
+
+/** Partner attribution click — written alongside pro_resource_events on card taps. */
+export async function trackPartnerResourceClick(partnerName: PartnerResourceName): Promise<void> {
+  try {
+    const supabase = createBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('partner_resource_clicks').insert({
+      user_id: user.id,
+      partner_name: partnerName,
+    });
+  } catch {
+    /* non-blocking */
+  }
+}
+
+export function trackPartnerResourceTap(
+  eventType: ProResourceEventType,
+  resource: ProResourceKey | null,
+  partnerName: PartnerResourceName,
+): void {
+  void trackProResource(eventType, resource);
+  void trackPartnerResourceClick(partnerName);
 }

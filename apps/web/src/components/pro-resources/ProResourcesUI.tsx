@@ -36,7 +36,10 @@ import {
 import {
   soundAcademyModuleResource,
   talk2DanServiceResource,
+  trackPartnerResourceClick,
+  trackPartnerResourceTap,
   trackProResource,
+  type PartnerResourceName,
   type ProResourceKey,
 } from '@/src/lib/pro-resource-analytics';
 
@@ -153,7 +156,11 @@ export function ModuleCard({ mod, href }: { mod: SoundAcademyModule; href: strin
     <Link
       href={href}
       onClick={() => {
-        void trackProResource('resource_tap', soundAcademyModuleResource(mod.id));
+        trackPartnerResourceTap(
+          'resource_tap',
+          soundAcademyModuleResource(mod.id),
+          'Sound Academy',
+        );
       }}
       className="relative shrink-0 w-[280px] h-[380px] rounded-3xl overflow-hidden mr-4 block no-underline"
     >
@@ -198,7 +205,11 @@ export function Talk2DanCard({ service }: { service: Talk2DanService }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {
-        void trackProResource('resource_tap', talk2DanServiceResource(service.id));
+        trackPartnerResourceTap(
+          'resource_tap',
+          talk2DanServiceResource(service.id),
+          'Talk2Dan',
+        );
       }}
       className="relative shrink-0 w-[280px] h-[380px] rounded-3xl overflow-hidden mr-4 block no-underline"
       style={{
@@ -259,11 +270,13 @@ export function GradientCtaButton({
   label,
   icon,
   trackResource,
+  trackPartner,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   trackResource?: ProResourceKey;
+  trackPartner?: PartnerResourceName;
 }) {
   return (
     <a
@@ -271,7 +284,13 @@ export function GradientCtaButton({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {
-        if (trackResource) void trackProResource('resource_tap', trackResource);
+        if (trackResource && trackPartner) {
+          trackPartnerResourceTap('resource_tap', trackResource, trackPartner);
+        } else if (trackResource) {
+          void trackProResource('resource_tap', trackResource);
+        } else if (trackPartner) {
+          void trackPartnerResourceClick(trackPartner);
+        }
       }}
       className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
       style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }}
@@ -288,12 +307,14 @@ export function SolidCtaButton({
   bg,
   icon,
   trackResource,
+  trackPartner,
 }: {
   href: string;
   label: string;
   bg: string;
   icon: React.ReactNode;
   trackResource?: ProResourceKey;
+  trackPartner?: PartnerResourceName;
 }) {
   return (
     <a
@@ -301,7 +322,13 @@ export function SolidCtaButton({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {
-        if (trackResource) void trackProResource('resource_tap', trackResource);
+        if (trackResource && trackPartner) {
+          trackPartnerResourceTap('resource_tap', trackResource, trackPartner);
+        } else if (trackResource) {
+          void trackProResource('resource_tap', trackResource);
+        } else if (trackPartner) {
+          void trackPartnerResourceClick(trackPartner);
+        }
       }}
       className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
       style={{ background: bg }}
@@ -316,10 +343,12 @@ export function OutlineCtaButton({
   href,
   label,
   trackResource,
+  trackPartner,
 }: {
   href: string;
   label: string;
   trackResource?: ProResourceKey;
+  trackPartner?: PartnerResourceName;
 }) {
   const { theme } = useTheme();
   const primary = theme === 'dark' ? 'text-[#EC4899] border-[#EC4899]' : 'text-pink-600 border-pink-600';
@@ -329,7 +358,13 @@ export function OutlineCtaButton({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => {
-        if (trackResource) void trackProResource('resource_tap', trackResource);
+        if (trackResource && trackPartner) {
+          trackPartnerResourceTap('resource_tap', trackResource, trackPartner);
+        } else if (trackResource) {
+          void trackProResource('resource_tap', trackResource);
+        } else if (trackPartner) {
+          void trackPartnerResourceClick(trackPartner);
+        }
       }}
       className={`mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold border bg-transparent no-underline ${primary}`}
     >
@@ -379,6 +414,7 @@ export function SoundAcademyTab() {
         label="Book a Free Appointment"
         icon={<Calendar size={18} className="text-white" />}
         trackResource="sa_booking"
+        trackPartner="Sound Academy"
       />
     </>
   );
@@ -432,6 +468,7 @@ export function Talk2DanTab() {
         bg="#059669"
         icon={<MessageCircle size={18} className="text-white" />}
         trackResource="t2d_website"
+        trackPartner="Talk2Dan"
       />
     </>
   );
@@ -481,7 +518,12 @@ export function HertsUniTab() {
         </div>
       </div>
 
-      <OutlineCtaButton href={HERTS_URL} label="Visit herts.ac.uk" trackResource="herts_website" />
+      <OutlineCtaButton
+        href={HERTS_URL}
+        label="Visit herts.ac.uk"
+        trackResource="herts_website"
+        trackPartner="University of Hertfordshire"
+      />
     </>
   );
 }
@@ -555,7 +597,7 @@ export function MBGSonicsTab() {
       <Link
         href="/distribution/mbg-sonics"
         onClick={() => {
-          void trackProResource('resource_tap', 'mbg_distribute');
+          trackPartnerResourceTap('resource_tap', 'mbg_distribute', 'MBG Sonics');
         }}
         className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
         style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }}

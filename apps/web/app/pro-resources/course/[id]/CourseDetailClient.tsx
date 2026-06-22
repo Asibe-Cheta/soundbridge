@@ -130,6 +130,8 @@ export function CourseDetailClient({ mod }: { mod: SoundAcademyModule }) {
           href={mod.ctaUrl}
           label={mod.ctaLabel}
           icon={<Calendar size={18} className="text-white" />}
+          trackResource="sa_booking"
+          trackPartner="Sound Academy"
         />
         <p className={`text-center text-xs mt-3 ${textSecondary}`}>
           Free 30-min consultation · No obligation
