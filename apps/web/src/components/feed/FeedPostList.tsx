@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useMemo } from 'react';
-
+import React from 'react';
 import { PostCard } from '@/src/components/posts/PostCard';
 import { EventPostCard } from '@/src/components/feed/EventPostCard';
 import { EventsStrip } from '@/src/components/feed/EventsStrip';
+import { FeedCaughtUpMarker } from '@/src/components/feed/FeedCaughtUpMarker';
 import type { FeedEventRecord } from '@/src/lib/event-feed';
 import type { Post } from '@/src/lib/types/post';
 
-type FeedItem =
+export type FeedListItem =
   | { kind: 'post'; post: Post }
-  | { kind: 'events_strip'; key: string };
+  | { kind: 'events_strip'; key: string }
+  | { kind: 'caught_up_marker' };
 
 type FeedPostListProps = {
-  posts: Post[];
+  items: FeedListItem[];
   stripEvents: FeedEventRecord[];
-  showEventsStrip: boolean;
   onPostUpdate?: () => void;
+  onCaughtUpScrolledPast?: () => void;
   bookmarksMap: Map<string, boolean>;
 };
 
@@ -24,27 +25,50 @@ function isEventPost(post: Post): post is Post & { event: NonNullable<Post['even
   return post.post_type === 'event' && Boolean(post.event_id) && Boolean(post.event);
 }
 
-export function FeedPostList({
-  posts,
-  stripEvents,
-  showEventsStrip,
-  onPostUpdate,
-  bookmarksMap,
-}: FeedPostListProps) {
-  const items = useMemo(() => {
-    const result: FeedItem[] = [];
-    posts.forEach((post, index) => {
+export function buildFeedListItems(
+  newPosts: Post[],
+  olderPosts: Post[],
+  showEventsStrip: boolean,
+): FeedListItem[] {
+  const result: FeedListItem[] = [];
+  let postIndex = 0;
+
+  const appendPosts = (bucket: Post[]) => {
+    for (const post of bucket) {
       result.push({ kind: 'post', post });
-      if (showEventsStrip && (index + 1) % 8 === 0) {
+      postIndex += 1;
+      if (showEventsStrip && postIndex % 8 === 0) {
         result.push({ kind: 'events_strip', key: `strip-after-${post.id}` });
       }
-    });
-    return result;
-  }, [posts, showEventsStrip]);
+    }
+  };
 
+  appendPosts(newPosts);
+  result.push({ kind: 'caught_up_marker' });
+  appendPosts(olderPosts);
+
+  return result;
+}
+
+export function FeedPostList({
+  items,
+  stripEvents,
+  onPostUpdate,
+  onCaughtUpScrolledPast,
+  bookmarksMap,
+}: FeedPostListProps) {
   return (
     <div className="space-y-4">
       {items.map((item) => {
+        if (item.kind === 'caught_up_marker') {
+          return (
+            <FeedCaughtUpMarker
+              key="caught-up-marker"
+              onScrolledPast={() => onCaughtUpScrolledPast?.()}
+            />
+          );
+        }
+
         if (item.kind === 'events_strip') {
           return <EventsStrip key={item.key} events={stripEvents} />;
         }

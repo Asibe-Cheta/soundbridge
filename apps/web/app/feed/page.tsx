@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { FeedPostList } from '@/src/components/feed/FeedPostList';
+import { FeedPostList, buildFeedListItems } from '@/src/components/feed/FeedPostList';
+import { NewPostsPill } from '@/src/components/feed/NewPostsPill';
 import { usePersonalizedFeedEvents } from '@/src/hooks/usePersonalizedFeedEvents';
 import { CreatePostModal } from '@/src/components/posts/CreatePostModal';
 import { FeedLeftSidebar } from '@/src/components/feed/FeedLeftSidebar';
 import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
 import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
 import { Post } from '@/src/lib/types/post';
+import { resolveFeedCursor, splitPostsByFeedCursor } from '@/src/lib/feed-cursor';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
 import { ProResourcesFeedBanner } from '@/src/components/pro-resources/ProResourcesFeedBanner';
 import Image from 'next/image';
@@ -32,6 +34,12 @@ export default function FeedPage() {
   const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
   const [showFirstActionPrompt, setShowFirstActionPrompt] = useState(false);
   const [onboardingUserType, setOnboardingUserType] = useState<any>(null);
+  const [feedCursorAt, setFeedCursorAt] = useState<string | null>(null);
+  const [feedCursorLoaded, setFeedCursorLoaded] = useState(false);
+  const [showNewPostsPill, setShowNewPostsPill] = useState(false);
+  const markerUpdatedRef = useRef(false);
+  const sessionTopPostIdRef = useRef<string | null>(null);
+  const feedTopRef = useRef<HTMLDivElement>(null);
   
   // CRITICAL: Use ref for user ID to avoid stale closures (Claude's Solution 1)
   const userIdRef = useRef<string | undefined>(user?.id);
@@ -45,6 +53,21 @@ export default function FeedPage() {
       router.push('/login?redirectTo=/feed');
     }
   }, [user?.id, authLoading, router]); // ✅ Use user?.id instead of user object
+
+  // Load feed catch-up cursor (defaults to 7 days ago client-side when null)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    fetch('/api/profile/feed-cursor', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          setFeedCursorAt(data.last_feed_caught_up_at ?? null);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setFeedCursorLoaded(true));
+  }, [user?.id]);
 
   // Fetch user profile pic
   useEffect(() => {
@@ -145,6 +168,9 @@ export default function FeedPage() {
         setPosts(prev => [...prev, ...newPosts]);
       } else {
         setPosts(newPosts);
+        sessionTopPostIdRef.current = newPosts[0]?.id ?? null;
+        setShowNewPostsPill(false);
+        markerUpdatedRef.current = false;
       }
 
       setHasMore(hasMorePosts);
@@ -237,6 +263,86 @@ export default function FeedPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [hasMore, loadingMore, loading, page]); // Removed fetchPosts from dependencies
+
+  const feedCursorDate = useMemo(
+    () => resolveFeedCursor(feedCursorAt),
+    [feedCursorAt],
+  );
+
+  const { newPosts: unseenPosts, olderPosts } = useMemo(
+    () => splitPostsByFeedCursor(posts, feedCursorDate),
+    [posts, feedCursorDate],
+  );
+
+  const feedListItems = useMemo(
+    () => buildFeedListItems(unseenPosts, olderPosts, showEventsStrip),
+    [unseenPosts, olderPosts, showEventsStrip],
+  );
+
+  const handleCaughtUpScrolledPast = useCallback(async () => {
+    if (markerUpdatedRef.current) return;
+    markerUpdatedRef.current = true;
+
+    try {
+      const res = await fetch('/api/profile/feed-cursor', {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data?.success && data.last_feed_caught_up_at) {
+        setFeedCursorAt(data.last_feed_caught_up_at);
+      }
+    } catch {
+      markerUpdatedRef.current = false;
+    }
+  }, []);
+
+  // Poll for new posts arriving mid-session (web parity with mobile realtime prepend)
+  useEffect(() => {
+    if (!user?.id || !feedCursorLoaded || loading || posts.length === 0) return;
+
+    const checkForNewPosts = async () => {
+      try {
+        const res = await fetch('/api/posts/feed?page=1&limit=5', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const json = await res.json();
+        const latestPosts: Post[] = json?.data?.posts ?? [];
+        if (!latestPosts.length) return;
+
+        const baselineId = sessionTopPostIdRef.current;
+        const hasNewAtTop =
+          latestPosts[0]?.id !== baselineId &&
+          !posts.some((p) => p.id === latestPosts[0]?.id);
+
+        if (hasNewAtTop) {
+          setShowNewPostsPill(true);
+        }
+      } catch {
+        // ignore polling errors
+      }
+    };
+
+    const onFocus = () => {
+      void checkForNewPosts();
+    };
+
+    window.addEventListener('focus', onFocus);
+    const intervalId = window.setInterval(checkForNewPosts, 45_000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [user?.id, feedCursorLoaded, loading, posts]);
+
+  const handleNewPostsPillPress = useCallback(() => {
+    setShowNewPostsPill(false);
+    hasTriedFetchRef.current = false;
+    fetchPosts(1, false, true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [fetchPosts]);
 
   const handlePostCreated = () => {
     // Force refresh feed - reset loading state and fetch
@@ -342,6 +448,12 @@ export default function FeedPage() {
 
             <ProResourcesFeedBanner />
 
+            <div ref={feedTopRef} />
+
+            {showNewPostsPill && posts.length > 0 && (
+              <NewPostsPill onPress={handleNewPostsPillPress} />
+            )}
+
             {/* Posts Feed */}
             {posts.length === 0 && !loading ? (
               <div className="text-center py-12">
@@ -357,10 +469,10 @@ export default function FeedPage() {
             ) : (
               <>
                 <FeedPostList
-                  posts={posts}
+                  items={feedListItems}
                   stripEvents={stripEvents}
-                  showEventsStrip={showEventsStrip}
                   onPostUpdate={handlePostCreated}
+                  onCaughtUpScrolledPast={handleCaughtUpScrolledPast}
                   bookmarksMap={bookmarksMap}
                 />
 
