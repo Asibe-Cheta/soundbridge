@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { sendTipThankYouDm } from '@/src/lib/tip-thank-you-dm';
+import { recordTipRoomTipStat } from '@/src/lib/tip-room-stats';
 
 /**
  * create-tip sets metadata.charge_type = 'tip'. Main Stripe webhook must finalize tips
@@ -227,6 +228,8 @@ async function recoverFanLandingTipRowFromMetadata(
   const currency = (paymentIntent.currency || 'gbp').toUpperCase();
   const nameRaw = typeof meta.guest_tipper_name === 'string' ? meta.guest_tipper_name.trim() : '';
   const msgRaw = typeof meta.tipMessage === 'string' ? meta.tipMessage.trim() : '';
+  const source =
+    meta.tip_source === 'tip_room' ? 'tip_room' : 'fan_landing_page';
   const { error } = await supabase.from('fan_landing_tips').insert({
     creator_id: creatorId,
     guest_email: email,
@@ -234,7 +237,7 @@ async function recoverFanLandingTipRowFromMetadata(
     amount: amountMajor,
     currency,
     stripe_payment_intent_id: paymentIntentId,
-    source: 'fan_landing_page',
+    source,
     status: 'pending',
     message: msgRaw || null,
   });
@@ -279,6 +282,17 @@ async function finalizeFanLandingGuestTipFromPaymentIntent(
       .eq('stripe_payment_intent_id', paymentIntentId)
       .eq('status', 'pending');
     console.log('[finalizeFanLanding] Wallet already credited (idempotent):', paymentIntentId);
+    if (meta.tip_source === 'tip_room') {
+      const amountMajor =
+        Number(fanRow?.amount) ||
+        (paymentIntent.amount != null && paymentIntent.amount > 0 ? paymentIntent.amount / 100 : 0);
+      await recordTipRoomTipStat(supabase, {
+        creatorId: String(fanRow?.creator_id || meta.creatorId || meta.creator_id),
+        amount: amountMajor,
+        currency: 'gbp',
+        paymentIntentId,
+      });
+    }
     return { ok: true };
   }
 
@@ -417,6 +431,16 @@ async function finalizeFanLandingGuestTipFromPaymentIntent(
   }
 
   console.log('✅ [finalizeFanLanding] Guest tip finalized for PI', paymentIntentId);
+
+  if (meta.tip_source === 'tip_room') {
+    await recordTipRoomTipStat(supabase, {
+      creatorId,
+      amount,
+      currency: 'gbp',
+      paymentIntentId,
+    });
+  }
+
   return { ok: true };
 }
 
