@@ -78,12 +78,11 @@ supabase functions deploy ai-career-proactive-filter
 
 **How to schedule (run once daily at 09:00 UTC):**
 
-Option A — Supabase Dashboard → Edge Functions → Schedule:
-```
-0 9 * * *
-```
+Option A — Vercel cron (web, **recommended**): already in `apps/web/vercel.json` → `/api/cron/ai-career-proactive` at `0 9 * * *`. Requires `CRON_SECRET` + **`SERPER_API_KEY`** on Vercel for weekly opportunity scouting searches.
 
-Option B — pg_cron (if you already use it):
+Option B — Supabase Edge Function proxy → same Vercel cron URL. Set `CRON_SECRET` in Supabase secrets.
+
+Option C — pg_cron (if you already use it):
 ```sql
 select cron.schedule(
   'ai-career-proactive-daily',
@@ -101,21 +100,17 @@ select cron.schedule(
 
 ## Opportunity Scouting (opt-in weekly search)
 
-For creators who have `opportunity_scouting_enabled = true` in `venue_notification_preferences`:
+For creators with `opportunity_scouting_enabled = true`:
 
-- Run at most once per week (check `last_opportunity_search_at`)
-- Search specifically for open mic nights and venue opportunities in their city and genre
-- Add genuine results to `curated_opportunities` (mobile admin team also adds these manually)
-- Update `last_opportunity_search_at` on the creator's venue prefs row after searching
+- Runs at most once per 7 days (`last_opportunity_search_at`)
+- **Grouped by** `onboarding_user_type` persona (musician / podcaster / audio engineer / producer) + city + primary genre — one Serper query set per group, not per creator
+- Results inserted into `curated_opportunities` (deduped by `source_url`); daily proactive filter matches creators via genre/location
+- Global policy/industry/brand queries run **once per week** (`app_settings.opportunity_scouting_global_last_run`) with `location_city = null`, `genre_tags = []`
+- `last_opportunity_search_at` updated for all due creators after the run, even if zero results
 
-**Rate limiting check:**
-```sql
-where opportunity_scouting_enabled = true
-  and (last_opportunity_search_at is null 
-       or last_opportunity_search_at < now() - interval '7 days')
-```
+**Env:** `SERPER_API_KEY` on Vercel ([serper.dev](https://serper.dev))
 
-This weekly search is lower priority — mobile team can implement this separately if you want, or fold it into the daily job with a pre-filter.
+Persona mapping: `podcast_creator` → podcaster; `industry_professional` → audio engineer; `music_creator` + producer/beats genres → producer; else musician.
 
 ---
 

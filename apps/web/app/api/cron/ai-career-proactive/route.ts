@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
       success: true,
       timestamp: new Date().toISOString(),
       ...result,
+      scouting: result.scouting,
     });
   } catch (e) {
     console.error('[cron ai-career-proactive]', e);

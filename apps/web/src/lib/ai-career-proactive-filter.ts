@@ -10,6 +10,7 @@ import {
 } from '@/src/lib/ai-career-proactive-gemini';
 import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 import { meetsLiveInterestThreshold } from '@/src/lib/event-poll';
+import { runOpportunityScoutingSearch } from '@/src/lib/opportunity-scouting-search';
 import { sendExpoPush } from '@/src/lib/push-notifications';
 
 export type PendingSignal = {
@@ -383,35 +384,15 @@ async function fetchSubscriberCreators(service: SupabaseClient): Promise<Creator
   return active;
 }
 
-async function runOpportunityScoutingTick(service: SupabaseClient): Promise<number> {
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-
-  const { data: prefs } = await service
-    .from('venue_notification_preferences')
-    .select('user_id, last_opportunity_search_at')
-    .eq('opportunity_scouting_enabled', true)
-    .or(`last_opportunity_search_at.is.null,last_opportunity_search_at.lt.${weekAgo.toISOString()}`);
-
-  if (!prefs?.length) return 0;
-
-  let updated = 0;
-  for (const row of prefs) {
-    await service
-      .from('venue_notification_preferences')
-      .update({ last_opportunity_search_at: new Date().toISOString() })
-      .eq('user_id', row.user_id);
-    updated++;
-  }
-
-  return updated;
+async function runOpportunityScoutingTick(service: SupabaseClient) {
+  return runOpportunityScoutingSearch(service);
 }
 
 export type ProactiveFilterResult = {
   creatorsScanned: number;
   signalsCreated: number;
   notificationsSent: number;
-  scoutingPrefsTicked: number;
+  scouting: Awaited<ReturnType<typeof runOpportunityScoutingSearch>> | null;
   errors: string[];
 };
 
@@ -422,9 +403,9 @@ export async function runAiCareerProactiveFilter(
   let signalsCreated = 0;
   let notificationsSent = 0;
 
-  const scoutingPrefsTicked = await runOpportunityScoutingTick(service).catch((e) => {
-    errors.push(`scouting tick: ${(e as Error).message}`);
-    return 0;
+  const scouting = await runOpportunityScoutingTick(service).catch((e) => {
+    errors.push(`scouting search: ${(e as Error).message}`);
+    return null;
   });
 
   const creators = await fetchSubscriberCreators(service).catch((e) => {
@@ -458,7 +439,7 @@ export async function runAiCareerProactiveFilter(
     creatorsScanned: creators.length,
     signalsCreated,
     notificationsSent,
-    scoutingPrefsTicked,
+    scouting,
     errors,
   };
 }
