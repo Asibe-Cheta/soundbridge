@@ -19,6 +19,7 @@ import {
   type AdviserAnalysisResult,
   type AdviserChatMessage,
 } from '@/src/lib/ai-adviser-gemini';
+import { ProactiveAlertsSection } from '@/src/components/ai-advisor/ProactiveAlertsSection';
 
 type Phase = 'idle' | 'scanning' | 'results';
 
@@ -386,6 +387,8 @@ export function AiAdvisorClient() {
             <UsageBadge usage={usage} />
           </div>
         )}
+
+        <ProactiveAlertsSection />
 
         {error && (
           <div className="mb-4 rounded-xl bg-red-500/10 border border-red-400/30 px-4 py-3 text-sm text-red-200">

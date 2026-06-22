@@ -37,6 +37,10 @@
     {
       "path": "/api/cron/event-match-intelligence",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/ai-career-proactive",
+      "schedule": "0 9 * * *"
     }
   ]
 }

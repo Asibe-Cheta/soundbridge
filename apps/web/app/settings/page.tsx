@@ -1160,10 +1160,16 @@ export default function SettingsPage() {
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">Notification Preferences</h3>
-          <Link href="/notifications" className="btn-primary">
-            <Bell size={16} />
-            Manage All Notifications
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/settings/venue-preferences" className="btn-secondary">
+              <MapPin size={16} />
+              Venue preferences
+            </Link>
+            <Link href="/notifications" className="btn-primary">
+              <Bell size={16} />
+              Manage All Notifications
+            </Link>
+          </div>
         </div>
         <div className="space-y-4">
           <div className="bg-gray-700/20 rounded-lg p-4 space-y-3">
