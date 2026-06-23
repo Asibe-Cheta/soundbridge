@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       { url: '/join/soundacademy', priority: '0.4', changefreq: 'monthly' },
       { url: '/legal/privacy', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/terms', priority: '0.3', changefreq: 'monthly' },
+      { url: '/legal/creator-rights-explained', priority: '0.3', changefreq: 'monthly' },
       { url: '/aml-policy', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/cookies', priority: '0.3', changefreq: 'monthly' },
     ];

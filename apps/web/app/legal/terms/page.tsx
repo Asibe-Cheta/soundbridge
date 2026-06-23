@@ -137,7 +137,11 @@ export default function TermsOfService() {
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               <p>
-                <strong>User Content:</strong> You retain ownership of content you upload, but grant us a non-exclusive license to host and distribute it.
+                <strong>User Content:</strong> You retain ownership of content you upload, but grant us a non-exclusive license to host and distribute it. For a plain-language explanation of ownership, hosting, distribution, and tips, see our{' '}
+                <Link href="/legal/creator-rights-explained" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
+                  Creator Rights Explained
+                </Link>{' '}
+                page.
               </p>
               <p>
                 <strong>Prohibited Content:</strong> You may not upload content that:
