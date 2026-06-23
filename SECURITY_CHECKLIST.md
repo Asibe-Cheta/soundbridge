@@ -123,7 +123,7 @@
 
 ### **Contact Information**
 - **Security Team**: security@soundbridge.live
-- **Legal Team**: legal@soundbridge.live
+- **Legal Team**: contact@soundbridge.live
 - **Data Protection Officer**: dpo@soundbridge.live
 - **Emergency**: [Emergency Phone Number]
 

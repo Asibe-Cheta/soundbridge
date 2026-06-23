@@ -243,8 +243,8 @@ export default function CreatorRightsExplainedPage() {
               Terms of Service
             </Link>{' '}
             is the governing legal document. Questions:{' '}
-            <a href="mailto:legal@soundbridge.live" style={{ color: 'var(--accent-primary)' }}>
-              legal@soundbridge.live
+            <a href="mailto:contact@soundbridge.live" style={{ color: 'var(--accent-primary)' }}>
+              contact@soundbridge.live
             </a>
           </em>
         </LegalParagraph>

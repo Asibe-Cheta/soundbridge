@@ -21,8 +21,8 @@ export default function DmcaPolicyPage() {
           </a>
           <br />
           <strong>Legal contact:</strong>{' '}
-          <a href="mailto:legal@soundbridge.live" style={{ color: 'var(--accent-primary)' }}>
-            legal@soundbridge.live
+          <a href="mailto:contact@soundbridge.live" style={{ color: 'var(--accent-primary)' }}>
+            contact@soundbridge.live
           </a>
         </LegalParagraph>
       </LegalSection>

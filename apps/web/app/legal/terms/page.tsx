@@ -473,8 +473,7 @@ export default function TermsOfService() {
             }}>
               <p style={{ color: 'var(--text-secondary)' }}>
                 <strong>Email:</strong> contact@soundbridge.live<br/>
-                <strong>Address:</strong> United Kingdom<br/>
-                <strong>Legal Email:</strong> legal@soundbridge.live
+                <strong>Address:</strong> United Kingdom
               </p>
             </div>
           </section>
