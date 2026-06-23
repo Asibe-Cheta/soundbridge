@@ -4,9 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+import { createBrowserClient } from '@/src/lib/supabase';
 
 export default function VerifyEmailPage() {
   const [email, setEmail] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -14,8 +18,34 @@ export default function VerifyEmailPage() {
   }, []);
 
   const handleResendEmail = async () => {
-    // TODO: Implement resend email functionality
-    alert('Resend email functionality will be implemented here');
+    const targetEmail = email.trim();
+    if (!targetEmail) {
+      setResendError('No email address found. Please sign up again or use the same browser you signed up with.');
+      return;
+    }
+
+    setResending(true);
+    setResendError(null);
+    setResendMessage(null);
+
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: targetEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+
+      setResendMessage('Verification email sent. Check your inbox and spam folder.');
+    } catch (err) {
+      setResendError(err instanceof Error ? err.message : 'Could not resend verification email.');
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -155,22 +185,33 @@ export default function VerifyEmailPage() {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+          {resendMessage && (
+            <p style={{ color: '#22C55E', fontSize: '0.9rem', margin: 0 }}>{resendMessage}</p>
+          )}
+          {resendError && (
+            <p style={{ color: '#F87171', fontSize: '0.9rem', margin: 0 }}>{resendError}</p>
+          )}
           <button
-            onClick={handleResendEmail}
+            type="button"
+            onClick={() => void handleResendEmail()}
+            disabled={resending || !email}
             style={{
               background: 'rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               color: 'white',
               padding: '1rem',
               borderRadius: '25px',
-              cursor: 'pointer',
+              cursor: resending || !email ? 'not-allowed' : 'pointer',
               fontWeight: '600',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              opacity: resending || !email ? 0.6 : 1,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseEnter={(e) => {
+              if (!resending && email) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
             onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
           >
-            Resend Verification Email
+            {resending ? 'Sending…' : 'Resend Verification Email'}
           </button>
           
           <Link href="/login" style={{ textDecoration: 'none' }}>

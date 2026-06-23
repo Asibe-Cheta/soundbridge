@@ -188,7 +188,7 @@ function SignupContent() {
           router.push('/dashboard');
         } else {
           // Email confirmation required - redirect to verification page
-          router.push('/verify-email');
+          router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
         }
       }
     } catch (error) {
