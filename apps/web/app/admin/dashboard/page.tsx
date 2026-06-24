@@ -728,6 +728,16 @@ export default function AdminDashboard() {
             >
               Gig Payments
             </a>
+            <a
+              href="/admin/community-invites"
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                theme === 'dark'
+                  ? 'bg-gray-800 text-gray-100 hover:bg-gray-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              Community Invites
+            </a>
           </div>
         </div>
       </div>
