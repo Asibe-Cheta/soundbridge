@@ -9,6 +9,10 @@ import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { decryptSecret } from '@/src/lib/encryption';
 import { performCreatorFincraWalletPayout } from '@/src/lib/payouts/creator-fincra-wallet-payout';
 import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
+import {
+  assertFincraDestinationMinimum,
+  resolveFincraPayoutAmount,
+} from '@/src/lib/payouts/fincra-payout-amount';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,8 +77,11 @@ export async function POST(request: NextRequest) {
       }
 
       const customerReference = `fincra_payout_${user.id}_${Date.now()}`;
+      const resolved = await resolveFincraPayoutAmount(amount, currency, payoutCurrency);
+      assertFincraDestinationMinimum(resolved.fincraAmount, payoutCurrency);
+
       const transfer = await createFincraTransfer({
-        amount,
+        amount: resolved.fincraAmount,
         currency: payoutCurrency,
         accountNumber,
         bankCode,

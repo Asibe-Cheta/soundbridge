@@ -2,6 +2,10 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import { decryptSecret } from '@/src/lib/encryption';
 import { pickVerifiedFincraCreatorBankAccount } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
+import {
+  assertFincraDestinationMinimum,
+  resolveFincraPayoutAmount,
+} from '@/src/lib/payouts/fincra-payout-amount';
 
 export type CreatorFincraWalletPayoutInput = {
   amount: number;
@@ -95,8 +99,11 @@ export async function performCreatorFincraWalletPayout(
   const accountName = String(bankAccount.account_holder_name || 'Account Holder');
   const customerReference = `fincra_payout_${user.id}_${Date.now()}`;
 
+  const resolved = await resolveFincraPayoutAmount(amount, currency, payoutCurrency);
+  assertFincraDestinationMinimum(resolved.fincraAmount, payoutCurrency);
+
   const transfer = await createFincraTransfer({
-    amount: Number(amount),
+    amount: resolved.fincraAmount,
     currency: payoutCurrency,
     accountNumber,
     bankCode,

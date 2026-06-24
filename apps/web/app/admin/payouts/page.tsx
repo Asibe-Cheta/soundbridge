@@ -22,6 +22,9 @@ type PendingPayoutRequest = {
   payout_rail?: string;
   stripe_transfer_id?: string | null;
   rejection_reason?: string | null;
+  estimated_fincra_amount?: number | null;
+  estimated_fincra_currency?: string | null;
+  request_source_currency?: string | null;
 };
 
 type ProcessingPayoutRequest = PendingPayoutRequest & {
@@ -489,6 +492,11 @@ export default function AdminPayoutsPage() {
                     </td>
                     <td className="p-3">
                       <div className="font-medium text-white">{formatMoney(p.amount, p.currency)}</div>
+                      {p.estimated_fincra_amount != null && p.estimated_fincra_currency && (
+                        <div className={`${mutedClass} text-xs mt-0.5`}>
+                          ≈ {formatMoney(p.estimated_fincra_amount, p.estimated_fincra_currency)} via Fincra
+                        </div>
+                      )}
                     </td>
                     <td className="p-3">
                       <div className={mutedClass}>{p.requested_at ? new Date(p.requested_at).toLocaleString() : '—'}</div>

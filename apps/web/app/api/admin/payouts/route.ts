@@ -13,6 +13,11 @@ import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import { checkCreatorPayoutFraud, notifyAdminPayoutBlocked } from '@/src/lib/payout-fraud-guard';
+import {
+  assertFincraDestinationMinimum,
+  estimateFincraPayoutAmount,
+  resolveFincraPayoutAmount,
+} from '@/src/lib/payouts/fincra-payout-amount';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,22 +109,32 @@ function buildPayoutFailureResponse(err: unknown): NextResponse {
 async function initiateFincraPayout(params: {
   payoutRequestId: string;
   amount: number;
-  currency: 'NGN' | 'GHS' | 'KES';
+  /** Wallet/request currency (usually USD). */
+  sourceCurrency: string;
+  destinationCurrency: 'NGN' | 'GHS' | 'KES';
   bankAccountNumber: string;
   bankCode: string;
   accountHolderName: string;
   reason?: string;
 }) {
+  const resolved = await resolveFincraPayoutAmount(
+    params.amount,
+    params.sourceCurrency,
+    params.destinationCurrency,
+  );
+  assertFincraDestinationMinimum(resolved.fincraAmount, params.destinationCurrency);
+
   const reference = `fincra_${params.payoutRequestId}_${Date.now()}`;
-  return createFincraTransfer({
-    amount: params.amount,
-    currency: params.currency,
+  const payout = await createFincraTransfer({
+    amount: resolved.fincraAmount,
+    currency: params.destinationCurrency,
     accountNumber: params.bankAccountNumber,
     bankCode: params.bankCode,
     accountName: params.accountHolderName,
     reference,
     narration: params.reason ?? 'SoundBridge payout',
   });
+  return { payout, resolved };
 }
 
 export async function OPTIONS() {
@@ -270,10 +285,12 @@ export async function POST(request: NextRequest) {
         .eq('id', payout_request_id);
 
       try {
-        const payout = await initiateFincraPayout({
+        const sourceCurrency = String(pr.currency || 'USD').toUpperCase();
+        const { payout, resolved } = await initiateFincraPayout({
           payoutRequestId: String(payout_request_id),
           amount: Number(pr.amount),
-          currency: targetCurrency as 'NGN' | 'GHS' | 'KES',
+          sourceCurrency,
+          destinationCurrency: targetCurrency as 'NGN' | 'GHS' | 'KES',
           bankAccountNumber: accountNumber,
           bankCode,
           accountHolderName,
@@ -296,6 +313,12 @@ export async function POST(request: NextRequest) {
             payout_request_id,
             transfer_id: payout.id,
             payout,
+            fincra_amount: resolved.fincraAmount,
+            fincra_currency: resolved.destinationCurrency,
+            source_amount: resolved.sourceAmount,
+            source_currency: resolved.sourceCurrency,
+            converted: resolved.converted,
+            exchange_rate: resolved.exchangeRate,
             fincra_api_log: payout.apiExchange ?? null,
           },
           { status: 200, headers: corsHeaders }
@@ -352,10 +375,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const payout = await initiateFincraPayout({
+        const manualSource = String(singlePayoutParams.sourceCurrency ?? 'USD').toUpperCase();
+        const { payout, resolved } = await initiateFincraPayout({
           payoutRequestId: `manual_${Date.now()}`,
           amount: Number(singlePayoutParams.amount),
-          currency,
+          sourceCurrency: manualSource,
+          destinationCurrency: currency,
           bankAccountNumber: String(singlePayoutParams.bankAccountNumber),
           bankCode: String(singlePayoutParams.bankCode),
           accountHolderName: String(singlePayoutParams.accountHolderName),
@@ -367,6 +392,12 @@ export async function POST(request: NextRequest) {
             success: true,
             message: 'Payout initiated successfully',
             payout,
+            fincra_amount: resolved.fincraAmount,
+            fincra_currency: resolved.destinationCurrency,
+            source_amount: resolved.sourceAmount,
+            source_currency: resolved.sourceCurrency,
+            converted: resolved.converted,
+            exchange_rate: resolved.exchangeRate,
           },
           { status: 200, headers: corsHeaders }
         );
@@ -538,6 +569,13 @@ export async function GET(request: NextRequest) {
           profileEmail ||
           authEmail ||
           (r.creator_id ? `Creator ${String(r.creator_id).slice(0, 8)}…` : null);
+
+        const requestCurrency = String(r.currency || 'USD').toUpperCase();
+        const fincraEstimate =
+          bankCurrency && isFincraCurrency(bankCurrency)
+            ? estimateFincraPayoutAmount(Number(r.amount), requestCurrency, bankCurrency)
+            : null;
+
         return {
           ...r,
           creator_name: creator_name || r.creator_id,
@@ -546,6 +584,9 @@ export async function GET(request: NextRequest) {
           bank_currency: bankCurrency,
           bank_account_masked: chosenBank ? maskAccountNumber(accountNumberPlain) : null,
           payout_rail: payoutRail,
+          estimated_fincra_amount: fincraEstimate?.fincraAmount ?? null,
+          estimated_fincra_currency: fincraEstimate?.destinationCurrency ?? null,
+          request_source_currency: requestCurrency,
         };
       });
 

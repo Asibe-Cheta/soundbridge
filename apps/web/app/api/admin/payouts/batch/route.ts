@@ -5,6 +5,10 @@ import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
 import { checkCreatorPayoutFraud, notifyAdminPayoutBlocked } from '@/src/lib/payout-fraud-guard';
+import {
+  assertFincraDestinationMinimum,
+  resolveFincraPayoutAmount,
+} from '@/src/lib/payouts/fincra-payout-amount';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -140,9 +144,13 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        const sourceCurrency = String(pr.currency || 'USD').toUpperCase();
+        const resolved = await resolveFincraPayoutAmount(sourceAmount, sourceCurrency, currency);
+        assertFincraDestinationMinimum(resolved.fincraAmount, currency);
+
         const reference = `fincra_${requestId}_${Date.now()}`;
         const transfer = await createFincraTransfer({
-          amount: sourceAmount,
+          amount: resolved.fincraAmount,
           currency,
           accountNumber,
           bankCode,
