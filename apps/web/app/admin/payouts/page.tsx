@@ -31,6 +31,11 @@ type ProcessingPayoutRequest = PendingPayoutRequest & {
   stripe_transfer_id: string;
 };
 
+type CompletedPayoutRequest = PendingPayoutRequest & {
+  completed_at?: string | null;
+  processed_at?: string | null;
+};
+
 type ProviderPayoutHistoryRow = {
   id: string;
   creator_id: string;
@@ -68,7 +73,7 @@ export default function AdminPayoutsPage() {
   const [pending, setPending] = useState<PendingPayoutRequest[]>([]);
   const [processing, setProcessing] = useState<ProcessingPayoutRequest[]>([]);
   const [failedRequests, setFailedRequests] = useState<PendingPayoutRequest[]>([]);
-  const [historyCompleted, setHistoryCompleted] = useState<ProviderPayoutHistoryRow[]>([]);
+  const [historyCompleted, setHistoryCompleted] = useState<CompletedPayoutRequest[]>([]);
   const [historyFailed, setHistoryFailed] = useState<ProviderPayoutHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +103,7 @@ export default function AdminPayoutsPage() {
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0'),
-        fetchWithSupabaseAuth('/api/admin/payouts?status=completed&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=completed&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?status=failed&limit=50&offset=0'),
       ]);
 
@@ -122,7 +127,7 @@ export default function AdminPayoutsPage() {
 
       if (completedRes.ok) {
         const completedJson = await completedRes.json();
-        setHistoryCompleted(completedJson.payouts ?? []);
+        setHistoryCompleted(completedJson.payout_requests ?? []);
       }
 
       if (failedRes.ok) {
@@ -305,7 +310,9 @@ export default function AdminPayoutsPage() {
       if (!res.ok) {
         throw new Error(data.error || data.message || 'Failed to sync Fincra status');
       }
-      if (data.message && !data.updated && !data.already_completed) {
+      if (data.updated) {
+        setError(null);
+      } else if (data.message && !data.already_completed) {
         setError(data.message);
       }
       await load();
@@ -450,7 +457,7 @@ export default function AdminPayoutsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className={`rounded-lg border p-4 ${cardClass}`}>
           <div className={`text-sm ${mutedClass}`}>Pending payout requests</div>
           <div className="text-3xl font-semibold text-white">{pending.length}</div>
@@ -466,18 +473,108 @@ export default function AdminPayoutsPage() {
           <div className={`text-xs mt-2 ${mutedClass}`}>Payout requests currently marked processing (Fincra transfer id on file).</div>
         </div>
         <div className={`rounded-lg border p-4 ${cardClass}`}>
-          <div className={`text-sm ${mutedClass}`}>History (completed/failed)</div>
-          <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <span className="text-white font-medium">{completedCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-400" />
-              <span className="text-white font-medium">{failedCount}</span>
-            </div>
+          <div className={`text-sm ${mutedClass}`}>Successful payouts</div>
+          <div className="flex items-center gap-2 mt-2">
+            <CheckCircle className="h-6 w-6 text-green-400" />
+            <span className="text-3xl font-semibold text-white">{completedCount}</span>
+          </div>
+          <div className={`text-xs mt-2 ${mutedClass}`}>Completed — funds sent and wallet deducted.</div>
+        </div>
+        <div className={`rounded-lg border p-4 ${cardClass}`}>
+          <div className={`text-sm ${mutedClass}`}>Failed payouts</div>
+          <div className="flex items-center gap-2 mt-2">
+            <XCircle className="h-6 w-6 text-red-400" />
+            <span className="text-3xl font-semibold text-white">{failedCount}</span>
           </div>
         </div>
+      </div>
+
+      <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <h2 className={`text-lg font-semibold ${textClass}`}>Successful payouts</h2>
+          </div>
+          <span className={`text-sm ${mutedClass}`}>
+            {completedCount} completed — Fincra transfer confirmed, creator wallet deducted
+          </span>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading…</div>
+        ) : historyCompleted.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No successful payouts yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className={dark ? 'bg-gray-700/50' : 'bg-gray-50'}>
+                <tr>
+                  <th className="text-left p-3 font-medium">Creator</th>
+                  <th className="text-left p-3 font-medium">Amount</th>
+                  <th className="text-left p-3 font-medium">Completed</th>
+                  <th className="text-left p-3 font-medium">Fincra transfer ID</th>
+                  <th className="text-left p-3 font-medium">Status</th>
+                  <th className="w-36 text-right p-3 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyCompleted.map((h) => (
+                  <tr
+                    key={h.id}
+                    className={`border-t ${dark ? 'border-gray-700 hover:bg-gray-700/30' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <td className="p-3">
+                      <div className="font-medium text-white">{h.creator_name || h.creator_email || 'Unknown creator'}</div>
+                      {h.creator_email && <div className={`${mutedClass} text-xs`}>{h.creator_email}</div>}
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-white">{formatMoney(h.amount, h.currency)}</div>
+                      {h.estimated_fincra_amount != null && h.estimated_fincra_currency && (
+                        <div className={`${mutedClass} text-xs mt-0.5`}>
+                          ≈ {formatMoney(h.estimated_fincra_amount, h.estimated_fincra_currency)} via Fincra
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <div className={mutedClass}>
+                        {h.completed_at
+                          ? new Date(h.completed_at).toLocaleString()
+                          : h.processed_at
+                            ? new Date(h.processed_at).toLocaleString()
+                            : h.requested_at
+                              ? new Date(h.requested_at).toLocaleString()
+                              : '—'}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <code className={`text-xs ${dark ? 'text-cyan-300' : 'text-cyan-700'}`} title={h.stripe_transfer_id ?? undefined}>
+                        {h.stripe_transfer_id || '—'}
+                      </code>
+                    </td>
+                    <td className="p-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-900/40 text-green-300 border border-green-700/50">
+                        <CheckCircle className="h-3 w-3" />
+                        Successful
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        disabled={actionBusy !== null && actionBusy.id === h.id}
+                        onClick={() => applyWalletDeduction(h.id)}
+                        className="px-2 py-1 rounded text-xs font-medium bg-amber-700/80 hover:bg-amber-600 text-white disabled:opacity-60"
+                        title="Repair: deduct creator wallet if this payout never updated their balance"
+                      >
+                        {actionBusy?.id === h.id && actionBusy.kind === 'deduct'
+                          ? 'Updating…'
+                          : 'Fix wallet balance'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>
@@ -752,82 +849,45 @@ export default function AdminPayoutsPage() {
 
       <div className={`rounded-lg border overflow-hidden ${cardClass}`}>
         <div className="p-4 border-b">
-          <h2 className={`text-lg font-semibold ${textClass}`}>History</h2>
-          <p className={`text-sm ${mutedClass}`}>Rows from <code className="text-xs">payout_requests</code> (Fincra id in transfer ref).</p>
+          <h2 className={`text-lg font-semibold ${textClass}`}>Failed payout history</h2>
+          <p className={`text-sm ${mutedClass}`}>Older failed rows from payout_requests (see Failed requests above for re-queue).</p>
         </div>
 
-        <div className="p-4 grid grid-cols-1 gap-4">
-          <div>
-            <h3 className={`text-sm font-semibold ${textClass} mb-2`}>Completed</h3>
-            {historyCompleted.length === 0 ? (
-              <div className={`${mutedClass} text-sm`}>No completed payouts found.</div>
-            ) : (
-              <div className="space-y-2">
-                {historyCompleted.map((h) => (
-                  <div key={h.id} className={`p-3 rounded-lg border ${dark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="text-white font-medium">
-                          {formatMoney(h.amount ?? 0, h.currency ?? 'NGN')}
-                        </div>
-                        <div className={`${mutedClass} text-xs truncate`}>
-                          Ref: {payoutRef(h)}
-                        </div>
+        <div className="p-4">
+          {historyFailed.length === 0 ? (
+            <div className={`${mutedClass} text-sm`}>No failed payouts in history.</div>
+          ) : (
+            <div className="space-y-2">
+              {historyFailed.map((h) => (
+                <div key={h.id} className={`p-3 rounded-lg border ${dark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-white font-medium">
+                        {formatMoney(h.amount ?? 0, h.currency ?? 'NGN')}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className={`${mutedClass} text-xs`}>
-                          {h.completed_at ? new Date(h.completed_at).toLocaleString() : h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
-                        </div>
-                        <button
-                          type="button"
-                          disabled={actionBusy !== null && actionBusy.id === h.id}
-                          onClick={() => applyWalletDeduction(h.id)}
-                          className="px-2 py-1 rounded text-xs font-medium bg-amber-700/80 hover:bg-amber-600 text-white disabled:opacity-60"
-                          title="Repair: deduct creator wallet if this payout never updated their balance"
-                        >
-                          {actionBusy?.id === h.id && actionBusy.kind === 'deduct'
-                            ? 'Updating…'
-                            : 'Fix wallet balance'}
-                        </button>
+                      <div className={`${mutedClass} text-xs truncate`}>
+                        Ref: {payoutRef(h)}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h3 className={`text-sm font-semibold ${textClass} mb-2`}>Failed</h3>
-            {historyFailed.length === 0 ? (
-              <div className={`${mutedClass} text-sm`}>No failed payouts found.</div>
-            ) : (
-              <div className="space-y-2">
-                {historyFailed.map((h) => (
-                  <div key={h.id} className={`p-3 rounded-lg border ${dark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="text-white font-medium">
-                          {formatMoney(h.amount ?? 0, h.currency ?? 'NGN')}
-                        </div>
-                        <div className={`${mutedClass} text-xs truncate`}>
-                          Ref: {payoutRef(h)}
-                        </div>
-                      </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-900/40 text-red-300 border border-red-700/50">
+                        <XCircle className="h-3 w-3" />
+                        Failed
+                      </span>
                       <div className={`${mutedClass} text-xs`}>
                         {h.failed_at ? new Date(h.failed_at).toLocaleString() : '—'}
                       </div>
                     </div>
-                    {h.error_message && (
-                      <div className="mt-2 text-xs text-red-300 break-words">
-                        {h.error_message}
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {h.error_message && (
+                    <div className="mt-2 text-xs text-red-300 break-words">
+                      {h.error_message}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

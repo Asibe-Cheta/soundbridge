@@ -459,7 +459,7 @@ export async function GET(request: NextRequest) {
     if (pendingRequests) {
       let prQuery = supabase
         .from('payout_requests')
-        .select('id, creator_id, amount, currency, status, requested_at, bank_account_id, stripe_transfer_id, fincra_customer_reference, rejection_reason')
+        .select('id, creator_id, amount, currency, status, requested_at, processed_at, completed_at, bank_account_id, stripe_transfer_id, fincra_customer_reference, rejection_reason')
         .order('requested_at', { ascending: false })
         .range(offset, offset + limit - 1);
       if (status) prQuery = prQuery.eq('status', status);
