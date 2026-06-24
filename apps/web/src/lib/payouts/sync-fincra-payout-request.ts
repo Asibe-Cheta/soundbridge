@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import {
+  findFincraPayoutByTransferId,
   getFincraPayoutStatusByCustomerReference,
-  getFincraPayoutStatusByTransferId,
+  getFincraPayoutStatusByReference,
 } from '@/src/lib/fincra';
 import {
   markPayoutRequestsCompleted,
@@ -18,6 +20,8 @@ export type SyncFincraPayoutResult = {
   payout_status?: 'completed' | 'failed' | 'processing';
   message?: string;
   deduction_errors?: string[];
+  fincra_api_log?: FincraApiExchange | null;
+  lookup_method?: string;
 };
 
 type PayoutRequestRow = {
@@ -30,41 +34,115 @@ type PayoutRequestRow = {
   fincra_customer_reference: string | null;
 };
 
-async function pollFincraStatus(pr: PayoutRequestRow): Promise<{ status: string; raw: Record<string, unknown> } | null> {
-  const attempts: Array<() => Promise<{ status: string; raw: Record<string, unknown> }>> = [];
+type PollResult = {
+  status: string;
+  raw: Record<string, unknown>;
+  apiExchange?: FincraApiExchange;
+  customerReference?: string;
+  lookupMethod: string;
+};
+
+async function pollFincraStatus(
+  pr: PayoutRequestRow,
+): Promise<PollResult | { failed: true; apiExchange?: FincraApiExchange; lastError?: string } | null> {
+  const attempts: Array<{
+    label: string;
+    run: () => Promise<{
+      status: string;
+      raw: Record<string, unknown>;
+      apiExchange?: FincraApiExchange;
+      customerReference?: string;
+    }>;
+  }> = [];
 
   if (pr.fincra_customer_reference) {
     const ref = pr.fincra_customer_reference;
-    attempts.push(async () => {
-      const result = await getFincraPayoutStatusByCustomerReference(ref);
-      return { status: result.status, raw: result.raw };
+    attempts.push({
+      label: 'customer_reference',
+      run: async () => {
+        const result = await getFincraPayoutStatusByCustomerReference(ref);
+        return {
+          status: result.status,
+          raw: result.raw,
+          apiExchange: result.apiExchange,
+          customerReference: result.customerReference ?? ref,
+        };
+      },
     });
   }
 
   const transferId = pr.stripe_transfer_id?.trim();
-  if (transferId && /^\d+$/.test(transferId)) {
-    attempts.push(async () => {
-      const result = await getFincraPayoutStatusByTransferId(transferId);
-      return { status: result.status, raw: result.raw };
+  if (transferId) {
+    attempts.push({
+      label: 'reference',
+      run: async () => {
+        const result = await getFincraPayoutStatusByReference(transferId);
+        return {
+          status: result.status,
+          raw: result.raw,
+          apiExchange: result.apiExchange,
+          customerReference: result.customerReference,
+        };
+      },
     });
-  }
 
-  if (transferId?.startsWith('fincra_')) {
-    attempts.push(async () => {
-      const result = await getFincraPayoutStatusByCustomerReference(transferId);
-      return { status: result.status, raw: result.raw };
-    });
-  }
+    if (transferId.startsWith('fincra_')) {
+      attempts.push({
+        label: 'customer_reference_from_transfer_id',
+        run: async () => {
+          const result = await getFincraPayoutStatusByCustomerReference(transferId);
+          return {
+            status: result.status,
+            raw: result.raw,
+            apiExchange: result.apiExchange,
+            customerReference: result.customerReference ?? transferId,
+          };
+        },
+      });
+    }
 
-  for (const attempt of attempts) {
-    try {
-      return await attempt();
-    } catch (error) {
-      console.warn('[sync-fincra-payout] status poll attempt failed:', error);
+    if (/^\d+$/.test(transferId)) {
+      attempts.push({
+        label: 'list_search_by_id',
+        run: async () => {
+          const result = await findFincraPayoutByTransferId(transferId);
+          return {
+            status: result.status,
+            raw: result.raw,
+            apiExchange: result.apiExchange,
+            customerReference: result.customerReference,
+          };
+        },
+      });
     }
   }
 
-  return null;
+  let lastExchange: FincraApiExchange | undefined;
+  let lastError: string | undefined;
+
+  for (const attempt of attempts) {
+    try {
+      const result = await attempt.run();
+      return {
+        status: result.status,
+        raw: result.raw,
+        apiExchange: result.apiExchange,
+        customerReference: result.customerReference,
+        lookupMethod: attempt.label,
+      };
+    } catch (error) {
+      const exchange = (error as { fincraExchange?: FincraApiExchange }).fincraExchange;
+      if (exchange) lastExchange = exchange;
+      lastError = error instanceof Error ? error.message : String(error);
+      console.warn(`[sync-fincra-payout] ${attempt.label} failed:`, error);
+    }
+  }
+
+  if (lastExchange || lastError) {
+    console.warn('[sync-fincra-payout] all lookup attempts failed', { lastError, lastExchange });
+  }
+
+  return lastExchange ? { failed: true, apiExchange: lastExchange, lastError } : null;
 }
 
 export async function syncPayoutRequestFromFincra(
@@ -110,12 +188,25 @@ export async function syncPayoutRequestFromFincra(
   }
 
   const fincra = await pollFincraStatus(row);
-  if (!fincra) {
+  if (!fincra || 'failed' in fincra) {
+    const failedPoll = fincra && 'failed' in fincra ? fincra : null;
     return {
       success: false,
       error:
-        'Could not fetch payout status from Fincra. Check API credentials and that the transfer id is valid.',
+        failedPoll?.lastError ||
+        'Could not fetch payout status from Fincra. See fincra_api_log for the last API exchange.',
+      fincra_api_log: failedPoll?.apiExchange ?? null,
     };
+  }
+
+  if (!row.fincra_customer_reference && fincra.customerReference) {
+    await supabase
+      .from('payout_requests')
+      .update({
+        fincra_customer_reference: fincra.customerReference,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', row.id);
   }
 
   const outcome = normalizeFincraPayoutStatus(fincra.status);
@@ -127,13 +218,17 @@ export async function syncPayoutRequestFromFincra(
       fincra_status: fincra.status,
       payout_status: 'processing',
       message: `Fincra still reports "${fincra.status}". Creator may not have received funds yet.`,
+      fincra_api_log: fincra.apiExchange ?? null,
+      lookup_method: fincra.lookupMethod,
     };
   }
 
   if (outcome === 'failed') {
     await markPayoutRequestsFailed(
       supabase,
-      [row.stripe_transfer_id, row.fincra_customer_reference].filter(Boolean) as string[],
+      [row.stripe_transfer_id, row.fincra_customer_reference, fincra.customerReference].filter(
+        Boolean,
+      ) as string[],
       `Fincra transfer ${fincra.status}`,
     );
     return {
@@ -142,6 +237,8 @@ export async function syncPayoutRequestFromFincra(
       fincra_status: fincra.status,
       payout_status: 'failed',
       message: 'Payout marked failed based on Fincra status.',
+      fincra_api_log: fincra.apiExchange ?? null,
+      lookup_method: fincra.lookupMethod,
     };
   }
 
@@ -153,6 +250,8 @@ export async function syncPayoutRequestFromFincra(
       error: 'Fincra reports success but payout request could not be updated.',
       fincra_status: fincra.status,
       deduction_errors,
+      fincra_api_log: fincra.apiExchange ?? null,
+      lookup_method: fincra.lookupMethod,
     };
   }
 
@@ -163,5 +262,7 @@ export async function syncPayoutRequestFromFincra(
     payout_status: 'completed',
     message: 'Payout marked completed from Fincra status; creator wallet deducted.',
     deduction_errors: deduction_errors.length > 0 ? deduction_errors : undefined,
+    fincra_api_log: fincra.apiExchange ?? null,
+    lookup_method: fincra.lookupMethod,
   };
 }

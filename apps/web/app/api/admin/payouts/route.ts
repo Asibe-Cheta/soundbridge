@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
           .update({
             updated_at: new Date().toISOString(),
             stripe_transfer_id: payout.id,
-            fincra_customer_reference: customerReference,
+            fincra_customer_reference: customerReference || payout.customerReference,
           })
           .eq('id', payout_request_id);
 

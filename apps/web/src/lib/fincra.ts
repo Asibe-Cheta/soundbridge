@@ -17,6 +17,8 @@ export type FincraBank = {
 export type FincraTransferResult = {
   id: string;
   status: string;
+  customerReference: string;
+  fincraReference?: string;
   raw: Record<string, unknown>;
   /** Last HTTP exchange with Fincra (redacted curl + response) for admin debugging. */
   apiExchange?: FincraApiExchange;
@@ -27,6 +29,9 @@ export type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 export type FincraPayoutStatusResult = {
   status: string;
   raw: Record<string, unknown>;
+  apiExchange?: FincraApiExchange;
+  /** Present when resolved via list/search — useful to backfill DB. */
+  customerReference?: string;
 };
 
 const DEFAULT_FINCRA_BASE_URL = 'https://api.fincra.com';
@@ -434,23 +439,57 @@ export async function createFincraTransfer(params: {
     (payload.data as { customerReference?: string } | undefined)?.customerReference ??
     params.reference;
   const status = payload.data?.status ?? 'pending';
+  const fincraReference =
+    payload.data?.reference != null ? String(payload.data.reference) : undefined;
   return {
     id: String(id),
     status: String(status),
+    customerReference: params.reference,
+    fincraReference,
     raw: payload as Record<string, unknown>,
     apiExchange: exchange,
   };
 }
 
+function extractFincraPayoutList(payload: Record<string, unknown>): Record<string, unknown>[] {
+  const data = payload.data;
+  if (Array.isArray(data)) return data as Record<string, unknown>[];
+  if (data && typeof data === 'object') {
+    const row = data as Record<string, unknown>;
+    for (const key of ['results', 'payouts', 'items', 'data']) {
+      const nested = row[key];
+      if (Array.isArray(nested)) return nested as Record<string, unknown>[];
+    }
+    if (row.id != null || row.status != null) return [row];
+  }
+  return [];
+}
+
+function payoutMatchesTransferId(item: Record<string, unknown>, needle: string): boolean {
+  const candidates = [item.id, item.reference, item.customerReference].filter(
+    (value) => value != null && String(value).trim().length > 0,
+  );
+  return candidates.some((value) => String(value) === needle);
+}
+
 function parseFincraPayoutStatusPayload(payload: {
-  data?: { status?: string };
+  data?: { status?: string; customerReference?: string };
   status?: string;
 }): FincraPayoutStatusResult {
+  const row = (payload.data ?? payload) as Record<string, unknown>;
   const status =
     (payload.data?.status as string | undefined) ??
     (payload as { status?: string }).status ??
+    (typeof row.status === 'string' ? row.status : undefined) ??
     'unknown';
-  return { status: String(status), raw: payload as Record<string, unknown> };
+  const customerReference =
+    (payload.data?.customerReference as string | undefined) ??
+    (typeof row.customerReference === 'string' ? row.customerReference : undefined);
+  return {
+    status: String(status),
+    raw: payload as Record<string, unknown>,
+    ...(customerReference ? { customerReference } : {}),
+  };
 }
 
 /** GET /disbursements/payouts/customer-reference/:reference */
@@ -458,23 +497,90 @@ export async function getFincraPayoutStatusByCustomerReference(
   customerReference: string,
 ): Promise<FincraPayoutStatusResult> {
   const enc = encodeURIComponent(customerReference);
-  const payload = await fincraHttp<{ data?: { status?: string }; status?: string }>(
-    'GET',
-    `/disbursements/payouts/customer-reference/${enc}`,
-  );
-  return parseFincraPayoutStatusPayload(payload);
+  const { data: payload, exchange } = await fincraHttpExchange<{
+    data?: { status?: string; customerReference?: string };
+    status?: string;
+  }>('GET', `/disbursements/payouts/customer-reference/${enc}`);
+  return { ...parseFincraPayoutStatusPayload(payload), apiExchange: exchange };
 }
 
-/** GET /disbursements/payouts/:transferId — numeric Fincra disbursement id */
+/** GET /disbursements/payouts/reference/:transactionReference */
+export async function getFincraPayoutStatusByReference(
+  transactionReference: string,
+): Promise<FincraPayoutStatusResult> {
+  const enc = encodeURIComponent(transactionReference);
+  const { data: payload, exchange } = await fincraHttpExchange<{
+    data?: { status?: string; customerReference?: string };
+    status?: string;
+  }>('GET', `/disbursements/payouts/reference/${enc}`);
+  return { ...parseFincraPayoutStatusPayload(payload), apiExchange: exchange };
+}
+
+/**
+ * Legacy rows may only have numeric Fincra id on file (no customerReference).
+ * Fincra documents GET /disbursements/payouts/ for listing business payouts.
+ */
+export async function findFincraPayoutByTransferId(
+  transferId: string,
+): Promise<FincraPayoutStatusResult> {
+  const { businessId } = getFincraConfig();
+  if (!businessId) throw new Error('FINCRA_BUSINESS_ID is not configured');
+
+  const needle = transferId.trim();
+  if (!needle) throw new Error('transfer id is required');
+
+  let lastExchange: FincraApiExchange | undefined;
+
+  for (let page = 1; page <= 10; page++) {
+    const qs = new URLSearchParams({
+      business: businessId,
+      page: String(page),
+      perPage: '50',
+    });
+    const { data: payload, exchange } = await fincraHttpExchange<Record<string, unknown>>(
+      'GET',
+      `/disbursements/payouts?${qs.toString()}`,
+    );
+    lastExchange = exchange;
+
+    const items = extractFincraPayoutList(payload);
+    if (items.length === 0) break;
+
+    const match = items.find((item) => payoutMatchesTransferId(item, needle));
+    if (match) {
+      const customerReference =
+        typeof match.customerReference === 'string' ? match.customerReference : undefined;
+      return {
+        status: String(match.status ?? 'unknown'),
+        raw: match,
+        apiExchange: exchange,
+        ...(customerReference ? { customerReference } : {}),
+      };
+    }
+
+    if (items.length < 50) break;
+  }
+
+  const err = new Error(
+    `Payout not found in Fincra for transfer id ${needle}. Try customer-reference lookup or confirm the id.`,
+  ) as FincraHttpError;
+  err.fincraExchange = lastExchange;
+  throw err;
+}
+
+/** @deprecated Use getFincraPayoutStatusByReference or findFincraPayoutByTransferId */
 export async function getFincraPayoutStatusByTransferId(
   transferId: string,
 ): Promise<FincraPayoutStatusResult> {
-  const enc = encodeURIComponent(transferId);
-  const payload = await fincraHttp<{ data?: { status?: string }; status?: string }>(
-    'GET',
-    `/disbursements/payouts/${enc}`,
-  );
-  return parseFincraPayoutStatusPayload(payload);
+  try {
+    return await getFincraPayoutStatusByReference(transferId);
+  } catch (referenceError) {
+    try {
+      return await findFincraPayoutByTransferId(transferId);
+    } catch {
+      throw referenceError;
+    }
+  }
 }
 
 export function verifyFincraWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {

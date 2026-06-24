@@ -293,6 +293,7 @@ export default function AdminPayoutsPage() {
   const syncFincraStatus = async (payoutRequestId: string) => {
     setActionBusy({ id: payoutRequestId, kind: 'sync' });
     setError(null);
+    setFincraApiLog(null);
     try {
       const res = await fetchWithSupabaseAuth('/api/admin/payouts/sync-fincra-status', {
         method: 'POST',
@@ -300,7 +301,10 @@ export default function AdminPayoutsPage() {
         body: JSON.stringify({ payout_request_id: payoutRequestId }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.message || 'Failed to sync Fincra status');
+      if (data.fincra_api_log) setFincraApiLog(data.fincra_api_log);
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Failed to sync Fincra status');
+      }
       if (data.message && !data.updated && !data.already_completed) {
         setError(data.message);
       }
