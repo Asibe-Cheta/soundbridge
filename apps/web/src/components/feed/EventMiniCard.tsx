@@ -10,6 +10,7 @@ import {
   formatEventShortDate,
   formatMiniCardPrice,
 } from '@/src/lib/event-feed';
+import { trackEventPromotionInteraction } from '@/src/lib/event-promotion-tracking-client';
 
 type EventMiniCardProps = {
   event: FeedEventRecord;
@@ -18,10 +19,15 @@ type EventMiniCardProps = {
 export function EventMiniCard({ event }: EventMiniCardProps) {
   const router = useRouter();
 
+  const handleOpen = () => {
+    trackEventPromotionInteraction(event.id, 'feed_card');
+    router.push(`/events/${event.id}`);
+  };
+
   return (
     <button
       type="button"
-      onClick={() => router.push(`/events/${event.id}`)}
+      onClick={handleOpen}
       className="shrink-0 w-[160px] h-[220px] rounded-xl overflow-hidden bg-gray-900 border border-white/10 text-left hover:border-white/25 transition-colors"
     >
       <div className="relative h-[105px] w-full bg-[#1E1235]">

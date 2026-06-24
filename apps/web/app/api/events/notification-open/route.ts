@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { incrementEventNotificationsOpened } from '@/src/lib/event-analytics';
+import { recordEventPromotionInteraction } from '@/src/lib/event-promotion-tracking';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +31,11 @@ export async function POST(request: NextRequest) {
 
     const service = createServiceClient();
     await incrementEventNotificationsOpened(service, eventId);
+
+    const { user, supabase } = await getSupabaseRouteClient(request, true);
+    if (user) {
+      await recordEventPromotionInteraction(supabase, user.id, eventId, 'notification');
+    }
 
     return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error) {

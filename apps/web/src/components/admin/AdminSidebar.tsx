@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   Award,
   BadgeCheck,
+  BarChart3,
   Building2,
   Briefcase,
   Calendar,
@@ -59,6 +60,7 @@ const NAV_ITEMS = [
   { href: '/admin/music-tips', label: 'Music & Tips', icon: Music },
   { href: '/admin/community-invites', label: 'Community Invites', icon: UserPlus },
   { href: '/admin/events', label: 'Events', icon: Calendar },
+  { href: '/admin/event-promotion', label: 'Events Promotion', icon: BarChart3 },
   { href: '/admin/partners', label: 'Partners', icon: Handshake },
   { href: '/admin/institutional-access', label: 'Institutional Access', icon: Building2 },
   { href: '/admin/founding-members', label: 'Founding Members', icon: Crown },

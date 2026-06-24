@@ -3,6 +3,7 @@ import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import { incrementEventTicketSales } from '@/src/lib/event-analytics';
+import { linkEventPromotionTicketPurchase } from '@/src/lib/event-promotion-tracking';
 import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 
@@ -202,6 +203,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await incrementEventTicketSales(supabaseAdmin, eventId, quantity, amountMajor);
+      await linkEventPromotionTicketPurchase(supabaseAdmin, user.id, eventId);
     } catch (analyticsErr) {
       console.error('[confirm-ticket-purchase] event analytics:', analyticsErr);
     }

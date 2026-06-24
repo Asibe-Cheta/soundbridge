@@ -27,7 +27,7 @@ export function EventShareButton({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = `${getSiteUrl()}/events/${eventId}`;
+  const shareUrl = `${getSiteUrl()}/events/${eventId}?ref=shared_link`;
   const shareText = [
     `Check out this event on SoundBridge: ${eventTitle}`,
     eventDate ? new Date(eventDate).toLocaleString() : null,

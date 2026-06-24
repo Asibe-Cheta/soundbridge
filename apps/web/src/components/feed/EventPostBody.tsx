@@ -13,6 +13,7 @@ import {
   formatEventLongDate,
   incrementEventFeedStat,
 } from '@/src/lib/event-feed';
+import { trackEventPromotionInteraction } from '@/src/lib/event-promotion-tracking-client';
 import { LinkText } from '@/src/components/posts/LinkText';
 import { VerifiedBadge } from '@/src/components/ui/VerifiedBadge';
 
@@ -38,6 +39,7 @@ export function EventPostBody({ event, author, description }: EventPostBodyProps
 
   const handleCta = () => {
     void incrementEventFeedStat(event.id, 'feed_cta_taps');
+    trackEventPromotionInteraction(event.id, 'feed_card');
     router.push(`/events/${event.id}`);
   };
 
