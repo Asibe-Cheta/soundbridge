@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { verifyFincraWebhookSignature } from '@/src/lib/fincra';
-import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
+import {
+  extractFincraReferencesFromWebhookPayload,
+  findPayoutRequestsByFincraReferences,
+  markPayoutRequestsCompleted,
+  markPayoutRequestsFailed,
+  normalizeFincraPayoutStatus,
+} from '@/src/lib/payouts/fincra-payout-completion';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,19 +42,12 @@ function isAllowedFincraIp(ip: string): boolean {
   return allowlist.has(ip);
 }
 
-function normalizeStatus(status: string): 'completed' | 'failed' | 'pending' {
-  const s = String(status || '').toLowerCase();
-  if (s.includes('successful') || s.includes('success') || s === 'completed') return 'completed';
-  if (s.includes('failed') || s === 'error' || s === 'cancelled') return 'failed';
-  return 'pending';
-}
-
 function normalizeWebhookOutcome(payload: Record<string, unknown>): 'completed' | 'failed' | 'pending' {
   const event = String(payload.event ?? payload.type ?? '').toLowerCase();
   const data = (payload.data as Record<string, unknown> | undefined) ?? {};
   const nestedStatus = String(data.status ?? '').toLowerCase();
   const topStatus = String(payload.status ?? '').toLowerCase();
-  return normalizeStatus([event, nestedStatus, topStatus].filter(Boolean).join(' '));
+  return normalizeFincraPayoutStatus([event, nestedStatus, topStatus].filter(Boolean).join(' '));
 }
 
 export async function OPTIONS() {
@@ -77,14 +76,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400, headers: corsHeaders });
   }
 
-  const reference =
-    (payload?.reference as string | undefined) ||
-    ((payload?.data as Record<string, unknown> | undefined)?.reference as string | undefined) ||
-    ((payload?.data as Record<string, unknown> | undefined)?.customerReference as string | undefined) ||
-    ((payload?.data as Record<string, unknown> | undefined)?.id as string | undefined) ||
-    '';
-
-  if (!reference) {
+  const references = extractFincraReferencesFromWebhookPayload(payload);
+  if (references.length === 0) {
     return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
   }
 
@@ -94,16 +87,18 @@ export async function POST(request: NextRequest) {
     ((payload?.data as Record<string, unknown> | undefined)?.status as string | undefined) ||
     '';
   const supabase = createServiceClient();
+  const primaryReference = references[0];
 
-  const { data: payoutTx } = await supabase
+  const { data: payoutTxRows } = await supabase
     .from('wallet_transactions')
     .select('id, user_id, amount, currency')
-    .eq('reference_id', reference)
+    .in('reference_id', references)
     .eq('transaction_type', 'payout')
-    .maybeSingle();
+    .limit(1);
+  const payoutTx = payoutTxRows?.[0] ?? null;
 
   if (normalized === 'failed' && payoutTx && Number(payoutTx.amount) < 0) {
-    const refundRef = `fincra_failed_refund:${reference}`;
+    const refundRef = `fincra_failed_refund:${primaryReference}`;
     const { data: existingRefund } = await supabase
       .from('wallet_transactions')
       .select('id')
@@ -118,7 +113,7 @@ export async function POST(request: NextRequest) {
         amount: refundAmt,
         description: 'Fincra payout failed — wallet credited',
         reference_id: refundRef,
-        metadata: { fincra_reference: reference, reason: eventStatus || 'failed' },
+        metadata: { fincra_reference: primaryReference, reason: eventStatus || 'failed' },
         p_currency: String(payoutTx.currency || 'GBP').toUpperCase(),
       });
       if (refundErr) {
@@ -127,83 +122,56 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Update wallet transaction statuses by transfer reference.
-  await supabase
-    .from('wallet_transactions')
-    .update({
-      status: normalized,
-      metadata: {
-        provider: 'fincra',
-        webhook_status: eventStatus,
-        webhook_received_at: new Date().toISOString(),
-        reference,
-      },
-    })
-    .eq('reference_id', reference)
-    .eq('transaction_type', 'payout');
+  for (const reference of references) {
+    await supabase
+      .from('wallet_transactions')
+      .update({
+        status: normalized,
+        metadata: {
+          provider: 'fincra',
+          webhook_status: eventStatus,
+          webhook_received_at: new Date().toISOString(),
+          reference,
+        },
+      })
+      .eq('reference_id', reference)
+      .eq('transaction_type', 'payout');
+  }
 
   const completedAt = new Date().toISOString();
   const failureReason = `Fincra transfer ${eventStatus || 'failed'}`;
+  const payoutRows = await findPayoutRequestsByFincraReferences(supabase, references);
 
-  // Keep payout requests in sync where stripe_transfer_id is used as transfer reference.
   if (normalized === 'completed') {
-    const { data: completingRows } = await supabase
-      .from('payout_requests')
-      .select('id, creator_id, amount, currency, status')
-      .eq('stripe_transfer_id', reference);
+    await markPayoutRequestsCompleted(supabase, payoutRows);
 
-    await supabase
-      .from('payout_requests')
-      .update({
-        status: 'completed',
-        completed_at: completedAt,
-        updated_at: completedAt,
-        rejection_reason: null,
-      })
-      .eq('stripe_transfer_id', reference);
-
-    for (const pr of completingRows ?? []) {
-      const deduct = await completePayoutRequestBalanceDeduction(supabase, {
-        creatorId: pr.creator_id,
-        amount: Number(pr.amount),
-        payoutRequestId: pr.id,
-        currency: String(pr.currency ?? 'USD'),
-      });
-      if (!deduct.success && !deduct.already_deducted) {
-        console.error('[fincra webhook] wallet deduction failed for payout_request', pr.id, deduct);
-      }
+    for (const reference of references) {
+      await supabase
+        .from('payouts')
+        .update({ status: 'completed', completed_at: completedAt, failure_reason: null })
+        .eq('stripe_transfer_id', reference);
+      await supabase
+        .from('payouts')
+        .update({ status: 'completed', completed_at: completedAt, failure_reason: null })
+        .eq('customer_reference', reference);
     }
-
-    await supabase
-      .from('payouts')
-      .update({ status: 'completed', completed_at: completedAt, failure_reason: null })
-      .eq('stripe_transfer_id', reference);
-    await supabase
-      .from('payouts')
-      .update({ status: 'completed', completed_at: completedAt, failure_reason: null })
-      .eq('customer_reference', reference);
   } else if (normalized === 'failed') {
-    await supabase
-      .from('payout_requests')
-      .update({
-        status: 'failed',
-        rejection_reason: failureReason,
-        updated_at: completedAt,
-      })
-      .eq('stripe_transfer_id', reference);
-    await supabase
-      .from('payouts')
-      .update({ status: 'failed', failure_reason: failureReason })
-      .eq('stripe_transfer_id', reference);
-    await supabase
-      .from('payouts')
-      .update({ status: 'failed', failure_reason: failureReason })
-      .eq('customer_reference', reference);
+    await markPayoutRequestsFailed(supabase, references, failureReason);
+
+    for (const reference of references) {
+      await supabase
+        .from('payouts')
+        .update({ status: 'failed', failure_reason: failureReason })
+        .eq('stripe_transfer_id', reference);
+      await supabase
+        .from('payouts')
+        .update({ status: 'failed', failure_reason: failureReason })
+        .eq('customer_reference', reference);
+    }
   }
 
-  return NextResponse.json({ received: true }, { status: 200, headers: corsHeaders });
+  return NextResponse.json({ received: true, references, outcome: normalized }, { status: 200, headers: corsHeaders });
 }
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-

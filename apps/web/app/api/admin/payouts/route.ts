@@ -124,17 +124,17 @@ async function initiateFincraPayout(params: {
   );
   assertFincraDestinationMinimum(resolved.fincraAmount, params.destinationCurrency);
 
-  const reference = `fincra_${params.payoutRequestId}_${Date.now()}`;
+  const customerReference = `fincra_${params.payoutRequestId}_${Date.now()}`;
   const payout = await createFincraTransfer({
     amount: resolved.fincraAmount,
     currency: params.destinationCurrency,
     accountNumber: params.bankAccountNumber,
     bankCode: params.bankCode,
     accountName: params.accountHolderName,
-    reference,
+    reference: customerReference,
     narration: params.reason ?? 'SoundBridge payout',
   });
-  return { payout, resolved };
+  return { payout, resolved, customerReference };
 }
 
 export async function OPTIONS() {
@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const sourceCurrency = String(pr.currency || 'USD').toUpperCase();
-        const { payout, resolved } = await initiateFincraPayout({
+        const { payout, resolved, customerReference } = await initiateFincraPayout({
           payoutRequestId: String(payout_request_id),
           amount: Number(pr.amount),
           sourceCurrency,
@@ -303,6 +303,7 @@ export async function POST(request: NextRequest) {
           .update({
             updated_at: new Date().toISOString(),
             stripe_transfer_id: payout.id,
+            fincra_customer_reference: customerReference,
           })
           .eq('id', payout_request_id);
 
@@ -458,7 +459,7 @@ export async function GET(request: NextRequest) {
     if (pendingRequests) {
       let prQuery = supabase
         .from('payout_requests')
-        .select('id, creator_id, amount, currency, status, requested_at, bank_account_id, stripe_transfer_id, rejection_reason')
+        .select('id, creator_id, amount, currency, status, requested_at, bank_account_id, stripe_transfer_id, fincra_customer_reference, rejection_reason')
         .order('requested_at', { ascending: false })
         .range(offset, offset + limit - 1);
       if (status) prQuery = prQuery.eq('status', status);
@@ -608,7 +609,7 @@ export async function GET(request: NextRequest) {
     let historyQuery = supabase
       .from('payout_requests')
       .select(
-        'id, creator_id, amount, currency, status, requested_at, processed_at, completed_at, stripe_transfer_id, rejection_reason, created_at, updated_at, admin_notes, bank_account_id'
+        'id, creator_id, amount, currency, status, requested_at, processed_at, completed_at, stripe_transfer_id, fincra_customer_reference, rejection_reason, created_at, updated_at, admin_notes, bank_account_id'
       )
       .order('requested_at', { ascending: false })
       .range(offset, offset + limit - 1);

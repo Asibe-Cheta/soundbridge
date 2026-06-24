@@ -72,7 +72,7 @@ export default function AdminPayoutsPage() {
   const [historyFailed, setHistoryFailed] = useState<ProviderPayoutHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry' | 'deduct';
+  type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry' | 'deduct' | 'sync';
   const [actionBusy, setActionBusy] = useState<{ id: string; kind: ActionBusyKind } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   type BatchResult = {
@@ -285,6 +285,28 @@ export default function AdminPayoutsPage() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fund transfer');
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  const syncFincraStatus = async (payoutRequestId: string) => {
+    setActionBusy({ id: payoutRequestId, kind: 'sync' });
+    setError(null);
+    try {
+      const res = await fetchWithSupabaseAuth('/api/admin/payouts/sync-fincra-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payout_request_id: payoutRequestId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to sync Fincra status');
+      if (data.message && !data.updated && !data.already_completed) {
+        setError(data.message);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to sync Fincra status');
     } finally {
       setActionBusy(null);
     }
@@ -564,7 +586,9 @@ export default function AdminPayoutsPage() {
             <Loader2 className={`h-5 w-5 ${mutedClass}`} />
             <h2 className={`text-lg font-semibold ${textClass}`}>In Progress (processing)</h2>
           </div>
-          <span className={`text-sm ${mutedClass}`}>Fincra transfer submitted — use Retry / Fund only if the request is stuck (no-op for Fincra)</span>
+          <span className={`text-sm ${mutedClass}`}>
+            After Fincra sends funds, click Sync from Fincra to move to History (or wait for webhook)
+          </span>
         </div>
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading…</div>
@@ -579,7 +603,7 @@ export default function AdminPayoutsPage() {
                   <th className="text-left p-3 font-medium">Amount</th>
                   <th className="text-left p-3 font-medium">Requested</th>
                   <th className="text-left p-3 font-medium">Provider transfer ID</th>
-                  <th className="w-40 text-right p-3 font-medium">Action</th>
+                  <th className="w-56 text-right p-3 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -604,23 +628,43 @@ export default function AdminPayoutsPage() {
                       </code>
                     </td>
                     <td className="p-3 text-right">
-                      <button
-                        disabled={actionBusy !== null && actionBusy.id === p.id}
-                        onClick={() => fundProcessing(p.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
-                          dark
-                            ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                            : 'bg-amber-600 hover:bg-amber-500 text-white'
-                        } disabled:opacity-60`}
-                      >
-                        {actionBusy?.id === p.id && actionBusy.kind === 'fund' ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Funding…
-                          </>
-                        ) : (
-                          'Retry / Fund'
-                        )}
-                      </button>
+                      <div className="inline-flex flex-col items-end gap-1.5">
+                        <button
+                          disabled={actionBusy !== null && actionBusy.id === p.id}
+                          onClick={() => syncFincraStatus(p.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
+                            dark
+                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                          } disabled:opacity-60`}
+                        >
+                          {actionBusy?.id === p.id && actionBusy.kind === 'sync' ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing…
+                            </>
+                          ) : (
+                            'Sync from Fincra'
+                          )}
+                        </button>
+                        <button
+                          disabled={actionBusy !== null && actionBusy.id === p.id}
+                          onClick={() => fundProcessing(p.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium ${
+                            dark
+                              ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                              : 'bg-amber-600 hover:bg-amber-500 text-white'
+                          } disabled:opacity-60`}
+                          title="Stripe/Wise funding only — no-op for Fincra"
+                        >
+                          {actionBusy?.id === p.id && actionBusy.kind === 'fund' ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Funding…
+                            </>
+                          ) : (
+                            'Retry / Fund'
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

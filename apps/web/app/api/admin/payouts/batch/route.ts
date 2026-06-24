@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
             status: 'processing',
             processed_at: new Date().toISOString(),
             stripe_transfer_id: transfer.id,
+            fincra_customer_reference: reference,
             rejection_reason: null,
             updated_at: new Date().toISOString(),
           })

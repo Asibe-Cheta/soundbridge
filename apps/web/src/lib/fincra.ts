@@ -442,6 +442,17 @@ export async function createFincraTransfer(params: {
   };
 }
 
+function parseFincraPayoutStatusPayload(payload: {
+  data?: { status?: string };
+  status?: string;
+}): FincraPayoutStatusResult {
+  const status =
+    (payload.data?.status as string | undefined) ??
+    (payload as { status?: string }).status ??
+    'unknown';
+  return { status: String(status), raw: payload as Record<string, unknown> };
+}
+
 /** GET /disbursements/payouts/customer-reference/:reference */
 export async function getFincraPayoutStatusByCustomerReference(
   customerReference: string,
@@ -451,11 +462,19 @@ export async function getFincraPayoutStatusByCustomerReference(
     'GET',
     `/disbursements/payouts/customer-reference/${enc}`,
   );
-  const status =
-    (payload.data?.status as string | undefined) ??
-    (payload as { status?: string }).status ??
-    'unknown';
-  return { status: String(status), raw: payload as Record<string, unknown> };
+  return parseFincraPayoutStatusPayload(payload);
+}
+
+/** GET /disbursements/payouts/:transferId — numeric Fincra disbursement id */
+export async function getFincraPayoutStatusByTransferId(
+  transferId: string,
+): Promise<FincraPayoutStatusResult> {
+  const enc = encodeURIComponent(transferId);
+  const payload = await fincraHttp<{ data?: { status?: string }; status?: string }>(
+    'GET',
+    `/disbursements/payouts/${enc}`,
+  );
+  return parseFincraPayoutStatusPayload(payload);
 }
 
 export function verifyFincraWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
