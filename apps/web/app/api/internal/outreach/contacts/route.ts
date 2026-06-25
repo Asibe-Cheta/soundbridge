@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireInternalTeam, isInternalTeamAccessDenied } from '@/src/lib/internal-team-auth';
+import {
+  isOutreachContactType,
+  OUTREACH_CONTACT_TYPES,
+} from '@/src/lib/outreach-contact-types';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-const CONTACT_TYPES = ['institution', 'artist', 'venue', 'church', 'other'] as const;
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
@@ -55,8 +57,11 @@ export async function POST(request: NextRequest) {
   if (!contactName) {
     return NextResponse.json({ error: 'contact_name is required' }, { status: 400, headers: CORS });
   }
-  if (!CONTACT_TYPES.includes(contactType as (typeof CONTACT_TYPES)[number])) {
-    return NextResponse.json({ error: 'Invalid contact_type' }, { status: 400, headers: CORS });
+  if (!isOutreachContactType(contactType)) {
+    return NextResponse.json(
+      { error: `Invalid contact_type. Allowed: ${OUTREACH_CONTACT_TYPES.join(', ')}` },
+      { status: 400, headers: CORS },
+    );
   }
 
   const { data, error } = await check.serviceClient

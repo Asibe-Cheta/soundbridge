@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireInternalTeam, isInternalTeamAccessDenied } from '@/src/lib/internal-team-auth';
+import {
+  isOutreachContactType,
+  OUTREACH_CONTACT_TYPES,
+} from '@/src/lib/outreach-contact-types';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-const CONTACT_TYPES = ['institution', 'artist', 'venue', 'church', 'other'] as const;
 
 type FlagField =
   | 'meeting_held'
@@ -70,8 +72,11 @@ export async function PATCH(
   }
   if (body.contact_type !== undefined) {
     const t = String(body.contact_type).toLowerCase();
-    if (!CONTACT_TYPES.includes(t as (typeof CONTACT_TYPES)[number])) {
-      return NextResponse.json({ error: 'Invalid contact_type' }, { status: 400, headers: CORS });
+    if (!isOutreachContactType(t)) {
+      return NextResponse.json(
+        { error: `Invalid contact_type. Allowed: ${OUTREACH_CONTACT_TYPES.join(', ')}` },
+        { status: 400, headers: CORS },
+      );
     }
     patch.contact_type = t;
   }

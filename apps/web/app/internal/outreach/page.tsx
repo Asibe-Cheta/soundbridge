@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
-import { Calendar, Plus, RefreshCw, Trash2, Users } from 'lucide-react';
+import { OUTREACH_CONTACT_TYPES } from '@/src/lib/outreach-contact-types';
+import { Calendar, Plus, RefreshCw, Trash2, Upload, Users } from 'lucide-react';
 
 type Meeting = {
   id: string;
@@ -28,7 +29,7 @@ type Contact = {
   outreach_meetings?: Meeting[];
 };
 
-const CONTACT_TYPES = ['institution', 'artist', 'venue', 'church', 'other'] as const;
+const CONTACT_TYPES = OUTREACH_CONTACT_TYPES;
 
 const FLAGS = [
   { key: 'meeting_held' as const, label: 'Meeting held' },
@@ -47,7 +48,9 @@ export default function InternalOutreachPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
   const [scheduleFor, setScheduleFor] = useState<string | null>(null);
 
   const [newName, setNewName] = useState('');
@@ -99,6 +102,33 @@ export default function InternalOutreachPage() {
     }
     load();
   }, [user, authLoading, load, router]);
+
+  const importCsvFile = async (file: File) => {
+    setImportBusy(true);
+    setImportResult(null);
+    setError(null);
+    try {
+      const csv = await file.text();
+      const res = await fetchWithSupabaseAuth('/api/internal/outreach/contacts/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Import failed');
+      }
+      const warnings = Array.isArray(data.warnings) ? data.warnings.filter(Boolean) : [];
+      const warningText = warnings.length > 0 ? ` (${warnings.length} warning(s))` : '';
+      setImportResult(`Imported ${data.imported ?? 0} contact(s)${warningText}.`);
+      setShowImport(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'CSV import failed');
+    } finally {
+      setImportBusy(false);
+    }
+  };
 
   const addContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,10 +217,25 @@ export default function InternalOutreachPage() {
             </h1>
             <p className={`text-sm mt-1 ${muted}`}>Restricted CRM — internal team only</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => setShowAdd(true)}
+              onClick={() => {
+                setShowImport((v) => !v);
+                setShowAdd(false);
+              }}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded text-sm ${
+                dark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              <Upload className="h-4 w-4" /> Import CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAdd(true);
+                setShowImport(false);
+              }}
               className="inline-flex items-center gap-2 px-3 py-2 rounded text-sm bg-red-600 text-white hover:bg-red-700"
             >
               <Plus className="h-4 w-4" /> Add contact
@@ -210,6 +255,42 @@ export default function InternalOutreachPage() {
         {error && (
           <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}
+          </div>
+        )}
+
+        {importResult && (
+          <div className="mb-4 rounded border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+            {importResult}
+          </div>
+        )}
+
+        {showImport && (
+          <div className={`rounded-lg border p-4 mb-6 ${card}`}>
+            <h2 className={`font-medium mb-2 ${text}`}>Import contacts from CSV</h2>
+            <p className={`text-sm mb-3 ${muted}`}>
+              Headers: <code className="text-xs">contact_name, organisation_name, contact_type, notes</code>
+              {' '}— types: {CONTACT_TYPES.join(', ')}
+            </p>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              disabled={importBusy}
+              className="block text-sm"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void importCsvFile(file);
+                e.target.value = '';
+              }}
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setShowImport(false)}
+                className={`px-4 py-2 rounded text-sm ${muted}`}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
