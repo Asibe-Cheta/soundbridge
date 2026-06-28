@@ -47,6 +47,9 @@ Sentry.init({
     // Facebook / Instagram iOS in-app browser: WKWebView bridge not available
     /webkit\.messageHandlers/i,
     /window\.webkit\.messageHandlers/i,
+    // Session Replay probing Stripe's cross-origin iframe (not an app bug)
+    /Failed to read a named property 'Element' from 'Window'/,
+    /Blocked a frame with origin.*from accessing a cross-origin frame/,
   ],
 
   // Enable logs to be sent to Sentry
@@ -128,6 +131,21 @@ Sentry.init({
       return null;
     }
 
+    // Session Replay + Stripe cross-origin iframe (SecurityError in replay SDK, not SoundBridge)
+    const exceptionType = event.exception?.values?.[0]?.type ?? '';
+    const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+    const isReplayStripeIframe =
+      exceptionType === 'SecurityError' &&
+      typeof message === 'string' &&
+      /cross-origin frame|Failed to read a named property 'Element'/i.test(message) &&
+      frames.some((frame) => {
+        const src = `${frame.module ?? ''} ${frame.filename ?? ''}`;
+        return src.includes('@sentry-internal/replay') || src.includes('replay/build');
+      });
+    if (isReplayStripeIframe) {
+      return null;
+    }
+
     return event;
   },
 
@@ -137,6 +155,12 @@ Sentry.init({
       // Mask all text and user input for privacy
       maskAllText: true,
       blockAllMedia: true,
+      // Stripe Payment Element uses cross-origin iframes; replay must not probe them
+      block: [
+        'iframe[src*="stripe.com"]',
+        'iframe[name^="__privateStripe"]',
+        'iframe[name^="__privateStripeController"]',
+      ],
     }),
   ],
 });
