@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { fetchPlatformRevenueTipDetails } from '@/src/lib/admin-platform-revenue-tips';
 import {
   buildPlatformRevenueReport,
   platformRevenueReportToCsv,
@@ -43,7 +44,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const report = buildPlatformRevenueReport((data ?? []) as PlatformRevenueRow[], range);
+  const report = buildPlatformRevenueReport(
+    (data ?? []) as PlatformRevenueRow[],
+    range,
+    await fetchPlatformRevenueTipDetails(admin.serviceClient, (data ?? []) as PlatformRevenueRow[]),
+  );
 
   if (exportFormat === 'csv') {
     const csv = platformRevenueReportToCsv(report);

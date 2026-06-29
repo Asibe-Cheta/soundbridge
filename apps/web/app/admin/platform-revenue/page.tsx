@@ -5,7 +5,7 @@ import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import type { PlatformRevenueReport } from '@/src/lib/platform-revenue-admin';
-import { Download, RefreshCw, TrendingUp, DollarSign, PieChart } from 'lucide-react';
+import { Download, RefreshCw, TrendingUp, DollarSign, PieChart, ArrowRight } from 'lucide-react';
 
 type PeriodKey = '7d' | '30d' | 'month' | 'year' | 'custom';
 
@@ -46,7 +46,9 @@ export default function AdminPlatformRevenuePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [txPage, setTxPage] = useState(0);
+  const [tipsPage, setTipsPage] = useState(0);
   const txPageSize = 25;
+  const tipsPageSize = 25;
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -73,6 +75,7 @@ export default function AdminPlatformRevenuePage() {
       }
       setReport(await res.json());
       setTxPage(0);
+      setTipsPage(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
       setReport(null);
@@ -103,6 +106,10 @@ export default function AdminPlatformRevenuePage() {
   const txs = report?.transactions ?? [];
   const txSlice = txs.slice(txPage * txPageSize, (txPage + 1) * txPageSize);
   const txPages = Math.max(1, Math.ceil(txs.length / txPageSize));
+
+  const tips = report?.tips ?? [];
+  const tipsSlice = tips.slice(tipsPage * tipsPageSize, (tipsPage + 1) * tipsPageSize);
+  const tipsPages = Math.max(1, Math.ceil(tips.length / tipsPageSize));
 
   return (
     <ProtectedRoute>
@@ -292,6 +299,104 @@ export default function AdminPlatformRevenuePage() {
                     )}
                   </table>
                 </div>
+              </div>
+
+              <div className={`mt-8 rounded-lg border overflow-hidden ${card}`}>
+                <div className={`px-4 py-3 border-b flex justify-between items-center ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <div>
+                    <h2 className={`font-semibold ${text}`}>Tips detail</h2>
+                    <p className={`text-xs ${muted}`}>
+                      Who tipped whom in this period — includes registered users and fan-page guests
+                    </p>
+                  </div>
+                  <span className={`text-xs ${muted}`}>
+                    Page {tipsPage + 1} of {tipsPages} ({tips.length} tips)
+                  </span>
+                </div>
+                <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className={`sticky top-0 ${dark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                      <tr>
+                        <th className={`text-left px-3 py-2 ${muted}`}>When</th>
+                        <th className={`text-left px-3 py-2 ${muted}`}>From (tipper)</th>
+                        <th className={`text-left px-3 py-2 w-8 ${muted}`} />
+                        <th className={`text-left px-3 py-2 ${muted}`}>To (creator)</th>
+                        <th className={`text-right px-3 py-2 ${muted}`}>Gross</th>
+                        <th className={`text-right px-3 py-2 ${muted}`}>Platform fee</th>
+                        <th className={`text-right px-3 py-2 ${muted}`}>Creator share</th>
+                        <th className={`text-left px-3 py-2 ${muted}`}>Cur</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tipsSlice.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className={`px-4 py-8 text-center ${muted}`}>
+                            No tips in this period
+                          </td>
+                        </tr>
+                      ) : (
+                        tipsSlice.map((tip) => (
+                          <tr
+                            key={tip.id}
+                            className={dark ? 'border-t border-gray-700' : 'border-t border-gray-100'}
+                          >
+                            <td className={`px-3 py-2 whitespace-nowrap ${muted}`}>
+                              {formatDate(tip.created_at)}
+                            </td>
+                            <td className={`px-3 py-2 ${text}`}>
+                              <div className="font-medium">{tip.from_name}</div>
+                              {tip.from_email && !tip.is_anonymous && (
+                                <div className={`text-xs ${muted}`}>{tip.from_email}</div>
+                              )}
+                              {tip.message && (
+                                <div className={`text-xs mt-0.5 italic ${muted}`} title={tip.message}>
+                                  “{tip.message.length > 48 ? `${tip.message.slice(0, 48)}…` : tip.message}”
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <ArrowRight className={`h-4 w-4 inline ${muted}`} />
+                            </td>
+                            <td className={`px-3 py-2 ${text}`}>
+                              <div className="font-medium">{tip.to_name}</div>
+                              {tip.to_email && <div className={`text-xs ${muted}`}>{tip.to_email}</div>}
+                            </td>
+                            <td className={`px-3 py-2 text-right ${text}`}>
+                              {money(tip.gross_amount, tip.currency)}
+                            </td>
+                            <td className="px-3 py-2 text-right text-green-400">
+                              {money(tip.platform_fee_amount, tip.currency)}
+                            </td>
+                            <td className={`px-3 py-2 text-right ${muted}`}>
+                              {money(tip.creator_payout_amount, tip.currency)}
+                            </td>
+                            <td className={`px-3 py-2 ${muted}`}>{tip.currency}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {tipsPages > 1 && (
+                  <div className={`px-4 py-3 flex gap-2 border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <button
+                      type="button"
+                      disabled={tipsPage === 0}
+                      onClick={() => setTipsPage((p) => p - 1)}
+                      className="px-3 py-1 text-sm rounded bg-gray-600 text-white disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={tipsPage >= tipsPages - 1}
+                      onClick={() => setTipsPage((p) => p + 1)}
+                      className="px-3 py-1 text-sm rounded bg-gray-600 text-white disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={`mt-8 rounded-lg border overflow-hidden ${card}`}>

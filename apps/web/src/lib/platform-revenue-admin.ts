@@ -1,3 +1,5 @@
+import type { PlatformRevenueTipDetail } from '@/src/lib/admin-platform-revenue-tips';
+
 export const PLATFORM_REVENUE_CHARGE_TYPES = [
   'tip',
   'gig_payment',
@@ -17,6 +19,8 @@ export const CHARGE_TYPE_LABELS: Record<string, string> = {
 };
 
 export type PlatformRevenuePeriodPreset = '7d' | '30d' | 'month' | 'year' | 'custom';
+
+export type { PlatformRevenueTipDetail } from '@/src/lib/admin-platform-revenue-tips';
 
 export type PlatformRevenueRow = {
   id: string;
@@ -64,6 +68,7 @@ export type PlatformRevenueReport = {
     creator_payout_total: number;
   };
   by_charge_type: ChargeTypeSummary[];
+  tips: PlatformRevenueTipDetail[];
   transactions: Array<
     PlatformRevenueRow & {
       label: string;
@@ -157,6 +162,7 @@ export function resolvePlatformRevenueDateRange(
 export function buildPlatformRevenueReport(
   rows: PlatformRevenueRow[],
   period: { preset: PlatformRevenuePeriodPreset; from: Date; to: Date; label: string },
+  tips: PlatformRevenueTipDetail[] = [],
 ): PlatformRevenueReport {
   const byType = new Map<string, ChargeTypeSummary>();
 
@@ -250,6 +256,7 @@ export function buildPlatformRevenueReport(
       platform_fee_total: Math.round(b.platform_fee_total * 100) / 100,
       creator_payout_total: Math.round(b.creator_payout_total * 100) / 100,
     })),
+    tips,
     transactions,
   };
 }
