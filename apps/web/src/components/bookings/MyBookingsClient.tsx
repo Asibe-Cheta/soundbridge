@@ -6,6 +6,7 @@ import { CalendarClock, CalendarCheck, CalendarX, CheckCircle, CreditCard, Loade
 
 import { BOOKING_STATUS_META, type BookingStatus } from '@/src/constants/bookings';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
+import { EventPromotionNudgeModal } from '@/src/components/feature-nudges/ContextNudgeModals';
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = publishableKey ? getStripeJsPromise() : null;
@@ -264,6 +265,11 @@ export const MyBookingsClient: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentContext, setPaymentContext] = useState<PaymentContext | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [eventPromotionNudge, setEventPromotionNudge] = useState<{
+    providerName: string;
+    providerId: string;
+    bookingId: string;
+  } | null>(null);
 
   const loadBookings = useCallback(async () => {
     try {
@@ -325,6 +331,13 @@ export const MyBookingsClient: React.FC = () => {
 
   const handlePaymentConfirmed = (updatedBooking: BookingRecord) => {
     setBookings((prev) => prev.map((booking) => (booking.id === updatedBooking.id ? updatedBooking : booking)));
+    const providerName =
+      updatedBooking.provider?.display_name?.trim() || 'this creator';
+    setEventPromotionNudge({
+      providerName,
+      providerId: updatedBooking.provider_id,
+      bookingId: updatedBooking.id,
+    });
   };
 
   const groupedBookings = useMemo(() => {
@@ -669,6 +682,14 @@ export const MyBookingsClient: React.FC = () => {
             </Elements>
           </div>
         </div>
+      )}
+      {eventPromotionNudge && (
+        <EventPromotionNudgeModal
+          providerName={eventPromotionNudge.providerName}
+          providerId={eventPromotionNudge.providerId}
+          bookingId={eventPromotionNudge.bookingId}
+          onClose={() => setEventPromotionNudge(null)}
+        />
       )}
     </section>
   );

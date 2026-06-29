@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { WelcomeScreen } from './WelcomeScreen';
+import { SignupSetupChecklist } from '@/src/components/feature-nudges/SignupSetupChecklist';
 import { UserTypeSelection } from './UserTypeSelection';
 import { QuickSetup } from './QuickSetup';
 import { ValueDemo } from './ValueDemo';
@@ -63,7 +63,7 @@ export function OnboardingManager() {
     return (
       <>
         {currentStep === 'welcome' && (
-          <WelcomeScreen
+          <SignupSetupChecklist
             isOpen={showOnboarding && !welcomeShown}
             onContinue={() => {
               setWelcomeShown(true);

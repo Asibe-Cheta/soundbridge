@@ -18,6 +18,7 @@ import { getSiteUrl } from '@/src/lib/site-url';
 import ErrorBoundary from "@/src/components/ErrorBoundary";
 import { GlobalErrorHandler } from "@/src/components/GlobalErrorHandler";
 import { UserBehaviourSessionTracker } from "@/src/components/behaviour/UserBehaviourSessionTracker";
+import { FeatureNudgeGate } from "@/src/components/feature-nudges/FeatureNudgeGate";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -178,6 +179,7 @@ export default function RootLayout({
                     {children}
                     <GlobalAudioPlayerGate />
                     <OnboardingManager />
+                    <FeatureNudgeGate />
                     <CommunityWelcomeGate />
                     <CookieConsentToast />
                     <CookieConsentScripts />

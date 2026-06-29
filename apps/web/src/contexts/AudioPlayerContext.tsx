@@ -55,6 +55,49 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
   const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const currentTrackRef = React.useRef<AudioTrack | null>(null);
+  const playSessionRecordedRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+    playSessionRecordedRef.current = null;
+  }, [currentTrack?.id]);
+
+  const recordPlaySession = React.useCallback(
+    async (trackId: string, durationListened: number, totalDuration: number, completed: boolean) => {
+      if (playSessionRecordedRef.current === trackId) return;
+      playSessionRecordedRef.current = trackId;
+
+      try {
+        const response = await fetch('/api/audio/play-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            trackId,
+            durationListened: Math.round(durationListened),
+            totalDuration: Math.round(totalDuration),
+            completed,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.recorded && result.play_count != null) {
+            window.dispatchEvent(
+              new CustomEvent('playCountUpdated', {
+                detail: { trackId, newPlayCount: result.play_count },
+              }),
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Failed to record play session:', err);
+        playSessionRecordedRef.current = null;
+      }
+    },
+    [],
+  );
 
   // Initialize audio element
   useEffect(() => {
@@ -73,43 +116,21 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       
       const handleTimeUpdate = () => {
         setCurrentTime(audio.currentTime);
+        const track = currentTrackRef.current;
+        if (!track?.id || !audio.duration) return;
+        const threshold = Math.min(30, audio.duration * 0.5);
+        if (audio.currentTime >= threshold) {
+          void recordPlaySession(track.id, audio.currentTime, audio.duration, false);
+        }
       };
-      
+
       const handleEnded = async () => {
         setIsPlaying(false);
         setCurrentTime(0);
-        
-        // Update play count when track completes
-        if (currentTrack?.id) {
-          try {
-            const response = await fetch('/api/audio/update-play-count', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                trackId: currentTrack.id
-              }),
-            });
-            
-            if (response.ok) {
-              const result = await response.json();
-              console.log('✅ Play count updated:', result.playCount);
-              
-              // Dispatch custom event to notify components of play count update
-              const event = new CustomEvent('playCountUpdated', {
-                detail: {
-                  trackId: currentTrack.id,
-                  newPlayCount: result.playCount
-                }
-              });
-              window.dispatchEvent(event);
-            } else {
-              console.error('❌ Failed to update play count');
-            }
-          } catch (error) {
-            console.error('❌ Error updating play count:', error);
-          }
+
+        const track = currentTrackRef.current;
+        if (track?.id && audio.duration) {
+          await recordPlaySession(track.id, audio.duration, audio.duration, true);
         }
       };
       
@@ -174,7 +195,7 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
         audio.removeEventListener('loadstart', handleLoadStart);
       };
     }
-  }, []);
+  }, [recordPlaySession]);
 
   const playTrack = useCallback(async (track: AudioTrack) => {
     console.log('🎵 playTrack called with:', track);

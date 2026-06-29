@@ -2,10 +2,28 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/src/contexts/ThemeContext';
-import { CheckCircle, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import { FincraApiLogPanel } from '@/src/components/admin/FincraApiLogPanel';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
+
+type SourceTransaction = {
+  id: string;
+  created_at: string;
+  transaction_type: string;
+  type_label: string;
+  amount: number;
+  currency: string;
+  description: string | null;
+  from_user_id: string | null;
+  from_name: string;
+  from_email: string | null;
+  to_user_id: string;
+  to_name: string;
+  to_email: string | null;
+  reference_id: string | null;
+  stripe_payment_intent_id: string | null;
+};
 
 type PendingPayoutRequest = {
   id: string;
@@ -75,6 +93,8 @@ export default function AdminPayoutsPage() {
   const [failedRequests, setFailedRequests] = useState<PendingPayoutRequest[]>([]);
   const [historyCompleted, setHistoryCompleted] = useState<CompletedPayoutRequest[]>([]);
   const [historyFailed, setHistoryFailed] = useState<ProviderPayoutHistoryRow[]>([]);
+  const [sourceTransactions, setSourceTransactions] = useState<SourceTransaction[]>([]);
+  const [sourceTxTotal, setSourceTxTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   type ActionBusyKind = 'approve' | 'manual' | 'reject' | 'fund' | 'retry' | 'deduct' | 'sync';
@@ -99,12 +119,13 @@ export default function AdminPayoutsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes] = await Promise.all([
+      const [pendingRes, processingRes, failedRequestsRes, completedRes, failedRes, sourceTxRes] = await Promise.all([
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=processing&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=failed&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?pending_requests=1&status=completed&limit=50&offset=0'),
         fetchWithSupabaseAuth('/api/admin/payouts?status=failed&limit=50&offset=0'),
+        fetchWithSupabaseAuth('/api/admin/payouts/source-transactions?limit=75&offset=0'),
       ]);
 
       if (!pendingRes.ok) throw new Error('Failed to load pending payout requests');
@@ -133,6 +154,12 @@ export default function AdminPayoutsPage() {
       if (failedRes.ok) {
         const failedJson = await failedRes.json();
         setHistoryFailed(failedJson.payouts ?? []);
+      }
+
+      if (sourceTxRes.ok) {
+        const sourceJson = await sourceTxRes.json();
+        setSourceTransactions(sourceJson.transactions ?? []);
+        setSourceTxTotal(sourceJson.total ?? 0);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load payout data');
@@ -487,6 +514,91 @@ export default function AdminPayoutsPage() {
             <span className="text-3xl font-semibold text-white">{failedCount}</span>
           </div>
         </div>
+      </div>
+
+      <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <div>
+            <h2 className={`text-lg font-semibold ${textClass}`}>Earnings source (tips &amp; transactions)</h2>
+            <p className={`text-xs mt-1 ${mutedClass}`}>
+              Who paid whom — wallet credits that fund creator balances before withdrawal. Showing latest{' '}
+              {sourceTransactions.length}
+              {sourceTxTotal > sourceTransactions.length ? ` of ${sourceTxTotal}` : ''}.
+            </p>
+          </div>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading…</div>
+        ) : sourceTransactions.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No tip or sale transactions recorded yet.</div>
+        ) : (
+          <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className={`sticky top-0 ${dark ? 'bg-gray-700/90' : 'bg-gray-50'}`}>
+                <tr>
+                  <th className="text-left p-3 font-medium">Date</th>
+                  <th className="text-left p-3 font-medium">Type</th>
+                  <th className="text-left p-3 font-medium">From (payer)</th>
+                  <th className="text-left p-3 font-medium w-8" />
+                  <th className="text-left p-3 font-medium">To (creator)</th>
+                  <th className="text-right p-3 font-medium">Amount</th>
+                  <th className="text-left p-3 font-medium">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sourceTransactions.map((tx) => (
+                  <tr
+                    key={tx.id}
+                    className={`border-t ${dark ? 'border-gray-700 hover:bg-gray-700/30' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <td className={`p-3 whitespace-nowrap ${mutedClass}`}>
+                      {new Date(tx.created_at).toLocaleString()}
+                    </td>
+                    <td className="p-3">
+                      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-purple-900/30 text-purple-200 border border-purple-700/40">
+                        {tx.type_label}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-white">{tx.from_name}</div>
+                      {tx.from_email && (
+                        <div className={`${mutedClass} text-xs`}>{tx.from_email}</div>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <ArrowRight className={`h-4 w-4 inline ${mutedClass}`} />
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-white">{tx.to_name}</div>
+                      {tx.to_email && <div className={`${mutedClass} text-xs`}>{tx.to_email}</div>}
+                    </td>
+                    <td className="p-3 text-right font-medium text-white whitespace-nowrap">
+                      {formatMoney(tx.amount, tx.currency)}
+                    </td>
+                    <td className="p-3">
+                      {tx.stripe_payment_intent_id ? (
+                        <code className={`text-xs ${dark ? 'text-cyan-300' : 'text-cyan-700'}`} title={tx.stripe_payment_intent_id}>
+                          {tx.stripe_payment_intent_id.slice(0, 14)}…
+                        </code>
+                      ) : tx.reference_id ? (
+                        <code className={`text-xs ${mutedClass}`} title={tx.reference_id}>
+                          {tx.reference_id.slice(0, 8)}…
+                        </code>
+                      ) : (
+                        <span className={mutedClass}>—</span>
+                      )}
+                      {tx.description && (
+                        <div className={`${mutedClass} text-xs mt-0.5 max-w-[200px] truncate`} title={tx.description}>
+                          {tx.description}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className={`rounded-lg border overflow-hidden mb-6 ${cardClass}`}>

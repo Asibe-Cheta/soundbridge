@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { CheckCircle, Music, Mic, User, Home, Loader2, AlertTriangle, Share2, Heart, MessageCircle, Plus, TrendingUp, Users, Calendar, Globe, ArrowRight, Download, Play, Pause, Volume2 } from 'lucide-react';
+import { DistributionNudgeModal } from '../../../src/components/feature-nudges/ContextNudgeModals';
+import { fetchJsonWithAuth } from '../../../src/lib/fetchWithAuth';
 
 function UploadSuccessContent() {
   const searchParams = useSearchParams();
@@ -20,6 +22,7 @@ function UploadSuccessContent() {
     location?: string;
     description?: string;
   } | null>(null);
+  const [showDistributionNudge, setShowDistributionNudge] = useState(false);
 
   useEffect(() => {
     // Get track data from URL params
@@ -45,6 +48,20 @@ function UploadSuccessContent() {
       });
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!trackData || trackData.type !== 'music' || !trackData.trackId || !user) return;
+
+    setShowDistributionNudge(true);
+
+    void fetchJsonWithAuth('/api/feature-nudges', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'register_first_upload',
+        trackId: trackData.trackId,
+      }),
+    });
+  }, [trackData, user]);
 
 
   // Show loading state while checking authentication
@@ -376,6 +393,14 @@ function UploadSuccessContent() {
       </main>
 
       <Footer />
+
+      {showDistributionNudge && trackData?.trackId && (
+        <DistributionNudgeModal
+          trackId={trackData.trackId}
+          trackTitle={trackData.title}
+          onClose={() => setShowDistributionNudge(false)}
+        />
+      )}
 
       {/* Shimmer Animation Styles */}
       <style jsx>{`
