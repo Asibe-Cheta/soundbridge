@@ -76,35 +76,37 @@ export async function assertUserCanViewPost(
   return connection ? 'ok' : 'forbidden';
 }
 
-function collectDescendants(
+/** Load reply threads only for the top-level comments on this page (not the whole post). */
+async function fetchDescendantsForRoots(
+  supabase: SupabaseClient,
+  postId: string,
   roots: PostCommentRow[],
-  allReplies: PostCommentRow[],
-): PostCommentRow[] {
-  const byParent = new Map<string, PostCommentRow[]>();
-  for (const reply of allReplies) {
-    if (!reply.parent_comment_id) continue;
-    const list = byParent.get(reply.parent_comment_id) ?? [];
-    list.push(reply);
-    byParent.set(reply.parent_comment_id, list);
+): Promise<PostCommentRow[]> {
+  if (roots.length === 0) return [];
+
+  const allDescendants: PostCommentRow[] = [];
+  let frontierIds = roots.map((r) => r.id);
+  const maxDepth = 32;
+
+  for (let depth = 0; depth < maxDepth && frontierIds.length > 0; depth++) {
+    const { data, error } = await supabase
+      .from('post_comments')
+      .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
+      .eq('post_id', postId)
+      .is('deleted_at', null)
+      .in('parent_comment_id', frontierIds)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const batch = (data ?? []) as PostCommentRow[];
+    if (batch.length === 0) break;
+
+    allDescendants.push(...batch);
+    frontierIds = batch.map((row) => row.id);
   }
 
-  const collected: PostCommentRow[] = [];
-  const walk = (parentId: string) => {
-    const children = byParent.get(parentId) ?? [];
-    children.sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-    for (const child of children) {
-      collected.push(child);
-      walk(child.id);
-    }
-  };
-
-  for (const root of roots) {
-    walk(root.id);
-  }
-
-  return collected;
+  return allDescendants;
 }
 
 async function fetchLikesForCommentIds(
@@ -118,6 +120,28 @@ async function fetchLikesForCommentIds(
   const chunkSize = 200;
   for (let i = 0; i < commentIds.length; i += chunkSize) {
     const chunk = commentIds.slice(i, i + chunkSize);
+    const { data: summaries, error: rpcError } = await supabase.rpc(
+      'get_comment_like_summaries',
+      {
+        p_comment_ids: chunk,
+        p_viewer_user_id: viewerUserId,
+      },
+    );
+
+    if (!rpcError && summaries) {
+      for (const row of summaries as {
+        comment_id: string;
+        like_count: number;
+        user_liked: boolean;
+      }[]) {
+        likesMap.set(row.comment_id, {
+          count: Number(row.like_count ?? 0),
+          user_liked: Boolean(row.user_liked),
+        });
+      }
+      continue;
+    }
+
     const { data: likes } = await supabase
       .from('comment_likes')
       .select('comment_id, user_id')
@@ -205,14 +229,28 @@ export async function fetchPostCommentsPage(
   const { postId, viewerUserId, page, limit } = params;
   const offset = (page - 1) * limit;
 
-  const { count: totalTopLevel, error: countError } = await supabase
+  const topLevelQuery = supabase
     .from('post_comments')
-    .select('id', { count: 'exact', head: true })
+    .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
     .eq('post_id', postId)
     .is('deleted_at', null)
-    .is('parent_comment_id', null);
+    .is('parent_comment_id', null)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const [{ count: totalTopLevel, error: countError }, { data: topLevel, error: topError }] =
+    await Promise.all([
+      supabase
+        .from('post_comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('post_id', postId)
+        .is('deleted_at', null)
+        .is('parent_comment_id', null),
+      topLevelQuery,
+    ]);
 
   if (countError) throw countError;
+  if (topError) throw topError;
 
   const total = totalTopLevel ?? 0;
   if (total === 0) {
@@ -222,16 +260,6 @@ export async function fetchPostCommentsPage(
     };
   }
 
-  const { data: topLevel, error: topError } = await supabase
-    .from('post_comments')
-    .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
-    .eq('post_id', postId)
-    .is('deleted_at', null)
-    .is('parent_comment_id', null)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (topError) throw topError;
   const topRows = (topLevel ?? []) as PostCommentRow[];
   if (topRows.length === 0) {
     return {
@@ -240,17 +268,7 @@ export async function fetchPostCommentsPage(
     };
   }
 
-  const { data: allReplies, error: repliesError } = await supabase
-    .from('post_comments')
-    .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
-    .eq('post_id', postId)
-    .is('deleted_at', null)
-    .not('parent_comment_id', 'is', null)
-    .order('created_at', { ascending: true });
-
-  if (repliesError) throw repliesError;
-
-  const descendants = collectDescendants(topRows, (allReplies ?? []) as PostCommentRow[]);
+  const descendants = await fetchDescendantsForRoots(supabase, postId, topRows);
   const rowsForTree = [...topRows, ...descendants];
   const userIds = [...new Set(rowsForTree.map((c) => c.user_id))];
 
