@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { AudioTrack } from '../lib/types/audio';
-import { adService } from '../services/AdService';
 
 interface AudioPlayerContextType {
   // State
@@ -13,7 +12,6 @@ interface AudioPlayerContextType {
   volume: number;
   isLoading: boolean;
   error: string | null;
-  showInterstitialAd: boolean;
   audioRef: React.MutableRefObject<HTMLAudioElement | null>;
   
   // Actions
@@ -27,7 +25,6 @@ interface AudioPlayerContextType {
   seek: (time: number) => void;
   setVolume: (volume: number) => void;
   clearError: () => void;
-  closeInterstitialAd: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -52,7 +49,6 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
   const [volume, setVolumeState] = useState(0.7);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const currentTrackRef = React.useRef<AudioTrack | null>(null);
@@ -221,18 +217,6 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
       return;
     }
 
-    // Check if we should show interstitial ad (every 3-5 tracks for free users)
-    const shouldShowAd = adService.trackPlay();
-    const adConfig = await adService.fetchAdConfig();
-    
-    if (shouldShowAd && adService.shouldShowInterstitials(adConfig.user_tier)) {
-      console.log('🎵 Showing interstitial ad before playing track');
-      setShowInterstitialAd(true);
-      // Store the track to play after ad is closed
-      setCurrentTrack(track);
-      return;
-    }
-    
     // Validate track URL
     if (!track.url || track.url.trim() === '') {
       console.error('🎵 Invalid track URL:', track.url);
@@ -363,15 +347,6 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     setError(null);
   }, []);
 
-  const closeInterstitialAd = useCallback(async () => {
-    setShowInterstitialAd(false);
-    // Resume playing the track after ad is closed
-    if (currentTrack) {
-      console.log('🎵 Resuming track after interstitial ad');
-      await playTrack(currentTrack);
-    }
-  }, [currentTrack, playTrack]);
-
   const value: AudioPlayerContextType = {
     currentTrack,
     isPlaying,
@@ -380,7 +355,6 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     volume,
     isLoading,
     error,
-    showInterstitialAd,
     audioRef,
     playTrack,
     pause,
@@ -392,7 +366,6 @@ export function AudioPlayerProvider({ children }: AudioPlayerProviderProps) {
     seek,
     setVolume,
     clearError,
-    closeInterstitialAd,
   };
 
   return (
