@@ -60,19 +60,32 @@ export function clearInstitutionalSignupSourceClient() {
   document.cookie = `${PARTNER_SOURCE_COOKIE}=; max-age=0; path=/; samesite=lax`;
 }
 
-export function clearCommunityEntryAttributionClient() {
+/** Clear only fan/community-entry attribution (does not touch partner `ref` cookies). */
+export function clearCommunityEntryOnlyClient() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(COMMUNITY_ENTRY_CREATOR_USERNAME_STORAGE);
   localStorage.removeItem(COMMUNITY_ENTRY_CREATOR_ID_STORAGE);
-  localStorage.removeItem('soundbridge_referral_code');
-  localStorage.removeItem('soundbridge_signup_source');
 
+  const domain = getCommunityEntryCookieDomainAttribute();
   for (const name of [
     COMMUNITY_ENTRY_CREATOR_USERNAME_COOKIE,
     COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
-    PARTNER_REFERRAL_COOKIE,
-    PARTNER_SOURCE_COOKIE,
   ]) {
+    document.cookie = `${name}=; max-age=0; path=/; samesite=lax${domain}`;
+    document.cookie = `${name}=; max-age=0; path=/; samesite=lax`;
+  }
+}
+
+/** Clear community entry + partner referral client attribution (post-welcome cleanup). */
+export function clearCommunityEntryAttributionClient() {
+  if (typeof window === 'undefined') return;
+  clearCommunityEntryOnlyClient();
+  localStorage.removeItem('soundbridge_referral_code');
+  localStorage.removeItem('soundbridge_signup_source');
+
+  const domain = getCommunityEntryCookieDomainAttribute();
+  for (const name of [PARTNER_REFERRAL_COOKIE, PARTNER_SOURCE_COOKIE]) {
+    document.cookie = `${name}=; max-age=0; path=/; samesite=lax${domain}`;
     document.cookie = `${name}=; max-age=0; path=/; samesite=lax`;
   }
 }

@@ -6,7 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createProfile, generateUsername } from '@/src/lib/profile';
-import { persistCommunityEntryCreatorClient, readCommunityEntryAttributionFromClient, clearInstitutionalSignupSourceClient } from '@/src/lib/community-entry';
+import {
+  persistCommunityEntryCreatorClient,
+  readCommunityEntryAttributionFromClient,
+  clearCommunityEntryOnlyClient,
+  clearInstitutionalSignupSourceClient,
+} from '@/src/lib/community-entry';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -88,12 +93,17 @@ function SignupContent() {
     const maxAge = 60 * 60 * 24 * 30;
     const isExplicitSoundAcademy = source === 'sound_academy';
 
+    // Partner `ref` and fan `community_creator` are separate attribution paths.
+    // A partner link must not show a stale community banner from a prior visit.
     if (communityCreatorParam) {
       persistCommunityEntryCreatorClient(communityCreatorParam);
       setCommunityCreator(communityCreatorParam);
       if (!isExplicitSoundAcademy) {
         clearInstitutionalSignupSourceClient();
       }
+    } else if (ref) {
+      clearCommunityEntryOnlyClient();
+      setCommunityCreator(null);
     } else {
       const storedCommunity = readCommunityEntryAttributionFromClient();
       setCommunityCreator(storedCommunity.creatorUsername);
@@ -122,7 +132,10 @@ function SignupContent() {
 
     setReferralCode(ref || storedRef || (cookieRef ? decodeURIComponent(cookieRef) : null));
 
-    const hasCommunityEntry = !!(communityCreatorParam || readCommunityEntryAttributionFromClient().creatorUsername);
+    const hasCommunityEntry = !!(
+      communityCreatorParam ||
+      (!ref && readCommunityEntryAttributionFromClient().creatorUsername)
+    );
     let resolvedSource = source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null);
     if (hasCommunityEntry && !isExplicitSoundAcademy) {
       resolvedSource = null;
@@ -385,6 +398,27 @@ function SignupContent() {
               </p>
               <p className="mt-2 text-xs text-pink-100/80">
                 Create your free account — after onboarding you&apos;ll get a one-time welcome to connect with them.
+              </p>
+            </div>
+          )}
+
+          {!communityCreator && referralCode && signupSource !== 'sound_academy' && (
+            <div
+              style={{
+                textAlign: 'center',
+                background: 'rgba(236, 72, 153, 0.12)',
+                border: '1px solid rgba(244, 114, 182, 0.35)',
+                borderRadius: '16px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                color: 'white',
+              }}
+            >
+              <p className="text-sm font-semibold text-pink-100">
+                Invited by @{referralCode}
+              </p>
+              <p className="mt-2 text-xs text-pink-100/80">
+                Create your free account to get started on SoundBridge.
               </p>
             </div>
           )}
