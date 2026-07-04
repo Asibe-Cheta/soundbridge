@@ -1481,11 +1481,14 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
   const [currentPage, setCurrentPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [referralPresence, setReferralPresence] = useState('');
+  const [referralCodeFilter, setReferralCodeFilter] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
 
   const handleSearch = async (page: number = 1) => {
-    if (!searchTerm.trim() && !roleFilter && !statusFilter) {
+    const referralFilter = referralCodeFilter.trim().toLowerCase() || referralPresence;
+    if (!searchTerm.trim() && !roleFilter && !statusFilter && !referralFilter) {
       setSearchResults(null);
       setCurrentPage(1);
       onRefresh();
@@ -1501,6 +1504,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
       if (searchTerm.trim()) params.append('search', searchTerm.trim());
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
+      if (referralFilter) params.append('referral', referralFilter);
 
       const response = await fetchWithSupabaseAuth(`/api/admin/users?${params.toString()}`);
       const result = await response.json();
@@ -1563,7 +1567,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={handleSearchKeyPress}
-                placeholder="Search by name, username, or email..."
+                placeholder="Search by name, username, email, or referral code..."
                 className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
                   theme === 'dark' 
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
@@ -1572,7 +1576,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
               />
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -1600,6 +1604,37 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <select
+              value={referralPresence}
+              onChange={(e) => {
+                setReferralPresence(e.target.value);
+                if (e.target.value) setReferralCodeFilter('');
+              }}
+              className={`px-4 py-2 rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            >
+              <option value="">All Referrals</option>
+              <option value="any">Has referral</option>
+              <option value="none">No referral</option>
+            </select>
+            <input
+              type="text"
+              value={referralCodeFilter}
+              onChange={(e) => {
+                setReferralCodeFilter(e.target.value.trim().toLowerCase());
+                if (e.target.value.trim()) setReferralPresence('');
+              }}
+              onKeyPress={handleSearchKeyPress}
+              placeholder="Referral code"
+              className={`w-36 px-3 py-2 rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            />
             <button
               onClick={() => handleSearch(1)}
               disabled={isSearching}
@@ -1616,6 +1651,8 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
               <button
                 onClick={() => {
                   setSearchTerm('');
+                  setReferralPresence('');
+                  setReferralCodeFilter('');
                   setSearchResults(null);
                   setRoleFilter('');
                   setStatusFilter('');
@@ -1722,6 +1759,7 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
               <tr>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>User</th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Role</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Referral</th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Status</th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Joined</th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>Actions</th>
@@ -1730,8 +1768,10 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
             <tbody className={`${theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'} divide-y`}>
               {displayUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className={`px-6 py-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {searchTerm ? 'No users found matching your search' : 'No users available'}
+                  <td colSpan={6} className={`px-6 py-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {searchTerm || referralPresence || referralCodeFilter
+                      ? 'No users found matching your search'
+                      : 'No users available'}
                   </td>
                 </tr>
               ) : (
@@ -1766,6 +1806,13 @@ function UserManagementTab({ theme, data, loading, onRefresh, onViewUser, onBanU
                     }`}>
                       {user.role || 'listener'}
                     </span>
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {user.referred_by_code ? (
+                      <span className="font-mono text-pink-400">@{user.referred_by_code}</span>
+                    ) : (
+                      <span className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

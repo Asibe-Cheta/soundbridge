@@ -4,6 +4,69 @@ const SOUND_ACADEMY_SOURCE = 'sound_academy';
 
 export const PARTNER_REFERRAL_COOKIE = 'soundbridge_referral_code';
 export const PARTNER_SOURCE_COOKIE = 'soundbridge_signup_source';
+export const PARTNER_REFERRAL_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+
+/** Share cookies across soundbridge.live and www.soundbridge.live in production. */
+function getPartnerCookieDomainAttribute(): string {
+  if (typeof window === 'undefined') return '';
+  const host = window.location.hostname.toLowerCase();
+  if (host === 'soundbridge.live' || host.endsWith('.soundbridge.live')) {
+    return '; domain=.soundbridge.live';
+  }
+  return '';
+}
+
+export function getPartnerCookieDomainForServer(): string | undefined {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+  if (siteUrl.includes('soundbridge.live')) return '.soundbridge.live';
+  return undefined;
+}
+
+/** Persist partner `ref` (and optional source) for the full signup flow. */
+export function persistPartnerReferralClient(
+  referralCode: string | null | undefined,
+  source?: string | null,
+) {
+  if (typeof window === 'undefined') return;
+
+  const domain = getPartnerCookieDomainAttribute();
+  const code = typeof referralCode === 'string' ? referralCode.trim().toLowerCase() : '';
+  if (code) {
+    localStorage.setItem(PARTNER_REFERRAL_COOKIE, code);
+    document.cookie = `${PARTNER_REFERRAL_COOKIE}=${encodeURIComponent(code)}; max-age=${PARTNER_REFERRAL_MAX_AGE_SECONDS}; path=/; samesite=lax${domain}`;
+  }
+
+  const normalizedSource = typeof source === 'string' ? source.trim().toLowerCase() : '';
+  if (normalizedSource) {
+    localStorage.setItem(PARTNER_SOURCE_COOKIE, normalizedSource);
+    document.cookie = `${PARTNER_SOURCE_COOKIE}=${encodeURIComponent(normalizedSource)}; max-age=${PARTNER_REFERRAL_MAX_AGE_SECONDS}; path=/; samesite=lax${domain}`;
+  }
+}
+
+export function readPartnerReferralFromClient(): {
+  referralCode: string | null;
+  source: string | null;
+} {
+  if (typeof window === 'undefined') {
+    return { referralCode: null, source: null };
+  }
+
+  const cookieValue = (name: string) =>
+    document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${name}=`))
+      ?.split('=')[1];
+
+  const storedRef = localStorage.getItem(PARTNER_REFERRAL_COOKIE)?.trim().toLowerCase() || null;
+  const storedSource = localStorage.getItem(PARTNER_SOURCE_COOKIE)?.trim().toLowerCase() || null;
+  const cookieRef = cookieValue(PARTNER_REFERRAL_COOKIE);
+  const cookieSource = cookieValue(PARTNER_SOURCE_COOKIE);
+
+  return {
+    referralCode: storedRef || (cookieRef ? decodeURIComponent(cookieRef).trim().toLowerCase() : null),
+    source: storedSource || (cookieSource ? decodeURIComponent(cookieSource).trim().toLowerCase() : null),
+  };
+}
 
 type PartnerAttributionInput = {
   userId: string;
@@ -98,12 +161,25 @@ export async function processPartnerAttribution(
   const source = normalizeText(input.source) || getSignupSourceFromMetadata(metadata);
 
   if (referralCode) {
+    // Prefer RPC (stamps profiles.referred_by_code + referral_signups when partner exists).
     const { error } = await supabase.rpc('record_referral_signup', {
       p_referred_user_id: input.userId,
       p_referral_code: referralCode,
     });
     if (error) {
       console.error('[partner-referrals] record_referral_signup failed:', error.message);
+      // Fallback: still stamp the profile so attribution is not lost if RPC is outdated.
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          referred_by_code: referralCode,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.userId)
+        .is('referred_by_code', null);
+      if (profileError) {
+        console.error('[partner-referrals] profiles.referred_by_code fallback failed:', profileError.message);
+      }
     }
   }
 

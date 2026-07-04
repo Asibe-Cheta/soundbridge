@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
-import { processPartnerAttributionForAuthUser } from '@/src/lib/partner-referrals';
+import {
+  getReferralCodeFromMetadata,
+  processPartnerAttributionForAuthUser,
+} from '@/src/lib/partner-referrals';
+
+function normalizeReferralCode(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().toLowerCase();
+  return trimmed || null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +45,10 @@ export async function POST(request: NextRequest) {
       console.error('❌ User not found in auth.users:', authError);
       console.log('🔄 Proceeding with minimal profile creation using provided data only...');
       
+      const referralCode =
+        normalizeReferralCode(referred_by_code) ||
+        getReferralCodeFromMetadata(authUser?.user?.user_metadata as Record<string, unknown>);
+
       // Fallback: Create profile with minimal data from request body
       const profileData = {
         id: userId,
@@ -55,6 +68,7 @@ export async function POST(request: NextRequest) {
         country: country || null,
         country_code: null, // Will be set by frontend if country is provided
         bio: bio || '',
+        ...(referralCode ? { referred_by_code: referralCode } : {}),
         onboarding_completed: false,
         onboarding_step: 'role_selection',
         selected_role: role || 'listener',
@@ -120,6 +134,9 @@ export async function POST(request: NextRequest) {
     const email = authUser.user.email || '';
     const firstName = authUser.user.user_metadata?.first_name || email.split('@')[0];
     const lastName = authUser.user.user_metadata?.last_name || '';
+    const referralCode =
+      normalizeReferralCode(referred_by_code) ||
+      getReferralCodeFromMetadata(authUser.user.user_metadata as Record<string, unknown>);
 
     const profileData = {
       id: userId,
@@ -139,6 +156,7 @@ export async function POST(request: NextRequest) {
       country: country || null,
       country_code: null, // Will be set by frontend if country is provided
       bio: bio || '',
+      ...(referralCode ? { referred_by_code: referralCode } : {}),
       onboarding_completed: false,
       onboarding_step: 'role_selection',
       selected_role: role || authUser.user.user_metadata?.role || 'listener', // Store the onboarding role

@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || '';
     const status = searchParams.get('status') || '';
+    const referral = searchParams.get('referral')?.trim().toLowerCase() || '';
     
     const supabase = createServiceClient();
 
@@ -29,17 +30,28 @@ export async function GET(request: NextRequest) {
         last_login_at,
         is_active,
         followers_count,
-        following_count
+        following_count,
+        referred_by_code
       `)
       .order('created_at', { ascending: false });
 
     // Apply filters
     if (search) {
-      query = query.or(`username.ilike.%${search}%,display_name.ilike.%${search}%,email.ilike.%${search}%`);
+      query = query.or(
+        `username.ilike.%${search}%,display_name.ilike.%${search}%,email.ilike.%${search}%,referred_by_code.ilike.%${search}%`,
+      );
     }
 
     if (role) {
       query = query.eq('role', role);
+    }
+
+    if (referral === 'any') {
+      query = query.not('referred_by_code', 'is', null);
+    } else if (referral === 'none') {
+      query = query.is('referred_by_code', null);
+    } else if (referral) {
+      query = query.eq('referred_by_code', referral);
     }
 
     if (status === 'active') {

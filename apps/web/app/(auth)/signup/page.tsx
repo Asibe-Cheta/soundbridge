@@ -12,6 +12,10 @@ import {
   clearCommunityEntryOnlyClient,
   clearInstitutionalSignupSourceClient,
 } from '@/src/lib/community-entry';
+import {
+  persistPartnerReferralClient,
+  readPartnerReferralFromClient,
+} from '@/src/lib/partner-referrals';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -90,7 +94,6 @@ function SignupContent() {
     const ref = searchParams.get('ref')?.trim().toLowerCase() || null;
     const source = searchParams.get('source')?.trim().toLowerCase() || null;
     const communityCreatorParam = searchParams.get('community_creator')?.trim().toLowerCase() || null;
-    const maxAge = 60 * 60 * 24 * 30;
     const isExplicitSoundAcademy = source === 'sound_academy';
 
     // Partner `ref` and fan `community_creator` are separate attribution paths.
@@ -109,34 +112,18 @@ function SignupContent() {
       setCommunityCreator(storedCommunity.creatorUsername);
     }
 
-    if (ref) {
-      localStorage.setItem('soundbridge_referral_code', ref);
-      document.cookie = `soundbridge_referral_code=${encodeURIComponent(ref)}; max-age=${maxAge}; path=/; samesite=lax`;
+    if (ref || source) {
+      persistPartnerReferralClient(ref, source);
     }
 
-    if (source) {
-      localStorage.setItem('soundbridge_signup_source', source);
-      document.cookie = `soundbridge_signup_source=${encodeURIComponent(source)}; max-age=${maxAge}; path=/; samesite=lax`;
-    }
-
-    const cookieValue = (name: string) =>
-      document.cookie
-        .split('; ')
-        .find((row) => row.startsWith(`${name}=`))
-        ?.split('=')[1];
-
-    const storedRef = localStorage.getItem('soundbridge_referral_code');
-    const storedSource = localStorage.getItem('soundbridge_signup_source');
-    const cookieRef = cookieValue('soundbridge_referral_code');
-    const cookieSource = cookieValue('soundbridge_signup_source');
-
-    setReferralCode(ref || storedRef || (cookieRef ? decodeURIComponent(cookieRef) : null));
+    const storedPartner = readPartnerReferralFromClient();
+    setReferralCode(ref || storedPartner.referralCode);
 
     const hasCommunityEntry = !!(
       communityCreatorParam ||
       (!ref && readCommunityEntryAttributionFromClient().creatorUsername)
     );
-    let resolvedSource = source || storedSource || (cookieSource ? decodeURIComponent(cookieSource) : null);
+    let resolvedSource = source || storedPartner.source;
     if (hasCommunityEntry && !isExplicitSoundAcademy) {
       resolvedSource = null;
     }

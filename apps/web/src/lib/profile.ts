@@ -1,4 +1,5 @@
 import { createBrowserClient } from './supabase';
+import { readPartnerReferralFromClient } from './partner-referrals';
 
 export interface ProfileData {
   username: string;
@@ -12,10 +13,7 @@ export interface ProfileData {
 export async function createProfile(userId: string, profileData: ProfileData) {
   try {
     console.log('🔧 Creating profile via API for user:', userId);
-    const referralCode =
-      typeof window !== 'undefined' ? localStorage.getItem('soundbridge_referral_code') : null;
-    const signupSource =
-      typeof window !== 'undefined' ? localStorage.getItem('soundbridge_signup_source') : null;
+    const { referralCode, source: signupSource } = readPartnerReferralFromClient();
     
     // Use the API route instead of direct database access
     const response = await fetch('/api/profile/create', {

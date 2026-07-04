@@ -10,6 +10,7 @@ import { createServiceClient } from '@/src/lib/supabase';
 import {
   PARTNER_REFERRAL_COOKIE,
   PARTNER_SOURCE_COOKIE,
+  getReferralCodeFromMetadata,
   processPartnerAttributionForAuthUser,
 } from '@/src/lib/partner-referrals';
 
@@ -35,8 +36,10 @@ export async function GET(request: NextRequest) {
     
     // Create Supabase client with proper cookie handling (Next.js 15 + @supabase/ssr)
     const cookieStore = await cookies();
-    const referralCodeCookie = cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value ?? null;
-    const signupSourceCookie = cookieStore.get(PARTNER_SOURCE_COOKIE)?.value ?? null;
+    const referralCodeCookie =
+      cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value?.trim().toLowerCase() || null;
+    const signupSourceCookie =
+      cookieStore.get(PARTNER_SOURCE_COOKIE)?.value?.trim().toLowerCase() || null;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -100,6 +103,9 @@ export async function GET(request: NextRequest) {
             if (!existingProfile) {
               console.log('Creating profile for mobile user:', data.user.id);
               
+              const mobileReferralCode =
+                referralCodeCookie ||
+                getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
               const { error: profileError } = await supabase
                 .from('profiles')
                 .insert({
@@ -110,6 +116,7 @@ export async function GET(request: NextRequest) {
                   location: 'london',
                   country: 'UK',
                   bio: '',
+                  ...(mobileReferralCode ? { referred_by_code: mobileReferralCode } : {}),
                   onboarding_completed: false,
                   onboarding_step: 'role_selection',
                   selected_role: 'listener',
@@ -194,7 +201,10 @@ export async function GET(request: NextRequest) {
               console.log('Creating profile for OAuth user:', data.user.id);
 
               const { displayName, firstName, lastName } = extractOAuthDisplayNameParts(data.user);
-              
+              const oauthReferralCode =
+                referralCodeCookie ||
+                getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
+
               // Create profile with OAuth user data
               const { error: profileError } = await supabase
                 .from('profiles')
@@ -209,6 +219,7 @@ export async function GET(request: NextRequest) {
                   location: 'london',
                   country: 'UK',
                   bio: '',
+                  ...(oauthReferralCode ? { referred_by_code: oauthReferralCode } : {}),
                   onboarding_completed: false,
                   onboarding_step: 'role_selection',
                   selected_role: 'listener',
@@ -337,6 +348,10 @@ export async function GET(request: NextRequest) {
           if (!existingProfile) {
             console.log('Profile does not exist, creating profile for user:', data.user.id);
             
+            const emailReferralCode =
+              referralCodeCookie ||
+              getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
+
             // Create profile with default data
             const { error: profileError } = await supabase
               .from('profiles')
@@ -348,6 +363,7 @@ export async function GET(request: NextRequest) {
                 location: 'london',
                 country: 'UK',
                 bio: '',
+                ...(emailReferralCode ? { referred_by_code: emailReferralCode } : {}),
                 onboarding_completed: false,
                 onboarding_step: 'role_selection',
                 selected_role: 'listener',
