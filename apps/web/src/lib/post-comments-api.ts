@@ -91,7 +91,7 @@ async function fetchDescendantsForRoots(
   for (let depth = 0; depth < maxDepth && frontierIds.length > 0; depth++) {
     const { data, error } = await supabase
       .from('post_comments')
-      .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
+      .select('id, post_id, user_id, parent_comment_id, content, created_at')
       .eq('post_id', postId)
       .is('deleted_at', null)
       .in('parent_comment_id', frontierIds)
@@ -229,9 +229,10 @@ export async function fetchPostCommentsPage(
   const { postId, viewerUserId, page, limit } = params;
   const offset = (page - 1) * limit;
 
+  // Do not select image_url — column is not present on all environments yet.
   const topLevelQuery = supabase
     .from('post_comments')
-    .select('id, post_id, user_id, parent_comment_id, content, image_url, created_at')
+    .select('id, post_id, user_id, parent_comment_id, content, created_at')
     .eq('post_id', postId)
     .is('deleted_at', null)
     .is('parent_comment_id', null)

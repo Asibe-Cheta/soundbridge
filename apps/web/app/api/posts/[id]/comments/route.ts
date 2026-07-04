@@ -30,10 +30,10 @@ export async function OPTIONS() {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const { user, error: authError } = await getSupabaseRouteClient(request, true);
 
     if (authError || !user) {
@@ -94,10 +94,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
 
     const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
 
