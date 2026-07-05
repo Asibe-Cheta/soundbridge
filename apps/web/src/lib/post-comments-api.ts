@@ -214,6 +214,112 @@ function formatCommentTree(
   return topLevel.map((comment) => buildNode(comment));
 }
 
+function formatTopLevelOnly(
+  topLevel: PostCommentRow[],
+  profileMap: Map<string, ProfileRow>,
+  likesMap: Map<string, { count: number; user_liked: boolean }>,
+  replyCountsMap: Map<string, number>,
+): FormattedPostComment[] {
+  return topLevel.map((comment) => {
+    const profile = profileMap.get(comment.user_id);
+    const likeData = likesMap.get(comment.id) ?? { count: 0, user_liked: false };
+    const authorLike = {
+      id: comment.user_id,
+      name: profile?.display_name || profile?.username || 'User',
+      username: profile?.username || null,
+      avatar_url: profile?.avatar_url || null,
+      is_verified: Boolean(profile?.is_verified),
+    };
+
+    return {
+      id: comment.id,
+      post_id: comment.post_id,
+      user_id: comment.user_id,
+      parent_comment_id: null,
+      content: comment.content,
+      image_url: comment.image_url ?? null,
+      user: {
+        id: authorLike.id,
+        display_name: authorLike.name,
+        username: authorLike.username,
+        avatar_url: authorLike.avatar_url,
+      },
+      author: authorLike,
+      created_at: comment.created_at,
+      likes_count: likeData.count,
+      like_count: likeData.count,
+      user_liked: likeData.user_liked,
+      replies_count: replyCountsMap.get(comment.id) ?? 0,
+      replies: [],
+    };
+  });
+}
+
+async function fetchDirectReplyCounts(
+  supabase: SupabaseClient,
+  postId: string,
+  parentIds: string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (parentIds.length === 0) return counts;
+
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('parent_comment_id')
+    .eq('post_id', postId)
+    .is('deleted_at', null)
+    .in('parent_comment_id', parentIds);
+
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    if (!row.parent_comment_id) continue;
+    counts.set(row.parent_comment_id, (counts.get(row.parent_comment_id) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function formatCommentRows(
+  rows: PostCommentRow[],
+  profileMap: Map<string, ProfileRow>,
+  likesMap: Map<string, { count: number; user_liked: boolean }>,
+): FormattedPostComment[] {
+  return rows.map((comment) => {
+    const profile = profileMap.get(comment.user_id);
+    const likeData = likesMap.get(comment.id) ?? { count: 0, user_liked: false };
+    const authorLike = {
+      id: comment.user_id,
+      name: profile?.display_name || profile?.username || 'User',
+      username: profile?.username || null,
+      avatar_url: profile?.avatar_url || null,
+      is_verified: Boolean(profile?.is_verified),
+    };
+
+    return {
+      id: comment.id,
+      post_id: comment.post_id,
+      user_id: comment.user_id,
+      parent_comment_id: comment.parent_comment_id,
+      content: comment.content,
+      image_url: comment.image_url ?? null,
+      user: {
+        id: authorLike.id,
+        display_name: authorLike.name,
+        username: authorLike.username,
+        avatar_url: authorLike.avatar_url,
+      },
+      author: authorLike,
+      created_at: comment.created_at,
+      likes_count: likeData.count,
+      like_count: likeData.count,
+      user_liked: likeData.user_liked,
+      replies_count: 0,
+      replies: [],
+    };
+  });
+}
+
 export async function fetchPostCommentsPage(
   supabase: SupabaseClient,
   params: {
@@ -221,12 +327,13 @@ export async function fetchPostCommentsPage(
     viewerUserId: string;
     page: number;
     limit: number;
+    includeReplies?: boolean;
   },
 ): Promise<{
   comments: FormattedPostComment[];
   pagination: { page: number; limit: number; total: number; has_more: boolean };
 }> {
-  const { postId, viewerUserId, page, limit } = params;
+  const { postId, viewerUserId, page, limit, includeReplies = false } = params;
   const offset = (page - 1) * limit;
 
   // Do not select image_url — column is not present on all environments yet.
@@ -269,6 +376,35 @@ export async function fetchPostCommentsPage(
     };
   }
 
+  if (!includeReplies) {
+    const rootIds = topRows.map((row) => row.id);
+    const userIds = [...new Set(topRows.map((c) => c.user_id))];
+
+    const [{ data: profiles }, likesMap, replyCountsMap] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified')
+        .in('id', userIds),
+      fetchLikesForCommentIds(supabase, rootIds, viewerUserId),
+      fetchDirectReplyCounts(supabase, postId, rootIds),
+    ]);
+
+    const profileMap = new Map<string, ProfileRow>();
+    for (const profile of (profiles ?? []) as ProfileRow[]) {
+      profileMap.set(profile.id, profile);
+    }
+
+    return {
+      comments: formatTopLevelOnly(topRows, profileMap, likesMap, replyCountsMap),
+      pagination: {
+        page,
+        limit,
+        total,
+        has_more: total > offset + limit,
+      },
+    };
+  }
+
   const descendants = await fetchDescendantsForRoots(supabase, postId, topRows);
   const rowsForTree = [...topRows, ...descendants];
   const userIds = [...new Set(rowsForTree.map((c) => c.user_id))];
@@ -292,6 +428,100 @@ export async function fetchPostCommentsPage(
 
   return {
     comments: formatCommentTree(topRows, descendants, profileMap, likesMap),
+    pagination: {
+      page,
+      limit,
+      total,
+      has_more: total > offset + limit,
+    },
+  };
+}
+
+/** Direct replies to a single comment (one level). */
+export async function fetchCommentRepliesPage(
+  supabase: SupabaseClient,
+  params: {
+    postId: string;
+    commentId: string;
+    viewerUserId: string;
+    page: number;
+    limit: number;
+  },
+): Promise<{
+  replies: FormattedPostComment[];
+  pagination: { page: number; limit: number; total: number; has_more: boolean };
+}> {
+  const { postId, commentId, viewerUserId, page, limit } = params;
+  const offset = (page - 1) * limit;
+
+  const { data: parentComment, error: parentError } = await supabase
+    .from('post_comments')
+    .select('id')
+    .eq('id', commentId)
+    .eq('post_id', postId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (parentError) throw parentError;
+  if (!parentComment) {
+    return {
+      replies: [],
+      pagination: { page, limit, total: 0, has_more: false },
+    };
+  }
+
+  const repliesQuery = supabase
+    .from('post_comments')
+    .select('id, post_id, user_id, parent_comment_id, content, created_at')
+    .eq('post_id', postId)
+    .eq('parent_comment_id', commentId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  const [{ count: totalReplies, error: countError }, { data: replies, error: repliesError }] =
+    await Promise.all([
+      supabase
+        .from('post_comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('post_id', postId)
+        .eq('parent_comment_id', commentId)
+        .is('deleted_at', null),
+      repliesQuery,
+    ]);
+
+  if (countError) throw countError;
+  if (repliesError) throw repliesError;
+
+  const total = totalReplies ?? 0;
+  const replyRows = (replies ?? []) as PostCommentRow[];
+  if (replyRows.length === 0) {
+    return {
+      replies: [],
+      pagination: { page, limit, total, has_more: total > offset + limit },
+    };
+  }
+
+  const userIds = [...new Set(replyRows.map((c) => c.user_id))];
+  const [{ data: profiles }, likesMap] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, is_verified')
+      .in('id', userIds),
+    fetchLikesForCommentIds(
+      supabase,
+      replyRows.map((c) => c.id),
+      viewerUserId,
+    ),
+  ]);
+
+  const profileMap = new Map<string, ProfileRow>();
+  for (const profile of (profiles ?? []) as ProfileRow[]) {
+    profileMap.set(profile.id, profile);
+  }
+
+  return {
+    replies: formatCommentRows(replyRows, profileMap, likesMap),
     pagination: {
       page,
       limit,

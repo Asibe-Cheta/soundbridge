@@ -1,6 +1,7 @@
 /**
- * GET /api/posts/[id]/comments - Get comments for a post
- * POST /api/posts/[id]/comments - Add a comment to a post
+ * GET /api/posts/[id]/comments - Top-level comments only (parent_comment_id IS NULL).
+ *     Pass include_replies=true to embed nested reply threads (web feed UI).
+ * POST /api/posts/[id]/comments - Add a top-level comment
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -46,6 +47,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10));
+    const includeReplies = searchParams.get('include_replies') === 'true';
 
     const service = createServiceClient();
     const access = await assertUserCanViewPost(service, user.id, postId);
@@ -67,6 +69,7 @@ export async function GET(
       viewerUserId: user.id,
       page,
       limit,
+      includeReplies,
     });
 
     return NextResponse.json(

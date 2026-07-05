@@ -60,7 +60,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`/api/posts/${resolvedParams.id}/comments`, {
+      const response = await fetch(`/api/posts/${resolvedParams.id}/comments?include_replies=true`, {
         credentials: 'include',
       });
 

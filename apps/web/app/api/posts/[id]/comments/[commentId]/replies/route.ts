@@ -1,12 +1,16 @@
 /**
- * POST /api/posts/[id]/comments/[commentId]/replies
- * 
- * Reply to a comment
+ * GET /api/posts/[id]/comments/[commentId]/replies - List replies to a comment
+ * POST /api/posts/[id]/comments/[commentId]/replies - Reply to a comment
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { notifyCommentReply } from '@/src/lib/post-notifications';
+import {
+  assertUserCanViewPost,
+  fetchCommentRepliesPage,
+} from '@/src/lib/post-comments-api';
+import { createServiceClient } from '@/src/lib/supabase';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,20 +18,87 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-export async function OPTIONS(request: NextRequest) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: corsHeaders,
   });
 }
 
-export async function POST(
+export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> },
 ) {
   try {
-    const postId = params.id;
-    const commentId = params.commentId;
+    const { id: postId, commentId } = await params;
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401, headers: corsHeaders },
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20));
+
+    const service = createServiceClient();
+    const access = await assertUserCanViewPost(service, user.id, postId);
+    if (access === 'not_found') {
+      return NextResponse.json(
+        { success: false, error: 'Post not found' },
+        { status: 404, headers: corsHeaders },
+      );
+    }
+    if (access === 'forbidden') {
+      return NextResponse.json(
+        { success: false, error: 'You do not have access to this post' },
+        { status: 403, headers: corsHeaders },
+      );
+    }
+
+    const { replies, pagination } = await fetchCommentRepliesPage(service, {
+      postId,
+      commentId,
+      viewerUserId: user.id,
+      page,
+      limit,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          replies,
+          pagination,
+        },
+      },
+      { headers: corsHeaders },
+    );
+  } catch (error: unknown) {
+    console.error('❌ Unexpected error fetching replies:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'unknown',
+      },
+      { status: 500, headers: corsHeaders },
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; commentId: string }> },
+) {
+  try {
+    const { id: postId, commentId } = await params;
     console.log('💬 Add Reply API called:', { postId, commentId });
 
     // Authenticate user

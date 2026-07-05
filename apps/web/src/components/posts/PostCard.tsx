@@ -165,7 +165,7 @@ export const PostCard = React.memo(function PostCard({
       
       if (shouldFetch) {
         hasFetchedCommentsRef.current = post.id;
-        fetch(`/api/posts/${post.id}/comments?limit=${limit}`, {
+        fetch(`/api/posts/${post.id}/comments?limit=${limit}&include_replies=true`, {
           credentials: 'include',
         })
           .then(res => res.json())
@@ -894,7 +894,7 @@ export const PostCard = React.memo(function PostCard({
                 setShowCommentBox(!showCommentBox);
                 // If opening comment box, fetch comments if not already loaded
                 if (!showCommentBox && (post.comment_count || 0) > 0 && commentPreview.length === 0) {
-                  fetch(`/api/posts/${post.id}/comments?limit=2`, {
+                  fetch(`/api/posts/${post.id}/comments?limit=2&include_replies=true`, {
                     credentials: 'include',
                   })
                     .then(res => res.json())
@@ -1162,7 +1162,7 @@ export const PostCard = React.memo(function PostCard({
                     onClick={() => {
                       setShowCommentBox(true);
                       setShowAllComments(true);
-                      fetch(`/api/posts/${post.id}/comments?limit=50`, {
+                      fetch(`/api/posts/${post.id}/comments?limit=50&include_replies=true`, {
                         credentials: 'include',
                       })
                         .then(res => res.json())
@@ -1190,7 +1190,7 @@ export const PostCard = React.memo(function PostCard({
                   setShowCommentBox(true);
                   setShowAllComments(true);
                   // Fetch comments
-                  fetch(`/api/posts/${post.id}/comments?limit=10`, {
+                  fetch(`/api/posts/${post.id}/comments?limit=10&include_replies=true`, {
                     credentials: 'include',
                   })
                     .then(res => res.json())
