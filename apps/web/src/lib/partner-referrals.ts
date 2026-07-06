@@ -1,6 +1,13 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 
-const SOUND_ACADEMY_SOURCE = 'sound_academy';
+export const SOUND_ACADEMY_SOURCE = 'sound_academy';
+export const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
+
+const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUTE_SOURCE]);
+
+function isInstitutionalSource(source: string | null | undefined): source is string {
+  return !!source && INSTITUTIONAL_SOURCES.has(source);
+}
 
 export const PARTNER_REFERRAL_COOKIE = 'soundbridge_referral_code';
 export const PARTNER_SOURCE_COOKIE = 'soundbridge_signup_source';
@@ -107,7 +114,11 @@ export function monthlyValueForSubscriptionTier(tier?: string | null): number {
   }
 }
 
-async function sendSoundAcademyWelcomeEmail(email: string | null | undefined, expiresAt?: string | null) {
+async function sendInstitutionalWelcomeEmail(
+  institution: string,
+  email: string | null | undefined,
+  expiresAt?: string | null,
+) {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey || !email) return;
 
@@ -121,9 +132,14 @@ async function sendSoundAcademyWelcomeEmail(email: string | null | undefined, ex
       })
     : 'one year from signup';
 
+  const partnerLabel =
+    institution === ABBEY_ROAD_INSTITUTE_SOURCE
+      ? 'Abbey Road Institute'
+      : 'Sound Academy';
+
   const html = `
     <p>Welcome to SoundBridge.</p>
-    <p>Your one year Premium access has been activated as part of the Sound Academy partnership with SoundBridge.</p>
+    <p>Your one year Premium access has been activated as part of the ${partnerLabel} partnership with SoundBridge.</p>
     <p>Here is what to do next:</p>
     <ul>
       <li>Complete your profile with your bio, photo and genre</li>
@@ -148,7 +164,7 @@ async function sendSoundAcademyWelcomeEmail(email: string | null | undefined, ex
       content: [{ type: 'text/html', value: html }],
     }),
   }).catch((error) => {
-    console.error('[partner-referrals] Sound Academy welcome email failed:', error);
+    console.error('[partner-referrals] institutional welcome email failed:', error);
   });
 }
 
@@ -183,10 +199,10 @@ export async function processPartnerAttribution(
     }
   }
 
-  if (source === SOUND_ACADEMY_SOURCE) {
+  if (isInstitutionalSource(source)) {
     const { error } = await supabase.rpc('grant_institutional_access', {
       p_user_id: input.userId,
-      p_institution: SOUND_ACADEMY_SOURCE,
+      p_institution: source,
       p_access_tier: 'premium',
     });
     if (error) {
@@ -198,10 +214,10 @@ export async function processPartnerAttribution(
       .from('institutional_access')
       .select('expires_at')
       .eq('user_id', input.userId)
-      .eq('institution', SOUND_ACADEMY_SOURCE)
+      .eq('institution', source)
       .maybeSingle();
 
-    await sendSoundAcademyWelcomeEmail(input.email, data?.expires_at ?? null);
+    await sendInstitutionalWelcomeEmail(source, input.email, data?.expires_at ?? null);
   }
 }
 
@@ -220,15 +236,15 @@ export async function processPartnerAttributionForAuthUser(
 }
 
 /**
- * On sign-in / session load: grant Sound Academy Premium if metadata says sound_academy
- * and profile is still free. Idempotent RPC; does not re-send welcome email (signup flow does).
+ * On sign-in / session load: grant institutional Premium if metadata matches
+ * and profile is still free. Idempotent RPC; does not re-send welcome email.
  */
-export async function ensureSoundAcademyPremiumAccess(
+export async function ensureInstitutionalPremiumAccess(
   supabase: SupabaseClient,
   user: Pick<User, 'id' | 'user_metadata'>,
 ): Promise<boolean> {
   const source = getSignupSourceFromMetadata(user.user_metadata as Record<string, unknown>);
-  if (source !== SOUND_ACADEMY_SOURCE) return false;
+  if (!isInstitutionalSource(source)) return false;
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -246,16 +262,24 @@ export async function ensureSoundAcademyPremiumAccess(
 
   const { error } = await supabase.rpc('grant_institutional_access', {
     p_user_id: user.id,
-    p_institution: SOUND_ACADEMY_SOURCE,
+    p_institution: source,
     p_access_tier: 'premium',
   });
 
   if (error) {
-    console.error('[partner-referrals] ensureSoundAcademyPremiumAccess failed:', error.message);
+    console.error('[partner-referrals] ensureInstitutionalPremiumAccess failed:', error.message);
     return false;
   }
 
   return true;
+}
+
+/** @deprecated Use ensureInstitutionalPremiumAccess */
+export async function ensureSoundAcademyPremiumAccess(
+  supabase: SupabaseClient,
+  user: Pick<User, 'id' | 'user_metadata'>,
+): Promise<boolean> {
+  return ensureInstitutionalPremiumAccess(supabase, user);
 }
 
 export async function recordReferralConversion(

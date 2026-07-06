@@ -8,6 +8,8 @@ export const COMMUNITY_ENTRY_CREATOR_USERNAME_STORAGE = 'soundbridge_community_e
 export const COMMUNITY_ENTRY_CREATOR_ID_STORAGE = 'soundbridge_community_entry_creator_id';
 
 const SOUND_ACADEMY_SOURCE = 'sound_academy';
+const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
+const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUTE_SOURCE]);
 const ATTRIBUTION_MAX_AGE = 60 * 60 * 24 * 30;
 
 /** Share cookies across soundbridge.live and www.soundbridge.live in production. */
@@ -101,7 +103,7 @@ export async function applyCommunityEntryAttribution(
   userId: string,
   input: CommunityEntryAttributionInput,
 ): Promise<{ creatorId: string | null; creatorUsername: string | null }> {
-  if (input.signupSource?.trim().toLowerCase() === SOUND_ACADEMY_SOURCE) {
+  if (input.signupSource?.trim().toLowerCase() && INSTITUTIONAL_SOURCES.has(input.signupSource.trim().toLowerCase())) {
     return { creatorId: null, creatorUsername: null };
   }
 

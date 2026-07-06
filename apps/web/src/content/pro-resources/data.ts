@@ -1,10 +1,15 @@
 export const CALENDLY_URL =
   'https://calendly.com/soundacademyen/meet-with-sound-academy?back=1&month=2026-05';
+export const ABBEY_ROAD_URL = 'https://abbeyroadinstitute.co.uk';
+export const ABBEY_ROAD_COURSES_URL = 'https://abbeyroadinstitute.co.uk/courses';
+export const ABBEY_ROAD_APPLY_URL =
+  'https://abbeyroadinstitute.co.uk/category/events/#apply-now';
 export const TALK2DAN_URL = 'https://talk2dan.co.uk';
 export const HERTS_URL = 'https://www.herts.ac.uk';
 
 export const PRO_RESOURCES_IMAGES = {
   saLogo: '/images/pro-resources/sa-2.png',
+  ariLogo: '/images/pro-resources/ari.png',
   fund: '/images/pro-resources/fund.jpg',
   mix: '/images/pro-resources/mix.jpg',
   t2dLogo: '/images/pro-resources/T2Dhome.png',
@@ -12,7 +17,7 @@ export const PRO_RESOURCES_IMAGES = {
   lockup: '/images/logos/logo-trans-lockup.png',
 } as const;
 
-export type ProResourcesTabId = 'sound-academy' | 'talk2dan' | 'herts' | 'mbg-sonics';
+export type ProResourcesTabId = 'sound-academy' | 'abbey-road' | 'talk2dan' | 'herts' | 'mbg-sonics';
 
 export type CourseUnit = {
   number: number;
@@ -52,10 +57,36 @@ export type Talk2DanService = {
 
 export const PRO_RESOURCES_TABS: { id: ProResourcesTabId; label: string }[] = [
   { id: 'sound-academy', label: 'Sound Academy' },
+  { id: 'abbey-road', label: 'Abbey Road Inst.' },
   { id: 'talk2dan', label: 'Talk 2 Dan' },
   { id: 'herts', label: 'Herts Uni' },
   { id: 'mbg-sonics', label: 'MBG Sonics' },
 ];
+
+export const INSTITUTIONAL_PARTNERS = [
+  {
+    id: 'sound_academy',
+    name: 'Sound Academy',
+    website: 'https://www.soundacademy.uk',
+    logo: PRO_RESOURCES_IMAGES.saLogo,
+    description:
+      'Sound Academy delivers professional audio engineering and DJ training across the UK and internationally.',
+    instagram: '@soundacademyuk',
+    registrationUrl: CALENDLY_URL,
+    joinPath: '/join/soundacademy',
+  },
+  {
+    id: 'abbey_road_institute',
+    name: 'Abbey Road Institute',
+    website: ABBEY_ROAD_URL,
+    logo: PRO_RESOURCES_IMAGES.ariLogo,
+    description:
+      'Abbey Road Institute delivers professional audio engineering and music production training inside leading professional studios. Their programmes are taught in small groups focused on real studio workflows and prepare students for Avid Pro Tools certifications.',
+    instagram: '@abbeyroadinstitute',
+    registrationUrl: ABBEY_ROAD_COURSES_URL,
+    joinPath: '/join/abbeyroad',
+  },
+] as const;
 
 export const SOUND_ACADEMY_STATS = [
   { value: '2,000+', label: 'Students Trained' },
@@ -282,6 +313,114 @@ export const TALK2DAN_SERVICES: Talk2DanService[] = [
   },
 ];
 
+export const ABBEY_ROAD_STATS = [
+  { value: '30+', label: 'Years of Excellence' },
+  { value: 'Grammy', label: 'Award-Winning Faculty' },
+  { value: 'Abbey Road', label: 'Iconic Studio Access' },
+  { value: 'Dolby', label: 'Atmos Certified' },
+] as const;
+
+export const ABBEY_ROAD_MODULES: SoundAcademyModule[] = [
+  {
+    id: 'ari-m1',
+    moduleNumber: 1,
+    title: 'Advanced Diploma in Music Production & Sound Engineering',
+    subtitle: 'Full-Time · 1 Year',
+    description:
+      'Train at one of London\'s most iconic institutions. Master every stage of professional production — from signal chain and tracking to mixing, mastering and client management.',
+    duration: '1 year',
+    format: 'Full-Time',
+    backgroundImage: '',
+    overlayFrom: 'rgba(220,38,38,0.48)',
+    overlayTo: 'rgba(127,29,29,0.48)',
+    gradientFrom: '#DC2626',
+    gradientTo: '#7F1D1D',
+    ctaLabel: 'Apply Now',
+    ctaUrl: ABBEY_ROAD_APPLY_URL,
+    certifications: ['Advanced Diploma'],
+    units: [
+      { number: 1, title: 'Signal chain & tracking', topics: [] },
+      { number: 2, title: 'Mixing', topics: [] },
+      { number: 3, title: 'Mastering', topics: [] },
+      { number: 4, title: 'Client management', topics: [] },
+    ],
+  },
+  {
+    id: 'ari-m2',
+    moduleNumber: 2,
+    title: 'Song Production Masterclass',
+    subtitle: 'Intensive · 4 Days',
+    description:
+      'Record and mix a full song at Abbey Road Studios and Angel Studios alongside Grammy-winning engineer Ben Baptie (Lady Gaga, Radiohead, U2).',
+    duration: '4 days',
+    format: 'Intensive',
+    backgroundImage: '',
+    overlayFrom: 'rgba(153,27,27,0.52)',
+    overlayTo: 'rgba(220,38,38,0.52)',
+    gradientFrom: '#991B1B',
+    gradientTo: '#DC2626',
+    ctaLabel: 'Apply Now',
+    ctaUrl: ABBEY_ROAD_APPLY_URL,
+    certifications: ['Certificate of Completion'],
+    units: [
+      { number: 1, title: 'Recording', topics: [] },
+      { number: 2, title: 'Editing', topics: [] },
+      { number: 3, title: 'Mixing', topics: [] },
+      { number: 4, title: 'Review', topics: [] },
+    ],
+  },
+  {
+    id: 'ari-m3',
+    moduleNumber: 3,
+    title: 'Dolby Atmos Mixing For Music',
+    subtitle: 'Part-Time · 12 Weeks',
+    description:
+      'Learn immersive spatial audio mixing in a dedicated Dolby Atmos studio at Angel Studios. Led by Grammy-winning engineer James Auwarter.',
+    duration: '12 weeks',
+    format: 'Part-Time',
+    backgroundImage: '',
+    overlayFrom: 'rgba(127,29,29,0.52)',
+    overlayTo: 'rgba(185,28,28,0.52)',
+    gradientFrom: '#7F1D1D',
+    gradientTo: '#B91C1C',
+    ctaLabel: 'Apply Now',
+    ctaUrl: ABBEY_ROAD_APPLY_URL,
+    certifications: ['Dolby Atmos Certificate'],
+    units: [
+      { number: 1, title: 'Spatial audio fundamentals', topics: [] },
+      { number: 2, title: 'Atmos mixing', topics: [] },
+      { number: 3, title: 'Delivery & review', topics: [] },
+    ],
+  },
+  {
+    id: 'ari-m4',
+    moduleNumber: 4,
+    title: 'Advanced Diploma in Audio Post Production for Film & TV',
+    subtitle: 'Part-Time · 5½ Months',
+    description:
+      'Specialise in professional audio for film and television. Build the practical skills and industry contacts to work on screen productions at the highest level.',
+    duration: '5½ months',
+    format: 'Part-Time',
+    backgroundImage: '',
+    overlayFrom: 'rgba(185,28,28,0.52)',
+    overlayTo: 'rgba(153,27,27,0.52)',
+    gradientFrom: '#B91C1C',
+    gradientTo: '#991B1B',
+    ctaLabel: 'Apply Now',
+    ctaUrl: ABBEY_ROAD_APPLY_URL,
+    certifications: ['Advanced Diploma'],
+    units: [
+      { number: 1, title: 'Post production workflow', topics: [] },
+      { number: 2, title: 'Sound design for screen', topics: [] },
+      { number: 3, title: 'Industry practice', topics: [] },
+    ],
+  },
+];
+
 export function getSoundAcademyModule(id: string): SoundAcademyModule | undefined {
   return SOUND_ACADEMY_MODULES.find((m) => m.id === id);
+}
+
+export function getAbbeyRoadModule(id: string): SoundAcademyModule | undefined {
+  return ABBEY_ROAD_MODULES.find((m) => m.id === id);
 }

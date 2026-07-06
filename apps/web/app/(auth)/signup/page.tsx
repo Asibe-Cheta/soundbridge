@@ -94,14 +94,15 @@ function SignupContent() {
     const ref = searchParams.get('ref')?.trim().toLowerCase() || null;
     const source = searchParams.get('source')?.trim().toLowerCase() || null;
     const communityCreatorParam = searchParams.get('community_creator')?.trim().toLowerCase() || null;
-    const isExplicitSoundAcademy = source === 'sound_academy';
+    const isExplicitInstitutional =
+      source === 'sound_academy' || source === 'abbey_road_institute';
 
     // Partner `ref` and fan `community_creator` are separate attribution paths.
     // A partner link must not show a stale community banner from a prior visit.
     if (communityCreatorParam) {
       persistCommunityEntryCreatorClient(communityCreatorParam);
       setCommunityCreator(communityCreatorParam);
-      if (!isExplicitSoundAcademy) {
+      if (!isExplicitInstitutional) {
         clearInstitutionalSignupSourceClient();
       }
     } else if (ref) {
@@ -124,7 +125,7 @@ function SignupContent() {
       (!ref && readCommunityEntryAttributionFromClient().creatorUsername)
     );
     let resolvedSource = source || storedPartner.source;
-    if (hasCommunityEntry && !isExplicitSoundAcademy) {
+    if (hasCommunityEntry && !isExplicitInstitutional) {
       resolvedSource = null;
     }
     setSignupSource(resolvedSource);
@@ -368,7 +369,33 @@ function SignupContent() {
             </div>
           )}
 
-          {communityCreator && signupSource !== 'sound_academy' && (
+          {signupSource === 'abbey_road_institute' && (
+            <div
+              style={{
+                textAlign: 'center',
+                background: 'rgba(220, 38, 38, 0.16)',
+                border: '1px solid rgba(252, 165, 165, 0.35)',
+                borderRadius: '16px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                color: 'white',
+              }}
+            >
+              <Image
+                src="/images/pro-resources/ari.png"
+                alt="Abbey Road Institute"
+                width={96}
+                height={48}
+                style={{ objectFit: 'contain', margin: '0 auto 0.75rem' }}
+              />
+              <p className="text-sm text-red-100">
+                Welcome, Abbey Road Institute student. Create your free SoundBridge account to
+                activate your one year Premium access.
+              </p>
+            </div>
+          )}
+
+          {communityCreator && signupSource !== 'sound_academy' && signupSource !== 'abbey_road_institute' && (
             <div
               style={{
                 textAlign: 'center',
@@ -389,7 +416,7 @@ function SignupContent() {
             </div>
           )}
 
-          {!communityCreator && referralCode && signupSource !== 'sound_academy' && (
+          {!communityCreator && referralCode && signupSource !== 'sound_academy' && signupSource !== 'abbey_road_institute' && (
             <div
               style={{
                 textAlign: 'center',

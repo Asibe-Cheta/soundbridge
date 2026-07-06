@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       { url: '/search', priority: '0.8', changefreq: 'daily' },
       { url: '/feed', priority: '0.8', changefreq: 'hourly' },
       { url: '/join/soundacademy', priority: '0.4', changefreq: 'monthly' },
+      { url: '/join/abbeyroad', priority: '0.4', changefreq: 'monthly' },
       { url: '/legal/privacy', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/terms', priority: '0.3', changefreq: 'monthly' },
       { url: '/legal/creator-rights-explained', priority: '0.3', changefreq: 'monthly' },

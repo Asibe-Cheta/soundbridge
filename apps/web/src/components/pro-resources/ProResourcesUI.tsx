@@ -2,9 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Award,
+  ArrowRight,
   Briefcase,
   Calendar,
   ChevronDown,
@@ -21,6 +23,9 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import {
+  ABBEY_ROAD_APPLY_URL,
+  ABBEY_ROAD_MODULES,
+  ABBEY_ROAD_STATS,
   CALENDLY_URL,
   HERTS_URL,
   PRO_RESOURCES_IMAGES,
@@ -34,6 +39,7 @@ import {
   type Talk2DanService,
 } from '@/src/content/pro-resources/data';
 import {
+  abbeyRoadModuleResource,
   soundAcademyModuleResource,
   talk2DanServiceResource,
   trackPartnerResourceClick,
@@ -198,6 +204,50 @@ export function ModuleCard({ mod, href }: { mod: SoundAcademyModule; href: strin
   );
 }
 
+export function AbbeyRoadModuleCard({ mod }: { mod: SoundAcademyModule }) {
+  const award = mod.certifications[0] ?? 'Award';
+  return (
+    <a
+      href={mod.ctaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => {
+        trackPartnerResourceTap(
+          'resource_tap',
+          abbeyRoadModuleResource(mod.id),
+          'Abbey Road Institute',
+        );
+      }}
+      className="relative shrink-0 w-[280px] h-[380px] rounded-3xl overflow-hidden mr-4 block no-underline"
+      style={{
+        background: `linear-gradient(135deg, ${mod.gradientFrom}, ${mod.gradientTo})`,
+      }}
+    >
+      <div
+        className="absolute inset-x-0 bottom-0 h-[65%]"
+        style={{
+          background:
+            'linear-gradient(to bottom, transparent, rgba(0,0,0,0.35), rgba(0,0,0,0.82))',
+        }}
+      />
+      <span className="absolute top-4 left-4 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-badge font-bold tracking-[1.2px] text-white max-w-[calc(100%-2rem)] truncate">
+        {mod.subtitle}
+      </span>
+      <div className="absolute bottom-0 left-0 right-0 p-5">
+        <h3 className="text-xl font-bold text-white tracking-[-0.5px] mb-2 line-clamp-3">{mod.title}</h3>
+        <p className="text-sm text-white/70 line-clamp-3 mb-3">{mod.description}</p>
+        <div className="flex items-center gap-2 text-xs text-white/40">
+          <List size={14} />
+          <span>{mod.units.length} units</span>
+          <span>·</span>
+          <Award size={14} />
+          <span className="truncate">{award}</span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
 export function Talk2DanCard({ service }: { service: Talk2DanService }) {
   return (
     <a
@@ -245,18 +295,26 @@ export function HorizontalCardRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function StatsGrid() {
+export function StatsGrid({
+  stats = SOUND_ACADEMY_STATS,
+  valueColor = '#EC4899',
+}: {
+  stats?: ReadonlyArray<{ value: string; label: string }>;
+  valueColor?: string;
+}) {
   const { theme } = useTheme();
   return (
     <div className="px-6 mt-8">
       <h4 className={`mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>By the Numbers</h4>
       <div className="flex flex-wrap gap-2.5">
-        {SOUND_ACADEMY_STATS.map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
             className={`w-[calc(50%-5px)] rounded-2xl border p-4 text-center ${cardBorder(theme)} ${cardBg(theme)}`}
           >
-            <div className="text-2xl font-bold text-[#EC4899]">{stat.value}</div>
+            <div className="text-2xl font-bold" style={{ color: valueColor }}>
+              {stat.value}
+            </div>
             <div className={`text-xs font-medium mt-1 ${textSecondary(theme)}`}>{stat.label}</div>
           </div>
         ))}
@@ -271,12 +329,14 @@ export function GradientCtaButton({
   icon,
   trackResource,
   trackPartner,
+  gradient = 'linear-gradient(to right, #DC2626, #EC4899)',
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   trackResource?: ProResourceKey;
   trackPartner?: PartnerResourceName;
+  gradient?: string;
 }) {
   return (
     <a
@@ -293,7 +353,7 @@ export function GradientCtaButton({
         }
       }}
       className="mx-6 mt-7 flex items-center justify-center gap-2 rounded-[32px] py-[15px] text-base font-bold text-white no-underline"
-      style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }}
+      style={{ background: gradient }}
     >
       {icon}
       {label}
@@ -418,6 +478,96 @@ export function SoundAcademyTab() {
       />
     </>
   );
+}
+
+function PartnerLogoImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={40}
+      height={40}
+      className={className}
+      onError={() => setHidden(true)}
+    />
+  );
+}
+
+export function AbbeyRoadTab() {
+  const { theme } = useTheme();
+  return (
+    <>
+      <PartnerBadge
+        dotColor="#FCA5A5"
+        badgeBg="rgba(220,38,38,0.15)"
+        badgeBorder="rgba(220,38,38,0.35)"
+        textColor="#FCA5A5"
+        label="EDUCATION PARTNER · UK"
+      >
+        <PartnerLogoImage
+          src={PRO_RESOURCES_IMAGES.ariLogo}
+          alt="Abbey Road Institute"
+          className="rounded-[10px]"
+        />
+      </PartnerBadge>
+
+      <div className="px-6 mt-6">
+        <h4 className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Courses & Programmes</h4>
+        <p className={`text-sm mt-1 mb-4 ${textSecondary(theme)}`}>
+          4 days to 1 year · Abbey Road & Angel Studios · Grammy-winning faculty
+        </p>
+      </div>
+
+      <HorizontalCardRow>
+        {ABBEY_ROAD_MODULES.map((mod) => (
+          <AbbeyRoadModuleCard key={mod.id} mod={mod} />
+        ))}
+      </HorizontalCardRow>
+
+      <StatsGrid stats={ABBEY_ROAD_STATS} valueColor="#DC2626" />
+
+      <GradientCtaButton
+        href={ABBEY_ROAD_APPLY_URL}
+        label="Apply Now"
+        icon={<ArrowRight size={18} className="text-white" />}
+        trackResource="ari_apply"
+        trackPartner="Abbey Road Institute"
+        gradient="linear-gradient(to right, #DC2626, #991B1B)"
+      />
+    </>
+  );
+}
+
+export class AbbeyRoadTabErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="mx-6 mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
+          Content unavailable. Other Pro Resources tabs are still available.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 export function Talk2DanTab() {
