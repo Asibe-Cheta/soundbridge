@@ -382,7 +382,7 @@ function SignupContent() {
               }}
             >
               <Image
-                src="/images/pro-resources/ari.png"
+                src="/images/pro-resources/abbey-logo.png"
                 alt="Abbey Road Institute"
                 width={96}
                 height={48}

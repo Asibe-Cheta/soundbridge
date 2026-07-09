@@ -9,7 +9,7 @@ export const HERTS_URL = 'https://www.herts.ac.uk';
 
 export const PRO_RESOURCES_IMAGES = {
   saLogo: '/images/pro-resources/sa-2.png',
-  ariLogo: '/images/pro-resources/ari.png',
+  ariLogo: '/images/pro-resources/abbey-logo.png',
   fund: '/images/pro-resources/fund.jpg',
   mix: '/images/pro-resources/mix.jpg',
   t2dLogo: '/images/pro-resources/T2Dhome.png',
