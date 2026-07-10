@@ -142,13 +142,8 @@ export async function GET(request: NextRequest) {
             console.error('Profile handling error for mobile user:', profileError);
           }
           
-          // Redirect to mobile-callback with success status
-          const mobileCallbackUrl = new URL('/auth/mobile-callback', request.url);
-          mobileCallbackUrl.searchParams.set('verified', 'true');
-          mobileCallbackUrl.searchParams.set('email', data.user.email || '');
-          if (next) mobileCallbackUrl.searchParams.set('next', next);
-          
-          return NextResponse.redirect(mobileCallbackUrl);
+          // Mobile email verified — offer app store handoff or stay on web
+          return NextResponse.redirect(new URL('/signup/continue', request.url));
         }
       } catch (verifyError) {
         console.error('Mobile verification error:', verifyError);

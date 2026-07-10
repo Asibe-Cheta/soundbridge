@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { PostSignupAppHandoff } from '@/src/components/auth/PostSignupAppHandoff';
+import { readPartnerReferralFromClient } from '@/src/lib/partner-referrals';
 
 function MobileCallbackContent() {
   const router = useRouter();
@@ -165,64 +167,19 @@ function MobileCallbackContent() {
   }
 
   if (status === 'success') {
+    const storedPartner =
+      typeof window !== 'undefined' ? readPartnerReferralFromClient() : null;
+
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Email Verified!</h1>
-            <p className="text-gray-300">
-              Your email has been successfully verified. You can now use SoundBridge.
-            </p>
-          </div>
-          
-          {isMobile ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  try {
-                    // For development, try Expo URL first
-                    const expoUrl = 'exp://192.168.1.122:8081/--/auth/callback?verified=true';
-                    console.log('Button click - trying Expo URL:', expoUrl);
-                    window.location.href = expoUrl;
-                    
-                    // Fallback to custom scheme
-                    setTimeout(() => {
-                      try {
-                        window.location.href = 'soundbridge://auth/callback?verified=true';
-                      } catch (error) {
-                        console.error('Failed to open with custom scheme:', error);
-                      }
-                    }, 1000);
-                  } catch (error) {
-                    console.error('Failed to open mobile app:', error);
-                    alert('Unable to open SoundBridge app. Please open it manually.');
-                  }
-                }}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                Open SoundBridge App
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                Continue on Web
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => router.push('/')}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-              Continue to SoundBridge
-            </button>
-          )}
-        </div>
+      <div
+        className="flex min-h-screen items-center justify-center px-4 py-10"
+        style={{ background: 'var(--bg-gradient)' }}
+      >
+        <PostSignupAppHandoff
+          variant="verified"
+          referralCode={storedPartner?.referralCode ?? null}
+          webContinueHref={isMobile ? '/dashboard' : '/'}
+        />
       </div>
     );
   }

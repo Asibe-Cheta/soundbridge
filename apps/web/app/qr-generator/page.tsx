@@ -3,18 +3,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/src/contexts/ThemeContext';
-import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, QrCode } from 'lucide-react';
 import QRCode from 'qrcode';
 
 const DEFAULT_QR_PATH = '/app';
 const PREVIEW_SIZE = 280;
-const DOWNLOAD_SIZE = 1024; // High-quality for print/banner
+const DOWNLOAD_SIZE = 1024;
 const DEFAULT_DARK = '#000000';
 const DEFAULT_LIGHT = '#ffffff';
+
+type PartnerLookupResult = {
+  displayName: string;
+  referralCode: string;
+  qrUrl: string;
+};
 
 export default function QRGeneratorPage() {
   const { theme } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const partnerCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const [url, setUrl] = useState('');
   const [resolvedUrl, setResolvedUrl] = useState('');
   const [foregroundColor, setForegroundColor] = useState(DEFAULT_DARK);
@@ -22,18 +30,25 @@ export default function QRGeneratorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Resolve full URL (with origin when in browser)
+  const [partnerEmail, setPartnerEmail] = useState('');
+  const [partnerMeta, setPartnerMeta] = useState<PartnerLookupResult | null>(null);
+  const [partnerQrUrl, setPartnerQrUrl] = useState('');
+  const [partnerLoading, setPartnerLoading] = useState(false);
+  const [partnerLookupLoading, setPartnerLookupLoading] = useState(false);
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+
   useEffect(() => {
     const base =
       typeof window !== 'undefined'
         ? window.location.origin
         : 'https://soundbridge.live';
     const path = url.trim() || DEFAULT_QR_PATH;
-    const full = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+    const full = path.startsWith('http')
+      ? path
+      : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
     setResolvedUrl(full);
   }, [url]);
 
-  // Live preview: draw QR on canvas whenever resolvedUrl or colors change
   useEffect(() => {
     if (!resolvedUrl || !canvasRef.current) return;
     setError(null);
@@ -54,11 +69,68 @@ export default function QRGeneratorPage() {
       (err) => {
         setIsLoading(false);
         if (err) setError(err.message || 'Failed to generate QR code');
-      }
+      },
     );
   }, [resolvedUrl, foregroundColor, backgroundColor]);
 
-  // Download high-quality PNG
+  useEffect(() => {
+    if (!partnerQrUrl || !partnerCanvasRef.current) return;
+    setPartnerError(null);
+    setPartnerLoading(true);
+    const canvas = partnerCanvasRef.current;
+    QRCode.toCanvas(
+      canvas,
+      partnerQrUrl,
+      {
+        width: PREVIEW_SIZE,
+        margin: 2,
+        color: {
+          dark: foregroundColor,
+          light: backgroundColor,
+        },
+        errorCorrectionLevel: 'H',
+      },
+      (err) => {
+        setPartnerLoading(false);
+        if (err) setPartnerError(err.message || 'Failed to generate partner QR code');
+      },
+    );
+  }, [partnerQrUrl, foregroundColor, backgroundColor]);
+
+  const handlePartnerLookup = useCallback(async () => {
+    const email = partnerEmail.trim().toLowerCase();
+    if (!email) {
+      setPartnerError('Enter the email address on your partner account.');
+      return;
+    }
+
+    setPartnerLookupLoading(true);
+    setPartnerError(null);
+    setPartnerMeta(null);
+    setPartnerQrUrl('');
+
+    try {
+      const response = await fetch('/api/partners/qr-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        setPartnerError(payload.error || 'Could not generate partner QR code.');
+        return;
+      }
+
+      setPartnerMeta(payload.data);
+      setPartnerQrUrl(payload.data.qrUrl);
+    } catch {
+      setPartnerError('Network error. Please try again.');
+    } finally {
+      setPartnerLookupLoading(false);
+    }
+  }, [partnerEmail]);
+
   const handleDownload = useCallback(async () => {
     if (!resolvedUrl) return;
     try {
@@ -81,7 +153,35 @@ export default function QRGeneratorPage() {
     }
   }, [resolvedUrl, foregroundColor, backgroundColor]);
 
+  const handlePartnerDownload = useCallback(async () => {
+    if (!partnerQrUrl || !partnerMeta) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(partnerQrUrl, {
+        width: DOWNLOAD_SIZE,
+        margin: 3,
+        color: {
+          dark: foregroundColor,
+          light: backgroundColor,
+        },
+        type: 'image/png',
+        errorCorrectionLevel: 'H',
+      });
+      const link = document.createElement('a');
+      link.download = `soundbridge-partner-${partnerMeta.referralCode}-qr.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      setPartnerError(e instanceof Error ? e.message : 'Download failed');
+    }
+  }, [partnerQrUrl, partnerMeta, foregroundColor, backgroundColor]);
+
   const isDark = theme === 'dark';
+  const inputClass = `w-full px-4 py-3 rounded-xl border text-base placeholder-gray-500 ${
+    isDark
+      ? 'bg-white/10 border-white/20 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+      : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+  }`;
+  const labelClass = `block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
 
   return (
     <div
@@ -112,13 +212,136 @@ export default function QRGeneratorPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className={`rounded-2xl border p-6 md:p-8 ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-sm'}`}>
-          <h1
-            className={`text-2xl md:text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
+      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-8">
+        <div
+          className={`rounded-2xl border-2 p-6 md:p-8 ${
+            isDark
+              ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/20 border-purple-500/40'
+              : 'bg-white border-purple-300 shadow-md'
+          }`}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+              <QrCode className="w-6 h-6" />
+            </div>
+            <h1
+              className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
+            >
+              Partner referral QR code
+            </h1>
+          </div>
+          <p
+            className={`text-base mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+          >
+            Enter the email on your partner account to generate a QR code for your
+            referral link. Scans open{' '}
+            <span className="font-mono text-sm">soundbridge.live/join</span> in the
+            browser — works on mobile even when the app is not installed, then guides
+            people to sign up and install.
+          </p>
+
+          <div className="mb-4">
+            <label className={labelClass}>Partner account email</label>
+            <input
+              type="email"
+              value={partnerEmail}
+              onChange={(e) => setPartnerEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handlePartnerLookup();
+              }}
+              placeholder="you@example.com"
+              className={inputClass}
+              autoComplete="email"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handlePartnerLookup()}
+            disabled={partnerLookupLoading}
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {partnerLookupLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Verifying partner…
+              </>
+            ) : (
+              <>
+                <QrCode className="w-5 h-5" />
+                Generate Partner QR Code
+              </>
+            )}
+          </button>
+
+          {partnerError && (
+            <p className="mt-4 text-red-500 text-sm">{partnerError}</p>
+          )}
+
+          {partnerMeta && partnerQrUrl && (
+            <div className="mt-6 space-y-4">
+              <div
+                className={`rounded-xl border p-4 ${
+                  isDark ? 'bg-white/5 border-white/10' : 'bg-purple-50 border-purple-100'
+                }`}
+              >
+                <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Partner:{' '}
+                  <span className="font-semibold">{partnerMeta.displayName}</span>
+                </p>
+                <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Referral code:{' '}
+                  <span className="font-mono">{partnerMeta.referralCode}</span>
+                </p>
+                <p className={`text-sm mt-1 break-all ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Link: <span className="font-mono">{partnerQrUrl}</span>
+                </p>
+              </div>
+
+              <div
+                className={`rounded-xl border-2 p-4 flex flex-col items-center justify-center min-h-[320px] relative ${
+                  isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                {partnerLoading && (
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Generating…</span>
+                  </div>
+                )}
+                <canvas
+                  ref={partnerCanvasRef}
+                  width={PREVIEW_SIZE}
+                  height={PREVIEW_SIZE}
+                  className="max-w-full h-auto"
+                  style={{ maxWidth: '280px' }}
+                  aria-label="Partner QR code preview"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handlePartnerDownload()}
+                disabled={!partnerQrUrl || partnerLoading}
+                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Download className="w-5 h-5" />
+                Download partner QR PNG
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div
+          className={`rounded-2xl border p-6 md:p-8 ${
+            isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-sm'
+          }`}
+        >
+          <h2
+            className={`text-xl md:text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
           >
             Event banner QR code
-          </h1>
+          </h2>
           <p
             className={`text-base mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
           >
@@ -127,39 +350,26 @@ export default function QRGeneratorPage() {
             below then download PNG for print.
           </p>
 
-          {/* URL input */}
           <div className="mb-6">
-            <label
-              className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-            >
-              Target URL (path or full URL)
-            </label>
+            <label className={labelClass}>Target URL (path or full URL)</label>
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={DEFAULT_QR_PATH}
-              className={`w-full px-4 py-3 rounded-xl border text-base placeholder-gray-500 ${
-                isDark
-                  ? 'bg-white/10 border-white/20 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-                  : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
-              }`}
+              className={inputClass}
             />
             <p
               className={`mt-2 text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
             >
-              Resolves to: <span className="font-mono break-all">{resolvedUrl || '—'}</span>
+              Resolves to:{' '}
+              <span className="font-mono break-all">{resolvedUrl || '—'}</span>
             </p>
           </div>
 
-          {/* Color controls */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                QR colour (foreground)
-              </label>
+              <label className={labelClass}>QR colour (foreground)</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -180,11 +390,7 @@ export default function QRGeneratorPage() {
               </div>
             </div>
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                Background colour
-              </label>
+              <label className={labelClass}>Background colour</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -206,7 +412,6 @@ export default function QRGeneratorPage() {
             </div>
           </div>
 
-          {/* Preview */}
           <div
             className={`rounded-xl border-2 p-4 flex flex-col items-center justify-center min-h-[320px] relative ${
               isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
@@ -218,9 +423,7 @@ export default function QRGeneratorPage() {
                 <span>Generating…</span>
               </div>
             )}
-            {error && (
-              <p className="text-red-500 text-sm mb-2">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             <canvas
               ref={canvasRef}
               width={PREVIEW_SIZE}
@@ -236,11 +439,10 @@ export default function QRGeneratorPage() {
             </p>
           </div>
 
-          {/* Download */}
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={handleDownload}
+              onClick={() => void handleDownload()}
               disabled={!resolvedUrl}
               className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >

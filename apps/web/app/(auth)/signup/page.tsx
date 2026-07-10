@@ -16,6 +16,7 @@ import {
   persistPartnerReferralClient,
   readPartnerReferralFromClient,
 } from '@/src/lib/partner-referrals';
+import { isMobileBrowser } from '@/src/lib/mobile-platform';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -185,8 +186,11 @@ function SignupContent() {
 
         // Redirect to dashboard or email confirmation page
         if (data.session) {
-          // User is automatically signed in, redirect to dashboard
-          router.push('/dashboard');
+          if (isMobileBrowser()) {
+            router.push('/signup/continue');
+          } else {
+            router.push('/dashboard');
+          }
         } else {
           // Email confirmation required - redirect to verification page
           router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);

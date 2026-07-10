@@ -5,16 +5,25 @@ import Link from 'next/link';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { createBrowserClient } from '@/src/lib/supabase';
+import {
+  ANDROID_PLAY_STORE_URL,
+  IOS_APP_STORE_URL,
+} from '@/src/lib/app-store-url';
+import { detectMobilePlatform, isMobileBrowser } from '@/src/lib/mobile-platform';
 
 export default function VerifyEmailPage() {
   const [email, setEmail] = useState('');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [showMobileAppHint, setShowMobileAppHint] = useState(false);
+  const [mobilePlatform, setMobilePlatform] = useState<'ios' | 'android' | 'other'>('other');
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setEmail(urlParams.get('email') || localStorage.getItem('signup_email') || '');
+    setShowMobileAppHint(isMobileBrowser());
+    setMobilePlatform(detectMobilePlatform());
   }, []);
 
   const handleResendEmail = async () => {
@@ -234,6 +243,50 @@ export default function VerifyEmailPage() {
             </button>
           </Link>
         </div>
+
+        {showMobileAppHint && (
+          <div
+            style={{
+              background: 'rgba(236, 72, 153, 0.08)',
+              border: '1px solid rgba(236, 72, 153, 0.25)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              textAlign: 'left',
+            }}
+          >
+            <p style={{ color: 'white', fontWeight: 600, marginBottom: '0.5rem' }}>
+              Prefer the app?
+            </p>
+            <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '0.75rem' }}>
+              You can download SoundBridge while you wait. After you verify your email,
+              sign in with the same address in the app.
+            </p>
+            <a
+              href={
+                mobilePlatform === 'android'
+                  ? ANDROID_PLAY_STORE_URL
+                  : IOS_APP_STORE_URL
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                background: 'linear-gradient(45deg, #DC2626, #EC4899)',
+                color: 'white',
+                textDecoration: 'none',
+                padding: '0.75rem 1rem',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+              }}
+            >
+              {mobilePlatform === 'android'
+                ? 'Get the Android app'
+                : 'Get the iPhone app'}
+            </a>
+          </div>
+        )}
 
         {/* Help Text */}
         <div style={{ color: '#999', lineHeight: '1.4' }}>
