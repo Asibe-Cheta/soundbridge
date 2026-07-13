@@ -17,6 +17,7 @@ export interface Creator {
   created_at: string;
   updated_at: string;
   is_verified?: boolean;
+  institution_badge?: string | null;
   // Computed fields
   followers_count: number;
   tracks_count: number;

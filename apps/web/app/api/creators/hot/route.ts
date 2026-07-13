@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
         country,
         genre,
         role,
+        is_verified,
+        institution_badge,
         created_at
       `)
       .in('role', ['creator', 'artist', 'musician', 'event_promoter'] as any) // Include more roles
@@ -156,6 +158,8 @@ export async function GET(request: NextRequest) {
         location: creator.location,
         country: creator.country,
         genre: creator.genre,
+        is_verified: creator.is_verified,
+        institution_badge: creator.institution_badge,
         followers_count: Math.floor(Math.random() * 500) + 10, // Mock follower count
         tracks_count: Math.floor(Math.random() * 20) + 1, // Mock track count
         events_count: Math.floor(Math.random() * 5), // Mock event count

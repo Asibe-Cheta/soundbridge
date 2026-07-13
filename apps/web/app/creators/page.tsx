@@ -27,6 +27,7 @@ interface Creator {
   location?: string;
   country?: string;
   is_verified: boolean;
+  institution_badge?: string | null;
   isFollowing: boolean;
   avatar_url?: string;
 }
@@ -68,7 +69,8 @@ const VirtualCreatorItem = ({ columnIndex, rowIndex, style, data }: VirtualCreat
           tracks_count: creator.tracks_count,
           events_count: 0,
           total_plays: 0,
-          hot_score: 0
+          hot_score: 0,
+          institution_badge: creator.institution_badge
         }}
         variant="creators"
         isMobile={false}
@@ -869,7 +871,8 @@ export default function CreatorsPage() {
                         tracks_count: creator.tracks_count,
                         events_count: 0,
                         total_plays: 0,
-                        hot_score: 0
+                        hot_score: 0,
+                        institution_badge: creator.institution_badge
                       }}
                       variant="discover"
                       isMobile={true}

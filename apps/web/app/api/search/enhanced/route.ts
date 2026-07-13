@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')
@@ -67,6 +69,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')
@@ -86,6 +90,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')
@@ -105,6 +111,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')
@@ -124,6 +132,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')
@@ -143,6 +153,8 @@ export async function GET(request: NextRequest) {
           location,
           country,
           role,
+          is_verified,
+          institution_badge,
           created_at
         `)
         .eq('role', 'creator')

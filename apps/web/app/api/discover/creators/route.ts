@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     const { data: profiles, error: profErr } = await supabase
       .from('profiles')
-      .select('id, username, display_name, bio, avatar_url, location, country, genre, role, created_at')
+      .select('id, username, display_name, bio, avatar_url, location, country, genre, role, is_verified, institution_badge, created_at')
       .eq('role', 'creator')
       .order('created_at', { ascending: false })
       .limit(limit);

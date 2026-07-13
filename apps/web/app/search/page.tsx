@@ -9,6 +9,7 @@ import type { AudioTrack } from '../../src/lib/types/audio';
 import { Footer } from '../../src/components/layout/Footer';
 import { Search, Filter, X, MapPin, Music, Users, Calendar, Mic, Play, Pause, Heart, Share2, ArrowLeft, Sliders, Loader2, AlertCircle, User, Clock, Eye } from 'lucide-react';
 import Image from 'next/image';
+import { InstitutionBadge } from '@/src/components/ui/InstitutionBadge';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -339,8 +340,11 @@ function SearchContent() {
                       />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ color: 'white', marginBottom: '0.25rem' }}>
-                        {creator.display_name}
+                      <h3 style={{ color: 'white', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{creator.display_name}</span>
+                        {creator.institution_badge && (
+                          <InstitutionBadge institutionBadge={creator.institution_badge} size={15} />
+                        )}
                       </h3>
                       <p style={{ color: '#9ca3af', marginBottom: '0.25rem' }}>
                         @{creator.username}

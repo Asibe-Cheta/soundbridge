@@ -13,6 +13,7 @@ export interface CreatorProfile {
   created_at: string;
   updated_at: string;
   is_verified?: boolean;
+  institution_badge?: 'abbey_road_institute' | 'sound_academy' | null;
   early_adopter?: boolean;
   // Computed fields
   followers_count?: number;

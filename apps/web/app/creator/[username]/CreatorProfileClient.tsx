@@ -48,6 +48,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
+import { InstitutionBadge } from '../../../src/components/ui/InstitutionBadge';
 import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
 import { OpenInAppProfileBanner } from '../../../src/components/app/OpenInAppProfileBanner';
 
@@ -560,6 +561,11 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                   <VerifiedBadge size={18} />
                 </div>
               )}
+              {creator.institution_badge && (
+                <div className="absolute -bottom-2 -left-2">
+                  <InstitutionBadge institutionBadge={creator.institution_badge} size={20} />
+                </div>
+              )}
             </div>
 
             <div className={`flex-1 ${isMobile ? 'text-center' : ''}`}>
@@ -570,6 +576,11 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                     {creator.is_verified && (
                       <span className="inline-flex items-center ml-2">
                         <VerifiedBadge size={isMobile ? 16 : 18} />
+                      </span>
+                    )}
+                    {creator.institution_badge && (
+                      <span className="inline-flex items-center ml-2">
+                        <InstitutionBadge institutionBadge={creator.institution_badge} size={isMobile ? 16 : 18} />
                       </span>
                     )}
                   </h1>

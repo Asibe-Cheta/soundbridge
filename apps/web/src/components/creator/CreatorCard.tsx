@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Users, Music, Calendar } from 'lucide-react';
+import { InstitutionBadge } from '../ui/InstitutionBadge';
 
 interface CreatorCardProps {
   creator: {
@@ -19,6 +20,7 @@ interface CreatorCardProps {
     events_count?: number;
     total_plays?: number;
     hot_score?: number;
+    institution_badge?: string | null;
   };
   variant?: 'home' | 'creators' | 'discover';
   isMobile?: boolean;
@@ -155,9 +157,13 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             lineHeight: '1.2',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
           }}>
-            {creator.display_name}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{creator.display_name}</span>
+            {creator.institution_badge && <InstitutionBadge institutionBadge={creator.institution_badge} size={14} />}
           </h3>
           
           <p style={{
@@ -272,9 +278,13 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
               margin: '0 0 4px 0',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
             }}>
-              {creator.display_name}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{creator.display_name}</span>
+              {creator.institution_badge && <InstitutionBadge institutionBadge={creator.institution_badge} size={14} />}
             </h3>
             
             <p style={{
@@ -436,9 +446,13 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
             margin: '0 0 4px 0',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
           }}>
-            {creator.display_name}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{creator.display_name}</span>
+            {creator.institution_badge && <InstitutionBadge institutionBadge={creator.institution_badge} size={13} />}
           </h3>
           
           <p style={{

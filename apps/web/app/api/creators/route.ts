@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // OPTIMIZED: Simplified query without expensive count aggregations
     let query = supabase
       .from('profiles')
-      .select('id, username, display_name, bio, avatar_url, location, country, followers_count, is_verified, role')
+      .select('id, username, display_name, bio, avatar_url, location, country, followers_count, is_verified, institution_badge, role')
       .eq('role', 'creator' as any);
 
     // Apply search filter
