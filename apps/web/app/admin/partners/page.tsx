@@ -19,6 +19,8 @@ function InstitutionBadgeAssignment() {
   const [searching, setSearching] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<{ candidates: number; updated: any[]; skipped: any[] } | null>(null);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -61,10 +63,52 @@ function InstitutionBadgeAssignment() {
     }
   };
 
+  const runBackfill = async () => {
+    if (!window.confirm('Assign badges to every creator with active Institutional Access who doesn\'t already have one? This will not overwrite existing badges.')) {
+      return;
+    }
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const response = await fetchWithSupabaseAuth('/api/admin/partners/institution-badge/backfill', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data?.error || 'Backfill failed');
+        return;
+      }
+      setBackfillResult(data);
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   return (
     <div className="mb-6 rounded-xl border border-gray-700 bg-gray-800 p-6">
       <h2 className="mb-1 text-lg font-semibold text-white">Institutional badges</h2>
       <p className="mb-4 text-sm text-gray-400">Assign or remove an institutional partner badge (Abbey Road Institute, Sound Academy) on a creator&apos;s profile.</p>
+
+      <button
+        onClick={runBackfill}
+        disabled={backfilling}
+        className="mb-4 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
+      >
+        {backfilling ? 'Backfilling...' : 'Backfill from Institutional Access'}
+      </button>
+
+      {backfillResult && (
+        <div className="mb-4 rounded-lg border border-gray-700 bg-gray-900 p-3 text-sm text-gray-300">
+          <p>
+            {backfillResult.candidates} active Institutional Access grant{backfillResult.candidates === 1 ? '' : 's'} found —{' '}
+            {backfillResult.updated.length} badge{backfillResult.updated.length === 1 ? '' : 's'} assigned,{' '}
+            {backfillResult.skipped.length} already had a badge (untouched).
+          </p>
+          {backfillResult.updated.length > 0 && (
+            <p className="mt-1 text-xs text-gray-500">
+              Assigned: {backfillResult.updated.map((u) => u.username).join(', ')}
+            </p>
+          )}
+        </div>
+      )}
 
       <input
         className="mb-4 block w-full max-w-md rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
