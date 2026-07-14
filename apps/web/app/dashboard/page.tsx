@@ -17,6 +17,7 @@ import { ContentManager } from '../../src/components/dashboard/ContentManager';
 import { AudienceIntelligencePanel } from '../../src/components/analytics/AudienceIntelligencePanel';
 import { EventPollPanel } from '../../src/components/analytics/EventPollPanel';
 import { resolveEffectiveTier } from '../../src/lib/effective-subscription-tier';
+import { EarnMoneyLiveNudge } from '../../src/components/feature-nudges/EarnMoneyLiveNudge';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -99,6 +100,9 @@ export default function DashboardPage() {
     { id: 'subscription', label: 'Subscription', icon: Star },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
     { id: 'request-room', label: 'Request Room', icon: Radio, href: '/request-room' },
+    ...(profile?.username
+      ? [{ id: 'tip-room', label: 'Tip Room', icon: DollarSign, href: `/tip/${profile.username}` }]
+      : []),
     { id: 'service-provider', label: 'Service Provider', icon: Briefcase },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -242,6 +246,10 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {user && profile && (
+            <EarnMoneyLiveNudge userId={user.id} username={profile.username} role={profile.role} />
           )}
 
           {/* Tab Content */}

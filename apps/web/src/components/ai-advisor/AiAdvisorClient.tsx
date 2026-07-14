@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Sparkles,
   Loader2,
@@ -217,11 +218,13 @@ function BuyCreditsModal({
 
 export function AiAdvisorClient() {
   const { user, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const seededPrompt = searchParams.get('prompt') || '';
   const [phase, setPhase] = useState<Phase>('idle');
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [analysis, setAnalysis] = useState<AdviserAnalysisResult | null>(null);
   const [messages, setMessages] = useState<AdviserChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = useState(seededPrompt);
   const [chatLoading, setChatLoading] = useState(false);
   const [stateLoading, setStateLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

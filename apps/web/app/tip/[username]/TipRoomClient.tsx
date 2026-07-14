@@ -10,6 +10,8 @@ import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import { PostTipCommunityPrompt } from '@/src/components/community/PostTipCommunityPrompt';
 import { isCommunityTipPromptDismissed } from '@/src/lib/community-join-prompt-storage';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { TipRoomOwnerPanel } from '@/src/components/creator/TipRoomOwnerPanel';
 
 const PRESETS = [1, 5, 10] as const;
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
@@ -101,6 +103,8 @@ export function TipRoomClient({
   const [showCommunityPrompt, setShowCommunityPrompt] = useState(false);
   const [checkingPrompt, setCheckingPrompt] = useState(false);
   const [stripeJs, setStripeJs] = useState<Stripe | null>(null);
+  const { user } = useAuth();
+  const isOwner = user?.id === creatorId;
 
   useEffect(() => {
     if (!stripePromise) {
@@ -305,6 +309,8 @@ export function TipRoomClient({
             SoundBridge
           </Link>
         </p>
+
+        {isOwner && <TipRoomOwnerPanel username={canonicalUsername} />}
       </div>
     </div>
   );
