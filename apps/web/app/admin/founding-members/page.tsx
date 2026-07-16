@@ -65,6 +65,15 @@ type PlatformAccountRow = {
   account_created_at: string;
 };
 
+type CountryBreakdownRow = { country: string; count: number; percent: number };
+
+type CountryDistribution = {
+  totalProfiles: number;
+  withCountry: number;
+  withoutCountry: number;
+  breakdown: CountryBreakdownRow[];
+};
+
 const formatDateTime = (value: string | null) => {
   if (!value) return '—';
   try {
@@ -102,6 +111,27 @@ export default function FoundingMembersAdminPage() {
   const [platformSearch, setPlatformSearch] = useState('');
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState<string | null>(null);
+
+  const [countryDistribution, setCountryDistribution] = useState<CountryDistribution | null>(null);
+  const [countryLoading, setCountryLoading] = useState(false);
+  const [countryError, setCountryError] = useState<string | null>(null);
+
+  const loadCountryDistribution = async () => {
+    try {
+      setCountryLoading(true);
+      setCountryError(null);
+      const response = await fetchWithSupabaseAuth('/api/admin/users/country-distribution');
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Failed to load country distribution');
+      }
+      setCountryDistribution(result);
+    } catch (err) {
+      setCountryError(err instanceof Error ? err.message : 'Failed to load country distribution');
+    } finally {
+      setCountryLoading(false);
+    }
+  };
 
   const loadPlatformAccounts = async (opts?: { nextPage?: number; nextSearch?: string }) => {
     const nextPage = opts?.nextPage ?? platformPage;
@@ -190,6 +220,7 @@ export default function FoundingMembersAdminPage() {
   useEffect(() => {
     loadClaimsData({ nextPage: 1 });
     loadPlatformAccounts({ nextPage: 1, nextSearch: '' });
+    loadCountryDistribution();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -212,6 +243,7 @@ export default function FoundingMembersAdminPage() {
               onClick={() => {
                 loadClaimsData({ nextPage: page });
                 loadPlatformAccounts({ nextPage: platformPage });
+                loadCountryDistribution();
               }}
             >
               Refresh
@@ -234,6 +266,54 @@ export default function FoundingMembersAdminPage() {
             <StatCard theme={theme} label="Claims (24h)" value={summary.recentClaims24h} />
           </div>
         )}
+
+        <div className={`rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
+          <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Users by country</h2>
+            <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              Percentage distribution of profiles by self-reported country.
+              {countryDistribution ? (
+                <>
+                  {' '}
+                  {countryDistribution.withCountry} of {countryDistribution.totalProfiles} profiles have a country set
+                  {countryDistribution.withoutCountry > 0 ? ` (${countryDistribution.withoutCountry} unset)` : ''}.
+                </>
+              ) : null}
+            </p>
+          </div>
+
+          {countryError && <div className="px-4 py-3 text-sm text-red-500">{countryError}</div>}
+
+          <div className="px-4 py-4">
+            {countryLoading ? (
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading…</p>
+            ) : !countryDistribution || countryDistribution.breakdown.length === 0 ? (
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No country data yet.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {countryDistribution.breakdown.map((row) => (
+                  <div key={row.country} className="flex items-center gap-3">
+                    <span className={`w-32 sm:w-40 shrink-0 truncate text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                      {row.country}
+                    </span>
+                    <div className={`flex-1 h-2.5 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <div
+                        className={`h-full rounded-full ${theme === 'dark' ? 'bg-blue-500' : 'bg-gray-900'}`}
+                        style={{ width: `${Math.max(row.percent, 1.5)}%` }}
+                      />
+                    </div>
+                    <span className={`w-20 shrink-0 text-right text-sm tabular-nums ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {row.percent}%
+                    </span>
+                    <span className={`w-14 shrink-0 text-right text-xs tabular-nums ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                      ({row.count})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className={`rounded-xl border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow`}>
           <div className={`px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
