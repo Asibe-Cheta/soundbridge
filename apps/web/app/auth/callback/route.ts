@@ -73,82 +73,16 @@ export async function GET(request: NextRequest) {
       }
     );
     
-    // If it's a mobile device, handle verification and redirect to mobile app
-    if (isMobile && type === 'signup' && tokenHash && !code) {
-      console.log('🔧 WEB CALLBACK: Mobile email verification detected, processing verification');
-      
-      try {
-        // Verify the email
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: 'signup'
-        });
-
-        if (error) {
-          console.error('Mobile email confirmation error:', error);
-          return NextResponse.redirect(new URL(`/auth/mobile-callback?error=confirmation_failed&message=${encodeURIComponent(error.message)}`, request.url));
-        }
-
-        if (data.user) {
-          console.log('Mobile email confirmed successfully for user:', data.user.email);
-          
-          // Create profile if it doesn't exist
-          try {
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('id', data.user.id)
-              .single();
-
-            if (!existingProfile) {
-              console.log('Creating profile for mobile user:', data.user.id);
-              
-              const mobileReferralCode =
-                referralCodeCookie ||
-                getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
-              const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: data.user.id,
-                  username: `user${data.user.id.substring(0, 8)}`,
-                  display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'New User',
-                  role: 'listener',
-                  location: 'london',
-                  country: 'UK',
-                  bio: '',
-                  ...(mobileReferralCode ? { referred_by_code: mobileReferralCode } : {}),
-                  onboarding_completed: false,
-                  onboarding_step: 'role_selection',
-                  selected_role: 'listener',
-                  profile_completed: false,
-                  first_action_completed: false,
-                  onboarding_skipped: false,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-
-              if (profileError) {
-                console.error('Error creating mobile profile:', profileError);
-              } else {
-                console.log('Mobile profile created successfully');
-              }
-            }
-
-            await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
-              referralCode: referralCodeCookie,
-              source: signupSourceCookie,
-            });
-          } catch (profileError) {
-            console.error('Profile handling error for mobile user:', profileError);
-          }
-          
-          // Mobile email verified — offer app store handoff or stay on web
-          return NextResponse.redirect(new URL('/signup/continue', request.url));
-        }
-      } catch (verifyError) {
-        console.error('Mobile verification error:', verifyError);
-        return NextResponse.redirect(new URL(`/auth/mobile-callback?error=verification_failed`, request.url));
-      }
+    // Email confirmation and password recovery links must NOT verify on GET —
+    // link-scanning proxies (mail security scanners, link previewers) fetch the
+    // URL automatically and would consume the single-use token before the real
+    // user clicks. Hand off to a page that only calls verifyOtp() on user action.
+    if (tokenHash && !code && (type === 'signup' || type === 'recovery')) {
+      const confirmUrl = new URL('/auth/confirm', request.url);
+      confirmUrl.searchParams.set('token_hash', tokenHash);
+      confirmUrl.searchParams.set('type', type);
+      confirmUrl.searchParams.set('next', type === 'recovery' ? '/update-password' : next);
+      return NextResponse.redirect(confirmUrl);
     }
 
     // Handle OAuth errors
@@ -311,143 +245,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Handle email confirmation (existing logic)
-    if (!tokenHash && !code) {
-      console.error('No token_hash or code provided');
-      return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
-    }
-
-    if (type === 'signup') {
-      // Handle email confirmation
-      const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash!,
-        type: 'signup'
-      });
-
-      if (error) {
-        console.error('Email confirmation error:', error);
-        return NextResponse.redirect(new URL(`/login?error=confirmation_failed&message=${encodeURIComponent(error.message)}`, request.url));
-      }
-
-      if (data.user) {
-        console.log('Email confirmed successfully for user:', data.user.email);
-        
-        // Create profile if it doesn't exist (after email verification, user should be fully propagated)
-        try {
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', data.user.id)
-            .single();
-
-          if (!existingProfile) {
-            console.log('Profile does not exist, creating profile for user:', data.user.id);
-            
-            const emailReferralCode =
-              referralCodeCookie ||
-              getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
-
-            // Create profile with default data
-            const { error: profileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: data.user.id,
-                username: `user${data.user.id.substring(0, 8)}`,
-                display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'New User',
-                role: 'listener',
-                location: 'london',
-                country: 'UK',
-                bio: '',
-                ...(emailReferralCode ? { referred_by_code: emailReferralCode } : {}),
-                onboarding_completed: false,
-                onboarding_step: 'role_selection',
-                selected_role: 'listener',
-                profile_completed: false,
-                first_action_completed: false,
-                onboarding_skipped: false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-
-            if (profileError) {
-              console.error('Error creating profile:', profileError);
-            } else {
-              console.log('Profile created successfully');
-            }
-          }
-
-          await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
-            referralCode: referralCodeCookie,
-            source: signupSourceCookie,
-          });
-          
-          // Wait a moment for profile to be committed, then check onboarding status
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Check if user needs onboarding with retry logic
-          let profile = null;
-          let attempts = 0;
-          const maxAttempts = 3;
-          
-          while (attempts < maxAttempts && !profile) {
-            const { data: profileData, error: profileFetchError } = await supabase
-              .from('profiles')
-              .select('onboarding_completed, onboarding_step')
-              .eq('id', data.user.id)
-              .single();
-            
-            if (profileData && !profileFetchError) {
-              profile = profileData;
-              break;
-            }
-            
-            console.log(`Profile fetch attempt ${attempts + 1} failed, retrying...`);
-            attempts++;
-            if (attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
-
-          // If no profile exists or onboarding not completed, redirect to home for onboarding
-          if (!profile || !profile.onboarding_completed) {
-            console.log('User needs onboarding, redirecting to home for onboarding flow');
-            return NextResponse.redirect(new URL('/?onboarding=true', request.url));
-          }
-          
-          console.log('User onboarding completed, redirecting to dashboard');
-        } catch (error) {
-          console.error('Error checking/creating profile:', error);
-          // If we can't check onboarding status, redirect to home for onboarding flow
-          return NextResponse.redirect(new URL('/', request.url));
-        }
-        
-        // Redirect to dashboard or specified next page
-        return NextResponse.redirect(new URL(next, request.url));
-      }
-    } else if (type === 'recovery') {
-      // Handle password reset
-      const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash!,
-        type: 'recovery'
-      });
-
-      if (error) {
-        console.error('Password reset error:', error);
-        return NextResponse.redirect(new URL(`/forgot-password?error=reset_failed&message=${encodeURIComponent(error.message)}`, request.url));
-      }
-
-      if (data.user) {
-        console.log('Password reset token verified for user:', data.user.email);
-        // Redirect to password update page
-        return NextResponse.redirect(new URL('/update-password', request.url));
-      }
-    } else {
-      console.error('Unknown callback type:', type);
-      return NextResponse.redirect(new URL('/login?error=invalid_type', request.url));
-    }
-
-    // Fallback redirect
-    return NextResponse.redirect(new URL('/login', request.url));
+    // Anything else (no token_hash/code, or an unrecognized type) is not a flow
+    // this route can complete — send to login rather than guessing.
+    console.error('Unhandled auth callback request:', { tokenHash: !!tokenHash, type, code: !!code });
+    return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
 
   } catch (error) {
     console.error('Auth callback error:', error);

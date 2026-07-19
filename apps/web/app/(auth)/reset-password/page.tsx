@@ -10,8 +10,13 @@ import Image from 'next/image';
 /**
  * Recovery entrypoint: Supabase "Reset password" email should link here as:
  *   {SITE_URL}/reset-password?token_hash={{ .TokenHash }}&type=recovery
- * We verify the OTP client-side, then send the user to /update-password (session active).
- * PKCE/code flow: ?code=… is exchanged for a session, then same redirect.
+ * A raw token_hash is handed off to /auth/confirm, which only calls verifyOtp()
+ * on explicit user click — auto-verifying here would let link-scanning proxies
+ * (mail security scanners, link previewers) burn the single-use token before the
+ * real user opens the email.
+ * PKCE/code flow: ?code=… is exchanged for a session directly (requires the
+ * code_verifier from the browser that requested it, so it isn't exposed to the
+ * same remote-scanner risk), then redirected to /update-password.
  * With no token/code, users are sent to /forgot-password (request email form).
  */
 function ResetPasswordVerifyInner() {
@@ -25,7 +30,6 @@ function ResetPasswordVerifyInner() {
 
     const run = async () => {
       const tokenHash = searchParams.get('token_hash');
-      const type = searchParams.get('type');
       const code = searchParams.get('code');
       const supabase = createBrowserClient();
 
@@ -42,33 +46,14 @@ function ResetPasswordVerifyInner() {
           return;
         }
 
-        if (tokenHash && type === 'recovery') {
-          const { error: vErr } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: 'recovery',
-          });
-          if (cancelled) return;
-          if (vErr) {
-            setError(vErr.message);
-            setWorking(false);
-            return;
-          }
-          router.replace('/update-password');
-          return;
-        }
-
-        if (tokenHash && !type) {
-          const { error: vErr } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: 'recovery',
-          });
-          if (cancelled) return;
-          if (vErr) {
-            setError(vErr.message);
-            setWorking(false);
-            return;
-          }
-          router.replace('/update-password');
+        if (tokenHash) {
+          // Hand off to the click-to-verify confirm page instead of consuming
+          // the single-use token here.
+          const confirmUrl = new URL('/auth/confirm', window.location.origin);
+          confirmUrl.searchParams.set('token_hash', tokenHash);
+          confirmUrl.searchParams.set('type', 'recovery');
+          confirmUrl.searchParams.set('next', '/update-password');
+          router.replace(confirmUrl.pathname + confirmUrl.search);
           return;
         }
 

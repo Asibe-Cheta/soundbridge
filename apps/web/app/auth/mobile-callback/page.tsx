@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@/src/lib/supabase';
 import { PostSignupAppHandoff } from '@/src/components/auth/PostSignupAppHandoff';
 import { readPartnerReferralFromClient } from '@/src/lib/partner-referrals';
 
@@ -78,64 +77,16 @@ function MobileCallbackContent() {
       return;
     }
 
-    // Try to handle the auth callback
-    handleAuthCallback(tokenHash, type, next, mobile);
+    // Raw, unverified token — hand off to the click-to-verify confirm page instead
+    // of consuming the single-use token here. Auto-verifying on page load lets
+    // link-scanning proxies (mail security scanners, link previewers) exhaust the
+    // token before the real user gets to click anything.
+    const confirmUrl = new URL('/auth/confirm', window.location.origin);
+    confirmUrl.searchParams.set('token_hash', tokenHash);
+    confirmUrl.searchParams.set('type', type);
+    confirmUrl.searchParams.set('next', next || '/');
+    router.replace(confirmUrl.pathname + confirmUrl.search);
   }, [searchParams, router]);
-
-  const handleAuthCallback = async (
-    tokenHash: string,
-    type: string,
-    next: string | null,
-    mobile: boolean
-  ) => {
-    try {
-      setStatus('redirecting');
-
-      // Create Supabase client
-      const supabase = createBrowserClient();
-
-      // Handle the auth callback
-      const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: type as any,
-      });
-
-      if (error) {
-        console.error('Auth callback error:', error);
-        setStatus('error');
-        return;
-      }
-
-      if (data.user) {
-        setStatus('success');
-        
-        // If on mobile, try to open the app
-        if (mobile) {
-          // If web consumed token_hash via verifyOtp, pass session tokens to avoid double-consume in app.
-          const session = data.session;
-          const mobileAppUrl =
-            session?.access_token && session?.refresh_token
-              ? `soundbridge://auth/callback?access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}&type=${encodeURIComponent(type)}&next=${encodeURIComponent(next || '/')}`
-              : `soundbridge://auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=${encodeURIComponent(type)}&next=${encodeURIComponent(next || '/')}`;
-          
-          // Attempt to open the mobile app
-          window.location.href = mobileAppUrl;
-          
-          // Fallback: after a delay, show success message
-          setTimeout(() => {
-            setStatus('success');
-          }, 2000);
-        } else {
-          // On desktop, redirect to web app
-          const redirectUrl = next || '/';
-          router.push(redirectUrl);
-        }
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      setStatus('error');
-    }
-  };
 
   if (status === 'loading') {
     return (
