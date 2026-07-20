@@ -196,7 +196,7 @@ function PendingPartnerApplications({ onProvisioned }: { onProvisioned: () => vo
         setMessage(data?.error || 'Failed to provision partner');
         return;
       }
-      setMessage(`Provisioned — referral code "${data.partner?.referral_code}" and 1 year Premium granted.`);
+      setMessage(`Provisioned. Referral code "${data.partner?.referral_code}" and 1 year Premium granted.`);
       await loadApplications();
       onProvisioned();
     } finally {
@@ -230,7 +230,7 @@ function PendingPartnerApplications({ onProvisioned }: { onProvisioned: () => vo
       <h2 className="mb-1 text-lg font-semibold text-white">Pending partner applications</h2>
       <p className="mb-4 text-sm text-gray-400">
         Signed at /agreement/partner. Provisioning creates their partner record (10% commission)
-        and grants 1 year Premium — requires a SoundBridge account already signed up under the
+        and grants 1 year Premium. Requires a SoundBridge account already signed up under the
         same email.
       </p>
 

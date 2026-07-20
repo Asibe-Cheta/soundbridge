@@ -1,47 +1,105 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
 import { CheckCircle2 } from 'lucide-react';
+import { PARTNER_AGREEMENT_BODY } from './partnerAgreementLegalText';
 
 const PERKS = [
-  '1 year of SoundBridge Premium, free, on us',
-  '10% commission on every paid subscription from someone who joins through your referral link',
+  '1 year of SoundBridge Premium, free, from your sign up date',
+  '10% commission on every paid subscription from someone who joins through your referral link, for as long as they remain subscribed',
 ];
 
-const EXPECTATIONS = [
-  'Share your referral link honestly — no spam, and no misleading claims about SoundBridge',
-  'Use the same email below as (or sign up with it for) your SoundBridge account, since that’s the account your perks are applied to',
-  'Follow the normal SoundBridge community and platform policies',
+const WHAT_YOU_WILL_DO = [
+  'Share your unique referral link with your audience, friends, and community',
+  'Help people discover musicians, podcasters, and DJs on SoundBridge',
+  'Grow your commission as more people you refer become subscribers',
 ];
 
 const HOW_IT_WORKS = [
-  'Sign below with your name and email',
-  'Justice reviews your application and provisions your account',
-  'You get a unique referral link and your 1 year Premium access activates',
-  'Commission is tracked automatically as your referrals convert to paid plans, and is paid out manually — you can check your running total any time from your Partner Dashboard',
+  'Sign below with your name, email, and signature',
+  'We review your application within 24 to 48 hours and set up your account',
+  'Your unique referral link is activated and your 1 year of Premium access begins',
+  'We send you tutorial videos to help you get started, along with your referral link',
+  'Track your referrals and commission any time from your Partner Dashboard',
 ];
 
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function slugify(s: string) {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 32);
+}
+
+async function fetchLogoDataUrl(): Promise<string | null> {
+  try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const res = await fetch(`${origin}/images/logos/logo-trans-lockup.png`);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export function PartnerAgreementClient() {
+  const sigRef = useRef<SignatureCanvas>(null);
+  const [padWidth, setPadWidth] = useState(320);
+  const [hasSignature, setHasSignature] = useState(false);
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [context, setContext] = useState('');
   const [agreed, setAgreed] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [signed, setSigned] = useState<{ name: string; date: string } | null>(null);
+  const [generating, setGenerating] = useState(false);
 
-  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-  const canSign = fullName.trim().length > 1 && isValidEmail(email) && agreed && !submitting;
+  const [signed, setSigned] = useState<{ name: string; email: string; date: string; signaturePng: string } | null>(
+    null
+  );
+
+  useEffect(() => {
+    const w = Math.min(480, Math.max(260, window.innerWidth - 96));
+    setPadWidth(w);
+  }, []);
+
+  const clearSignature = useCallback(() => {
+    sigRef.current?.clear();
+    setHasSignature(false);
+  }, []);
+
+  const canSign = fullName.trim().length > 1 && isValidEmail(email) && agreed && hasSignature && !submitting;
 
   const handleSign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSign) return;
+
+    if (!sigRef.current || sigRef.current.isEmpty()) {
+      setError('Please draw your signature before signing.');
+      return;
+    }
+    const signaturePng = sigRef.current.toDataURL('image/png');
+
     setSubmitting(true);
     setError(null);
     try {
@@ -54,6 +112,7 @@ export function PartnerAgreementClient() {
           phone: phone.trim() || undefined,
           context: context.trim() || undefined,
           agreed: true,
+          signaturePng,
         }),
       });
       const data = await res.json();
@@ -61,13 +120,109 @@ export function PartnerAgreementClient() {
         setError(data?.error || 'Could not submit your application. Please try again.');
         return;
       }
-      setSigned({ name: fullName.trim(), date: todayLabel() });
+      setSigned({ name: fullName.trim(), email: email.trim(), date: todayLabel(), signaturePng });
     } catch {
       setError('Could not submit your application. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!signed) return;
+    setGenerating(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      let y = margin;
+
+      const logoData = await fetchLogoDataUrl();
+      if (logoData) {
+        try {
+          doc.addImage(logoData, 'PNG', margin, y, 42, 12);
+          y += 14;
+        } catch {
+          /* optional logo */
+        }
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.text('SoundBridge Partner Agreement', margin, y);
+      y += 8;
+
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const refId = `SBP-${Date.now()}-${slugify(signed.name) || 'partner'}`;
+      doc.text(`Reference: ${refId}`, margin, y);
+      y += 6;
+      doc.setTextColor(0, 0, 0);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const bodyLines = doc.splitTextToSize(PARTNER_AGREEMENT_BODY, pageW - margin * 2);
+      for (const line of bodyLines) {
+        if (y > pageH - 28) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += 5;
+      }
+
+      y += 4;
+      if (y > pageH - 55) {
+        doc.addPage();
+        y = margin;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('Signed by', margin, y);
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Name: ${signed.name}`, margin, y);
+      y += 5;
+      doc.text(`Email: ${signed.email}`, margin, y);
+      y += 5;
+      doc.text(`Date: ${signed.date}`, margin, y);
+      y += 8;
+
+      if (y > pageH - 45) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.addImage(signed.signaturePng, 'PNG', margin, y, 72, 28);
+      y += 28 + 10;
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(90, 90, 90);
+      const footer = doc.splitTextToSize(
+        'This document was generated in the SoundBridge product at soundbridge.live/agreement/partner.',
+        pageW - margin * 2
+      );
+      for (const line of footer) {
+        if (y > pageH - 12) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += 4;
+      }
+
+      doc.save(`SoundBridge-Partner-Agreement-${refId}.pdf`);
+    } catch (e) {
+      console.error(e);
+      setError('Could not generate PDF. Please try again or use a different browser.');
+    } finally {
+      setGenerating(false);
+    }
+  }, [signed]);
 
   if (signed) {
     return (
@@ -77,16 +232,17 @@ export function PartnerAgreementClient() {
             <CheckCircle2 className="h-7 w-7 text-[hsl(var(--primary-foreground))]" />
           </div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            Thanks {signed.name.split(' ')[0]}, your application is in!
+            Welcome aboard, {signed.name.split(' ')[0]}!
           </h1>
           <p className="mt-2 max-w-sm text-sm text-[hsl(var(--muted-foreground))]">
-            Justice will review it and email your referral link once it&apos;s approved. If you
-            don&apos;t have a SoundBridge account under this email yet, sign up now so it&apos;s
-            ready to go.
+            We will review your application within 24 to 48 hours and set up your account. Once
+            that is done, we will send you your referral link and links to our tutorial videos to
+            help you get started.
           </p>
 
           <div className="mt-8 w-full max-w-xs rounded-xl border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] px-5 py-4">
-            <p className="font-serif text-2xl italic">{signed.name}</p>
+            <img src={signed.signaturePng} alt="Your signature" className="mx-auto h-16 object-contain" />
+            <p className="mt-2 font-medium">{signed.name}</p>
             <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
               Signed {signed.date}
             </p>
@@ -94,10 +250,11 @@ export function PartnerAgreementClient() {
 
           <button
             type="button"
-            onClick={() => window.print()}
-            className="mt-8 w-full max-w-xs rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm font-semibold transition hover:bg-[hsl(var(--muted))] print:hidden"
+            onClick={handleDownloadPdf}
+            disabled={generating}
+            className="mt-8 w-full max-w-xs rounded-xl bg-[hsl(var(--primary))] px-4 py-3 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Save / print confirmation
+            {generating ? 'Preparing PDF...' : 'Download your signed copy'}
           </button>
         </div>
       </article>
@@ -117,10 +274,13 @@ export function PartnerAgreementClient() {
             priority
           />
         </div>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">SoundBridge Partner Programme</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          Welcome to the SoundBridge Partner Collaboration Programme
+        </h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-[hsl(var(--muted-foreground))]">
-          Become a SoundBridge referral partner. Read the terms below and sign at the bottom to
-          apply.
+          We are thrilled to have you join us. From today, you will be using your unique referral
+          link to introduce people to incredible independent musicians, podcasters, and DJs. We
+          will guide you every step of the way.
         </p>
       </header>
 
@@ -141,10 +301,10 @@ export function PartnerAgreementClient() {
 
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-            What we ask of you
+            What you will be doing
           </h2>
           <ul className="space-y-2.5">
-            {EXPECTATIONS.map((item) => (
+            {WHAT_YOU_WILL_DO.map((item) => (
               <li key={item} className="flex gap-2.5 text-sm leading-relaxed">
                 <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[hsl(var(--primary))]" />
                 {item}
@@ -170,10 +330,11 @@ export function PartnerAgreementClient() {
         </div>
 
         <p className="rounded-xl border border-[hsl(var(--border))] px-4 py-3 text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
-          <span className="font-medium text-[hsl(var(--foreground))]">Before you sign — </span>
-          this isn&apos;t a legally binding employment or agency contract. SoundBridge may adjust
-          or end the partner programme at any time; commission already earned on converted
-          referrals up to that point will still be honoured.
+          <span className="font-medium text-[hsl(var(--foreground))]">Before you sign: </span>
+          this is a binding agreement between you and SoundBridge Live Ltd. It guarantees your 1
+          year of Premium access from your sign up date, and your 10% commission for every user
+          who joins through your referral link and subscribes, for as long as they remain
+          subscribed.
         </p>
       </section>
 
@@ -230,6 +391,29 @@ export function PartnerAgreementClient() {
           />
         </label>
 
+        <div>
+          <p className="mb-2 text-sm font-medium">Your signature</p>
+          <div className="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-white">
+            <SignatureCanvas
+              ref={sigRef}
+              penColor="#111827"
+              onEnd={() => setHasSignature(true)}
+              canvasProps={{
+                width: padWidth,
+                height: 140,
+                className: 'block max-w-full touch-none',
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={clearSignature}
+            className="mt-2 text-xs text-[hsl(var(--muted-foreground))] underline underline-offset-2 hover:text-[hsl(var(--foreground))]"
+          >
+            Clear
+          </button>
+        </div>
+
         <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[hsl(var(--muted-foreground))]">
           <input
             type="checkbox"
@@ -254,7 +438,7 @@ export function PartnerAgreementClient() {
           disabled={!canSign}
           className="w-full rounded-xl bg-[hsl(var(--primary))] px-4 py-3 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {submitting ? 'Submitting…' : 'Sign & Apply'}
+          {submitting ? 'Submitting...' : 'Sign & Apply'}
         </button>
       </form>
     </article>

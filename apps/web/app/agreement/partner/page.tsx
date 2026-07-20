@@ -4,8 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 import { PartnerAgreementClient } from './PartnerAgreementClient';
 
 export const metadata: Metadata = {
-  title: 'Partner Programme — SoundBridge',
-  description: 'Become a SoundBridge referral partner: 1 year free Premium and 10% commission on referred subscriptions. Read and sign digitally.',
+  title: 'Partner Collaboration Programme - SoundBridge',
+  description: 'Join the SoundBridge Partner Collaboration Programme: 1 year free Premium and 10% commission on referred subscriptions. Read and sign digitally.',
   robots: { index: false, follow: false },
 };
 
