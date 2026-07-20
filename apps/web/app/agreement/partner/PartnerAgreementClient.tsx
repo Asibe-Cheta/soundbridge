@@ -11,12 +11,6 @@ const PERKS = [
   '10% commission on every paid subscription from someone who joins through your referral link, for as long as they remain subscribed',
 ];
 
-const WHAT_YOU_WILL_DO = [
-  'Share your unique referral link with your audience, friends, and community',
-  'Help people discover musicians, podcasters, and DJs on SoundBridge',
-  'Grow your commission as more people you refer become subscribers',
-];
-
 const HOW_IT_WORKS = [
   'Sign below with your name, email, and signature',
   'We review your application within 24 to 48 hours and set up your account',
@@ -291,20 +285,6 @@ export function PartnerAgreementClient() {
           </h2>
           <ul className="space-y-2.5">
             {PERKS.map((item) => (
-              <li key={item} className="flex gap-2.5 text-sm leading-relaxed">
-                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[hsl(var(--primary))]" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.35)] p-4 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-            What you will be doing
-          </h2>
-          <ul className="space-y-2.5">
-            {WHAT_YOU_WILL_DO.map((item) => (
               <li key={item} className="flex gap-2.5 text-sm leading-relaxed">
                 <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[hsl(var(--primary))]" />
                 {item}
