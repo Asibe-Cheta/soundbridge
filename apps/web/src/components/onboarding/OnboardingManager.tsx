@@ -7,6 +7,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { SignupSetupChecklist } from '@/src/components/feature-nudges/SignupSetupChecklist';
 import { UserTypeSelection } from './UserTypeSelection';
 import { QuickSetup } from './QuickSetup';
+import { MusicLoverPurposeStep } from './MusicLoverPurposeStep';
 import { ValueDemo } from './ValueDemo';
 import { TierSelection } from './TierSelection';
 import { PaymentCollection } from './PaymentCollection';
@@ -55,7 +56,7 @@ export function OnboardingManager() {
 
   // NEW FLOW: includes event organiser steps, first post, follow suggestions (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
   const isNewFlow = [
-    'welcome', 'userType', 'quickSetup', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation',
+    'welcome', 'userType', 'quickSetup', 'musicLoverPurpose', 'valueDemo', 'tierSelection', 'payment', 'welcomeConfirmation',
     'eventTypes', 'eventOrganiser_location', 'eventOrganiser_valueDemo', 'followSuggestions', 'firstPost'
   ].includes(currentStep);
 
@@ -90,6 +91,14 @@ export function OnboardingManager() {
           />
         )}
 
+        {currentStep === 'musicLoverPurpose' && (
+          <MusicLoverPurposeStep
+            isOpen={showOnboarding}
+            onContinue={() => setCurrentStep('valueDemo')}
+            onBack={() => setCurrentStep('quickSetup')}
+          />
+        )}
+
         {currentStep === 'eventTypes' && (
           <EventTypesStep
             isOpen={showOnboarding}
@@ -110,7 +119,7 @@ export function OnboardingManager() {
           <ValueDemo
             isOpen={showOnboarding}
             onContinue={() => {}}
-            onBack={() => setCurrentStep('quickSetup')}
+            onBack={() => setCurrentStep(onboardingState.onboardingUserType === 'music_lover' ? 'musicLoverPurpose' : 'quickSetup')}
           />
         )}
 

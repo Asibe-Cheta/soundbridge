@@ -12,7 +12,7 @@ export type OnboardingStep =
   // Old flow
   'role_selection' | 'profile_setup' | 'first_action' | 'completed' |
   // New flow
-  'welcome' | 'userType' | 'quickSetup' | 'valueDemo' | 'tierSelection' | 'payment' | 'welcomeConfirmation' |
+  'welcome' | 'userType' | 'quickSetup' | 'musicLoverPurpose' | 'valueDemo' | 'tierSelection' | 'payment' | 'welcomeConfirmation' |
   // Event organiser + follow suggestions + first post
   'eventTypes' | 'eventOrganiser_location' | 'eventOrganiser_valueDemo' | 'followSuggestions' | 'firstPost';
 

@@ -221,7 +221,7 @@ export function QuickSetup({ isOpen, onContinue, onBack }: QuickSetupProps) {
 
       console.log('✅ Profile completed successfully');
       setProfileCompleted(true);
-      setCurrentStep('valueDemo');
+      setCurrentStep(onboardingState.onboardingUserType === 'music_lover' ? 'musicLoverPurpose' : 'valueDemo');
       onContinue();
     } catch (error: any) {
       console.error('❌ Exception submitting profile:', error);
