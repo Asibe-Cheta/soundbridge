@@ -150,6 +150,131 @@ function InstitutionBadgeAssignment() {
   );
 }
 
+interface PartnerApplication {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  context: string | null;
+  status: 'pending' | 'provisioned' | 'declined';
+  decline_reason: string | null;
+  created_at: string;
+}
+
+function PendingPartnerApplications({ onProvisioned }: { onProvisioned: () => void }) {
+  const [applications, setApplications] = useState<PartnerApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchWithSupabaseAuth('/api/admin/partner-applications');
+      const data = await response.json();
+      if (response.ok) {
+        setApplications(data.applications || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadApplications();
+  }, []);
+
+  const provision = async (id: string) => {
+    setBusyId(id);
+    setMessage(null);
+    try {
+      const response = await fetchWithSupabaseAuth(`/api/admin/partner-applications/${id}/provision`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data?.error || 'Failed to provision partner');
+        return;
+      }
+      setMessage(`Provisioned — referral code "${data.partner?.referral_code}" and 1 year Premium granted.`);
+      await loadApplications();
+      onProvisioned();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const decline = async (id: string) => {
+    if (!window.confirm('Decline this application?')) return;
+    setBusyId(id);
+    setMessage(null);
+    try {
+      const response = await fetchWithSupabaseAuth(`/api/admin/partner-applications/${id}/decline`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data?.error || 'Failed to decline application');
+        return;
+      }
+      await loadApplications();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const pending = applications.filter((a) => a.status === 'pending');
+
+  return (
+    <div className="mb-6 rounded-xl border border-gray-700 bg-gray-800 p-6">
+      <h2 className="mb-1 text-lg font-semibold text-white">Pending partner applications</h2>
+      <p className="mb-4 text-sm text-gray-400">
+        Signed at /agreement/partner. Provisioning creates their partner record (10% commission)
+        and grants 1 year Premium — requires a SoundBridge account already signed up under the
+        same email.
+      </p>
+
+      {message && <div className="mb-3 text-sm text-gray-300">{message}</div>}
+
+      {loading ? (
+        <div className="text-sm text-gray-400">Loading applications...</div>
+      ) : pending.length === 0 ? (
+        <div className="text-sm text-gray-500">No pending applications.</div>
+      ) : (
+        <div className="divide-y divide-gray-700 rounded-lg border border-gray-700">
+          {pending.map((application) => (
+            <div key={application.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-white">{application.full_name}</p>
+                <p className="truncate text-xs text-gray-500">{application.email}</p>
+                {application.context && (
+                  <p className="mt-1 max-w-md truncate text-xs text-gray-400">{application.context}</p>
+                )}
+              </div>
+              <div className="flex flex-shrink-0 gap-2">
+                <button
+                  onClick={() => provision(application.id)}
+                  disabled={busyId === application.id}
+                  className="rounded bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {busyId === application.id ? 'Working...' : 'Provision'}
+                </button>
+                <button
+                  onClick={() => decline(application.id)}
+                  disabled={busyId === application.id}
+                  className="rounded border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPartnersPage() {
   const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,6 +329,8 @@ export default function AdminPartnersPage() {
         </div>
 
         <InstitutionBadgeAssignment />
+
+        <PendingPartnerApplications onProvisioned={loadPartners} />
 
         <form onSubmit={createPartner} className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-gray-700 bg-gray-800 p-4">
           <label className="text-sm text-gray-300">
