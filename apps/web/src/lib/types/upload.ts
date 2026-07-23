@@ -120,6 +120,8 @@ export interface TrackUploadData {
   scheduleDate?: string;
   audioFile: UploadFile;
   coverArtFile?: UploadFile;
+  /** Creator affirmed ownership/licence of the recording and underlying composition (LEGAL_CONFIRMATION.MD). */
+  rightsConfirmed?: boolean;
 }
 
 // Copyright Protection Types

@@ -75,8 +75,17 @@ export async function POST(request: NextRequest) {
       contentType,
       is_mixtape,
       dj_name,
-      tracklist
+      tracklist,
+      // Rights confirmation (LEGAL_CONFIRMATION.MD)
+      rightsConfirmed,
     } = body;
+
+    if (!rightsConfirmed) {
+      return NextResponse.json(
+        { error: 'Please confirm you have the rights to upload this content before continuing' },
+        { status: 400 }
+      );
+    }
 
     // Validate required fields
     const normalizedContentType =
@@ -459,6 +468,8 @@ export async function POST(request: NextRequest) {
       dj_name: isMixtapeUpload ? String(dj_name || artistName || '').trim() : null,
       tracklist: isMixtapeUpload ? String(tracklist || '').trim() : null,
       live_interest_enabled: !isMixtapeUpload && normalizedContentType === 'music',
+      rights_confirmed: true,
+      rights_confirmed_at: new Date().toISOString(),
     };
 
     const { data: track, error: insertError } = await (supabase

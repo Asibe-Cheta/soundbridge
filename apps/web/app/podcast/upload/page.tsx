@@ -45,6 +45,7 @@ export default function PodcastUploadPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showShortPodcastConfirm, setShowShortPodcastConfirm] = useState(false);
   const [shortPodcastConfirmed, setShortPodcastConfirmed] = useState(false);
+  const [agreedToRights, setAgreedToRights] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -156,6 +157,11 @@ export default function PodcastUploadPage() {
       return;
     }
 
+    if (!agreedToRights) {
+      alert('Please confirm you have the rights to upload this content before continuing');
+      return;
+    }
+
     await performPodcastUpload();
   };
 
@@ -195,7 +201,8 @@ export default function PodcastUploadPage() {
         publishOption,
         scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined,
         episodeNumber: episodeNumber.trim(),
-        category: podcastCategory
+        category: podcastCategory,
+        rightsConfirmed: agreedToRights
       };
 
       console.log('Uploading podcast with data:', podcastData);
@@ -211,6 +218,7 @@ export default function PodcastUploadPage() {
         setPrivacy('public');
         setPublishOption('now');
         setScheduleDate('');
+        setAgreedToRights(false);
         uploadActions.resetUpload();
         
         // Redirect to success page with podcast details
@@ -1362,26 +1370,67 @@ export default function PodcastUploadPage() {
                 </div>
               )}
 
+              {/* Rights Confirmation */}
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '12px',
+                padding: '1rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem'
+              }}>
+                <input
+                  type="checkbox"
+                  id="podcast-rights-confirmation"
+                  checked={agreedToRights}
+                  onChange={(e) => setAgreedToRights(e.target.checked)}
+                  style={{ marginTop: '0.25rem', width: '16px', height: '16px', flexShrink: 0 }}
+                />
+                <label htmlFor="podcast-rights-confirmation" style={{ fontSize: '0.875rem', color: '#D1D5DB' }}>
+                  I confirm that I own, or have the necessary rights and permissions, to distribute
+                  this recording and its underlying composition, including any samples, co-writes,
+                  or featured artists.
+                </label>
+              </div>
+
+              {!agreedToRights && (
+                <div style={{
+                  background: 'rgba(220, 38, 38, 0.1)',
+                  border: '1px solid rgba(220, 38, 38, 0.3)',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1rem',
+                  color: '#FCA5A5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.875rem'
+                }}>
+                  <AlertTriangle size={16} />
+                  Please confirm you have the rights to upload this content before continuing.
+                </div>
+              )}
+
               {/* Publish Button */}
               <button
                 onClick={handlePublish}
-                disabled={!uploadState.audioFile || uploadState.isUploading}
+                disabled={!uploadState.audioFile || uploadState.isUploading || !agreedToRights}
                 style={{
                   width: '100%',
-                  background: !uploadState.audioFile || uploadState.isUploading 
-                    ? '#6B7280' 
+                  background: !uploadState.audioFile || uploadState.isUploading || !agreedToRights
+                    ? '#6B7280'
                     : 'linear-gradient(45deg, #DC2626, #EC4899)',
                   color: 'white',
                   border: 'none',
                   padding: '1rem 2rem',
                   borderRadius: '12px',
-                  cursor: !uploadState.audioFile || uploadState.isUploading ? 'not-allowed' : 'pointer',
+                  cursor: !uploadState.audioFile || uploadState.isUploading || !agreedToRights ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  opacity: !uploadState.audioFile || uploadState.isUploading ? 0.6 : 1
+                  opacity: !uploadState.audioFile || uploadState.isUploading || !agreedToRights ? 0.6 : 1
                 }}
               >
                 {uploadState.isUploading ? (

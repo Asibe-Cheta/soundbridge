@@ -382,7 +382,7 @@ export default function UnifiedUploadPage() {
     if (contentType === 'mixtape' && !mixtapeTracklist.trim()) return 'Tracklist is required for mixtapes';
     if (!uploadState.audioFile) return 'Audio file is required';
     if (!uploadState.coverArtFile) return 'Cover art is required';
-    if (!agreedToCopyright) return 'You must agree to the copyright terms to upload content';
+    if (!agreedToCopyright) return 'Please confirm you have the rights to upload this content before continuing';
 
     if (contentType === 'podcast') {
       const audioDuration = uploadState.audioMetadata?.duration ?? 0;
@@ -919,6 +919,7 @@ export default function UnifiedUploadPage() {
         privacy: privacy as 'public' | 'private',
         publishOption: publishOption as 'now' | 'draft' | 'schedule',
         scheduleDate: publishOption === 'schedule' ? scheduleDate : undefined,
+        rightsConfirmed: agreedToCopyright,
         // Content-specific data
         ...(contentType === 'music' ? {
           contentType: 'music' as const,
@@ -2074,9 +2075,9 @@ export default function UnifiedUploadPage() {
                 required
               />
               <label htmlFor="copyright-agreement" className="text-sm text-gray-700 dark:text-gray-300">
-                {contentType === 'mixtape'
-                  ? 'I confirm this mix is shared for promotional, non-commercial purposes. I understand I do not own the underlying recordings and that rights holders may request removal. SoundBridge complies with all valid DMCA takedown requests. Uploading content that infringes copyright may result in removal or account suspension. '
-                  : 'I confirm that I own all rights to this music and it does not infringe any third-party copyrights. I understand that uploading copyrighted content may result in account suspension or termination. '}
+                I confirm that I own, or have the necessary rights and permissions, to distribute
+                this recording and its underlying composition, including any samples, co-writes,
+                or featured artists.{' '}
                 <Link href="/copyright-policy" className="text-blue-600 hover:text-blue-800 underline">
                   Learn more about our copyright policy
                 </Link>
@@ -2087,7 +2088,7 @@ export default function UnifiedUploadPage() {
               <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border-l-4 border-red-500">
                 <p className="text-sm text-red-800 dark:text-red-200">
                   <AlertTriangle className="w-4 h-4 inline mr-1" />
-                  You must agree to the copyright terms to upload content.
+                  Please confirm you have the rights to upload this content before continuing.
                 </p>
               </div>
             )}

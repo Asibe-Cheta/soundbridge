@@ -415,6 +415,9 @@ export class AudioUploadService {
     dj_name?: string | null;
     tracklist?: string | null;
     live_interest_enabled?: boolean;
+    // Rights confirmation (LEGAL_CONFIRMATION.MD)
+    rights_confirmed?: boolean;
+    rights_confirmed_at?: string | null;
   }): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const insertData = {
@@ -542,6 +545,16 @@ export class AudioUploadService {
           error: {
             code: 'VALIDATION_ERROR',
             message: categoryDurationCheck.message,
+          },
+        };
+      }
+
+      if (!trackData.rightsConfirmed) {
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Please confirm you have the rights to upload this content before continuing',
           },
         };
       }
@@ -744,6 +757,8 @@ export class AudioUploadService {
         dj_name: isMixtape ? (td.djName?.trim() || td.artistName?.trim() || null) : null,
         tracklist: isMixtape ? (td.tracklist?.trim() || null) : null,
         live_interest_enabled: !skipMusicRights && normalizedContentType === 'music',
+        rights_confirmed: !!td.rightsConfirmed,
+        rights_confirmed_at: td.rightsConfirmed ? new Date().toISOString() : null,
       });
 
       if (!dbResult.success) {
