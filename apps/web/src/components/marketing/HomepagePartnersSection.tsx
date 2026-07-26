@@ -20,6 +20,18 @@ const PARTNERS = [
     type: 'text' as const,
   },
   {
+    name: 'Abbey Road Institute',
+    descriptor: 'Official student access partner',
+    src: '/images/partners/abbey-road-institute.png',
+    type: 'image' as const,
+  },
+  {
+    name: 'MBG Sonics',
+    descriptor: 'Official distribution partner',
+    src: '/images/partners/mbg-sonics.png',
+    type: 'image' as const,
+  },
+  {
     name: 'Talk 2 Dan Media',
     descriptor: 'Creative industry event partnership',
     src: '/images/partners/T2Dhome.png',
@@ -53,7 +65,7 @@ export function HomepagePartnersSection({ userCountRounded, isDark }: HomepagePa
           Trusted by creators and institutions across the UK and beyond
         </h2>
 
-        <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 sm:gap-x-8 lg:gap-x-10">
+        <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-6 lg:gap-x-10">
           {PARTNERS.map((partner) => (
             <li key={partner.name} className="flex flex-col items-center text-center">
               {partner.type === 'image' ? (
