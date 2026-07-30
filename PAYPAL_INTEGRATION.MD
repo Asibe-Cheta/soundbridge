@@ -71,6 +71,13 @@ event tickets), so no frontend rebuild was needed there — PayPal just appears 
    - Inside it, toggle PayPal on.
    - This is a one-time, account-level setting — not "web's" or "mobile's" to do separately.
      Until it's on, PayPal won't appear on **either** platform no matter what code says.
+   - **Status as of 2026-07-30: "Pending approval," not yet "Enabled."** Unlike most other
+     digital wallets here, PayPal via Stripe requires Stripe/PayPal to actually review and
+     approve the account as a sub-merchant before it goes live — this is a business/compliance
+     step, not a config or code issue. **PayPal will not appear anywhere in checkout until this
+     flips to "Enabled."** If you're testing and don't see it, check this status first before
+     assuming something's broken. Check the ⓘ next to "Pending approval" and the Stripe account's
+     notification bell/email for anything PayPal needs from us to finish the review.
 2. **Register the production domain under Payment method domains** (Settings → Payments →
    **Payment method domains**). Currently only `buy.stripe.com` and `checkout.stripe.com` are
    listed. PayPal (like Apple Pay, Google Pay, Amazon Pay, Klarna) requires the domain it's
