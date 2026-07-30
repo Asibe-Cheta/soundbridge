@@ -56,24 +56,47 @@ On web specifically: every checkout UI already used Stripe's modern `PaymentElem
 `confirmPayment()` (Tip Room, fan-landing/in-player tips, Request Room, content purchase,
 event tickets), so no frontend rebuild was needed there — PayPal just appears once enabled.
 
-## What's still needed — and is mobile team's to do
+## What's still needed
 
-1. **PayPal must be enabled in the Stripe Dashboard** (Settings → Payment methods) for the
-   connected account. This is a one-time, account-level setting — not per-client — so it's not
-   "web's" or "mobile's" to do separately. Confirm with whoever owns Stripe Dashboard access
-   before either team spends time testing; until it's on, PayPal won't appear on **either**
-   platform no matter what code says.
-2. **Mobile-side PaymentSheet configuration for redirect-based methods.** PayPal is a
-   redirect-based payment method in Stripe (like iDEAL), which the React Native Stripe SDK's
-   `PaymentSheet` supports, but it needs a `returnURL` configured on `initPaymentSheet` (a
-   custom URL scheme), the corresponding native URL scheme registration in
-   `Info.plist`/iOS and the Android manifest, and `handleURLCallback` wired up so the app
-   resumes correctly after the user completes payment in PayPal's app/browser and gets
-   redirected back. This is genuinely mobile-SDK-specific plumbing this web session has not
-   touched and can't verify — it's the one real piece of client work left.
-3. **QA on both iOS and Android** once PayPal is enabled in the Dashboard and the redirect
-   plumbing is in place: confirm the PayPal button renders in PaymentSheet and a full
-   redirect-and-return payment completes for at least tip and event-ticket flows.
+### Shared (whoever owns Stripe Dashboard access — not per-client)
+
+1. **Turn PayPal on in the Stripe Dashboard**, in the right configuration. Settings →
+   Payments → **Payment methods** only lists *configurations* (groups), not individual
+   method toggles — you have to open one to find PayPal:
+   - Click into the **"Default"** row where **Type = "Your platform account"**
+     (`pmc_1Rq1Pl0Bt6mXrdyeWfraTamz`), *not* one of the connected-account configs. This
+     codebase uses destination charges (`transfer_data: { destination: <connected account> }`),
+     and per Stripe's own description on that page, destination charges bill against the
+     **platform account's** payment method configuration, not the connected account's.
+   - Inside it, toggle PayPal on.
+   - This is a one-time, account-level setting — not "web's" or "mobile's" to do separately.
+     Until it's on, PayPal won't appear on **either** platform no matter what code says.
+2. **Register the production domain under Payment method domains** (Settings → Payments →
+   **Payment method domains**). Currently only `buy.stripe.com` and `checkout.stripe.com` are
+   listed. PayPal (like Apple Pay, Google Pay, Amazon Pay, Klarna) requires the domain it's
+   rendered on to be registered before it'll show up in Stripe Elements/PaymentElement. Add:
+   - `www.soundbridge.live` — the canonical domain. (Bare `soundbridge.live` 301-redirects to
+     `www.soundbridge.live` before anything renders — per `vercel.json` and the hardcoded
+     `return_url` fallback already in the checkout components — so there's nothing to register
+     there; only the `www` host actually serves pages.)
+   - Enter just the hostname, no `https://` prefix, matching the existing rows.
+   - This step is **web-specific** — it only matters for PayPal rendered via Elements/
+     PaymentElement on soundbridge.live. Mobile's native `PaymentSheet` doesn't use Elements on
+     a domain, so this doesn't block mobile.
+
+### Mobile team's to do
+
+3. **PaymentSheet configuration for redirect-based methods.** PayPal is a redirect-based
+   payment method in Stripe (like iDEAL), which the React Native Stripe SDK's `PaymentSheet`
+   supports, but it needs a `returnURL` configured on `initPaymentSheet` (a custom URL scheme),
+   the corresponding native URL scheme registration in `Info.plist`/iOS and the Android
+   manifest, and `handleURLCallback` wired up so the app resumes correctly after the user
+   completes payment in PayPal's app/browser and gets redirected back. This is genuinely
+   mobile-SDK-specific plumbing this web session has not touched and can't verify — it's the
+   one real piece of client work left.
+4. **QA on both iOS and Android** once items 1–3 are done: confirm the PayPal button renders
+   in PaymentSheet and a full redirect-and-return payment completes for at least tip and
+   event-ticket flows.
 
 ## What NOT to do (avoid duplicating/conflicting with what's already live)
 
