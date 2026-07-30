@@ -10,6 +10,11 @@ import { CreatePostModal } from '@/src/components/posts/CreatePostModal';
 import { FeedLeftSidebar } from '@/src/components/feed/FeedLeftSidebar';
 import { FeedRightSidebar } from '@/src/components/feed/FeedRightSidebar';
 import { PostOnboardingFirstActionPrompt, wasFirstActionPromptShown } from '@/src/components/onboarding/PostOnboardingFirstActionPrompt';
+import {
+  AudioLoverWelcomeLayer,
+  wasWelcomeLayerDismissed,
+  isWithinWelcomeWindow,
+} from '@/src/components/feed/AudioLoverWelcomeLayer';
 import { Post } from '@/src/lib/types/post';
 import { resolveFeedCursor, splitPostsByFeedCursor } from '@/src/lib/feed-cursor';
 import { Plus, Radio, Loader2, AlertCircle } from 'lucide-react';
@@ -34,6 +39,8 @@ export default function FeedPage() {
   const [bookmarksMap, setBookmarksMap] = useState<Map<string, boolean>>(new Map());
   const [showFirstActionPrompt, setShowFirstActionPrompt] = useState(false);
   const [onboardingUserType, setOnboardingUserType] = useState<any>(null);
+  const [showWelcomeLayer, setShowWelcomeLayer] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [feedCursorAt, setFeedCursorAt] = useState<string | null>(null);
   const [feedCursorLoaded, setFeedCursorLoaded] = useState(false);
   const [showNewPostsPill, setShowNewPostsPill] = useState(false);
@@ -78,6 +85,9 @@ export default function FeedPage() {
           if (data.success && data.profile?.avatar_url) {
             setProfilePic(data.profile.avatar_url);
           }
+          if (data.success && data.profile?.display_name) {
+            setDisplayName(data.profile.display_name);
+          }
         })
         .catch(() => {
           // Ignore errors
@@ -85,10 +95,14 @@ export default function FeedPage() {
     }
   }, [user?.id]);
 
-  // Post-onboarding first action prompt: show once on first feed load (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
+  // Post-onboarding first action prompt / Audio Lover welcome layer: both driven by the same
+  // onboarding-status check, shown once per first-session window (WEB_TEAM_ONBOARDING_ENHANCEMENTS.MD)
   useEffect(() => {
     if (!user?.id || authLoading) return;
-    if (wasFirstActionPromptShown(user.id)) return;
+
+    const showFirstAction = !wasFirstActionPromptShown(user.id);
+    const showWelcome = !wasWelcomeLayerDismissed(user.id) && isWithinWelcomeWindow(user.created_at);
+    if (!showFirstAction && !showWelcome) return;
 
     const timer = setTimeout(() => {
       fetch('/api/user/onboarding-status', { credentials: 'include' })
@@ -96,7 +110,12 @@ export default function FeedPage() {
         .then(data => {
           if (!data?.profile?.onboarding_completed) return;
           const type = data?.profile?.onboarding_user_type;
-          if (type === 'music_lover' || !type) return;
+
+          if (type === 'music_lover') {
+            if (showWelcome) setShowWelcomeLayer(true);
+            return;
+          }
+          if (!type || !showFirstAction) return;
           setOnboardingUserType(type);
           setShowFirstActionPrompt(true);
         })
@@ -104,7 +123,7 @@ export default function FeedPage() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [user?.id, authLoading]);
+  }, [user?.id, user?.created_at, authLoading]);
 
   // Fetch posts - REMOVED bookmark check from here (mobile team recommendation)
   // Use refs for loading states to avoid dependency issues
@@ -397,6 +416,14 @@ export default function FeedPage() {
 
           {/* Center Feed - Narrower */}
           <main className="flex-1 max-w-lg mx-auto pt-4 min-w-0">
+            {showWelcomeLayer && user?.id && (
+              <AudioLoverWelcomeLayer
+                displayName={displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}
+                userId={user.id}
+                onDismiss={() => setShowWelcomeLayer(false)}
+              />
+            )}
+
             {/* Create Post Card */}
             <div className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-4 mb-4 hover:border-white/20 transition-all">
               <div className="flex items-center gap-3">
