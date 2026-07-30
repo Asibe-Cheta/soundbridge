@@ -202,6 +202,7 @@ export async function POST(request: NextRequest) {
       transfer_data: {
         destination: stripeAccountId,
       },
+      automatic_payment_methods: { enabled: true },
       ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
         eventId: eventId,

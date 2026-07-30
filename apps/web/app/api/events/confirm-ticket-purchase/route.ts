@@ -6,6 +6,7 @@ import { incrementEventTicketSales } from '@/src/lib/event-analytics';
 import { linkEventPromotionTicketPurchase } from '@/src/lib/event-promotion-tracking';
 import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-intent-metadata';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Verify payment intent with Stripe first to get amount and currency
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentMethodType = await getPaymentIntentPaymentMethodType(stripe, paymentIntent);
 
     // Get amount and currency from payment intent (source of truth)
     const amountMinor = paymentIntent.amount; // Stripe: smallest currency unit (pence/cents)
@@ -165,6 +167,7 @@ export async function POST(request: NextRequest) {
       status: 'active',
       platform_fee_amount: Math.round(platformFeePerTicket * 100) / 100,
       organizer_amount: Math.round(organizerPerTicket * 100) / 100,
+      payment_method_type: paymentMethodType,
     }));
 
     const { data: createdTickets, error: insertError } = await supabaseAdmin
@@ -193,6 +196,7 @@ export async function POST(request: NextRequest) {
         p_reference_id: eventId,
         p_creator_user_id: (event as { creator_id?: string }).creator_id ?? null,
         p_currency: currency.toUpperCase(),
+        p_payment_method_type: paymentMethodType,
       });
       if (insertPrErr) {
         console.error('[confirm-ticket-purchase] insert_platform_revenue:', insertPrErr);

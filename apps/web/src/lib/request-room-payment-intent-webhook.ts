@@ -1,6 +1,8 @@
 import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { stripe } from '@/src/lib/stripe';
+import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-intent-metadata';
 
 export function isRequestRoomTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
   return pi.metadata?.charge_type === 'request_room_tip';
@@ -55,6 +57,8 @@ export async function finalizeRequestRoomFromSucceededPaymentIntent(
     const platformFee = Math.round(amountMajor * PLATFORM_FEE_DECIMAL * 100) / 100;
     const creatorEarnings = Math.max(0, Math.round((amountMajor - platformFee) * 100) / 100);
 
+    const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
+
     const { error: insertErr } = await supabase.from('request_room_requests').insert({
       session_id: sessionId,
       creator_id: creatorId,
@@ -64,6 +68,7 @@ export async function finalizeRequestRoomFromSucceededPaymentIntent(
       tip_amount: amountMajor,
       payment_intent_id: paymentIntentId,
       status: 'pending',
+      payment_method_type: paymentMethodType,
     });
     if (insertErr) {
       console.error('[request-room webhook] insert request error:', insertErr);

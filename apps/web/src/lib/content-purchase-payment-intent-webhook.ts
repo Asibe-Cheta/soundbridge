@@ -2,6 +2,8 @@ import type Stripe from 'stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { notifyCreatorContentPurchasePush } from '@/src/lib/content-purchase-push';
+import { stripe } from '@/src/lib/stripe';
+import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-intent-metadata';
 
 /**
  * PaymentIntents from POST /api/payments/create-intent set charge_type to audio_sale or album_sale.
@@ -55,6 +57,8 @@ export async function recordContentSaleFromPaymentIntent(
     return;
   }
 
+  const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
+
   const { data: purchase, error: purchaseError } = await supabase
     .from('content_purchases')
     .insert({
@@ -67,6 +71,7 @@ export async function recordContentSaleFromPaymentIntent(
       creator_earnings: parseFloat(creator_earnings || '0'),
       transaction_id: paymentIntent.id,
       status: 'completed',
+      payment_method_type: paymentMethodType,
     })
     .select()
     .single();

@@ -254,6 +254,7 @@ export async function POST(request: NextRequest) {
     const piParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
       amount: amountCents,
       currency: dbCurrency.toLowerCase(),
+      automatic_payment_methods: { enabled: true },
       metadata: {
         content_id: content_id,
         content_type: content_type,

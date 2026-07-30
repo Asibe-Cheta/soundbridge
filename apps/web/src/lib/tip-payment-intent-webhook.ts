@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { sendTipThankYouDm } from '@/src/lib/tip-thank-you-dm';
 import { recordTipRoomTipStat } from '@/src/lib/tip-room-stats';
+import { stripe } from '@/src/lib/stripe';
+import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-intent-metadata';
 
 /**
  * create-tip sets metadata.charge_type = 'tip'. Main Stripe webhook must finalize tips
@@ -320,6 +322,7 @@ async function finalizeFanLandingGuestTipFromPaymentIntent(
   const feePct = meta.platform_fee_percent ? parseFloat(String(meta.platform_fee_percent)) : 15;
 
   try {
+    const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
     const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
       p_charge_type: 'tip',
       p_gross_amount: grossMinor,
@@ -330,6 +333,7 @@ async function finalizeFanLandingGuestTipFromPaymentIntent(
       p_reference_id: paymentIntentId,
       p_creator_user_id: creatorId,
       p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
+      p_payment_method_type: paymentMethodType,
     });
     if (insertPrErr) {
       console.error('[finalizeFanLanding] insert_platform_revenue:', insertPrErr);
@@ -575,6 +579,7 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   }
 
   try {
+    const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
     const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
       p_charge_type: 'tip',
       p_gross_amount: grossMinor,
@@ -585,6 +590,7 @@ async function finalizeTipFromSucceededPaymentIntentInner(
       p_reference_id: paymentIntentId,
       p_creator_user_id: creatorId,
       p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
+      p_payment_method_type: paymentMethodType,
     });
     if (insertPrErr) {
       console.error('[finalizeTip] insert_platform_revenue:', insertPrErr);
