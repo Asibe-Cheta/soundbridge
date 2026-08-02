@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 
 type SessionPayload = {
   id: string;
@@ -80,6 +81,7 @@ export default function RequestRoomPublicClient({
   const [email, setEmail] = useState('');
   const [gdprConsent, setGdprConsent] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const minTip = Number(session.minimum_tip_amount || 1);
@@ -188,12 +190,47 @@ export default function RequestRoomPublicClient({
                 <span>I consent to receive occasional updates from SoundBridge and this creator.</span>
               </label>
               {error ? <p className={isDark ? 'text-sm text-red-300' : 'text-sm text-red-600'}>{error}</p> : null}
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-500"
-              >
-                Continue to payment
-              </button>
+
+              <div className="flex justify-center gap-2">
+                {(['card', 'paypal'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setProvider(p)}
+                    className={
+                      isDark
+                        ? `rounded-lg px-4 py-1.5 text-xs font-medium transition ${provider === p ? 'bg-white/15 text-white' : 'border border-white/10 bg-transparent text-white/60 hover:bg-white/5'}`
+                        : `rounded-lg px-4 py-1.5 text-xs font-medium transition ${provider === p ? 'bg-slate-900 text-white' : 'border border-slate-300 bg-transparent text-slate-500 hover:bg-slate-50'}`
+                    }
+                  >
+                    {p === 'card' ? 'Card' : 'PayPal'}
+                  </button>
+                ))}
+              </div>
+
+              {provider === 'card' ? (
+                <button
+                  type="submit"
+                  className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-500"
+                >
+                  Continue to payment
+                </button>
+              ) : (
+                <PayPalCheckoutButton
+                  createOrderEndpoint="/api/request-room/create-payment-intent"
+                  createOrderPayload={{
+                    session_id: sessionId,
+                    song_request: songRequest.trim(),
+                    tip_amount: Number(tipAmount),
+                    tipper_name: tipperName.trim() || 'Anonymous',
+                    email: email.trim(),
+                    gdpr_consent: gdprConsent,
+                  }}
+                  currency="USD"
+                  onCaptured={() => setMessage(`Your request has been sent! ${displayName} will see it now.`)}
+                  onError={setError}
+                />
+              )}
             </form>
           ) : (
             <Elements stripe={stripePromise} options={options}>

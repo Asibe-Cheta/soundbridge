@@ -9,6 +9,7 @@ import {
 } from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 import { createServerClient } from '@/src/lib/supabase';
+import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
 
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
   'usd', 'gbp', 'eur', 'cad', 'aud', 'sgd', 'hkd', 'jpy', 'nzd', 'dkk', 'sek', 'nok', 'chf',
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       email?: string;
       name?: string;
       message?: string;
+      provider?: string;
     } | null;
 
     if (!body?.creatorId || !body.email?.trim()) {
@@ -159,6 +161,25 @@ export async function POST(request: NextRequest) {
     const platformFeeRate = PLATFORM_FEE_DECIMAL;
     const platformFee = Math.round(tipAmount * platformFeeRate * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
+
+    if (body.provider === 'paypal') {
+      const { paypalOrderId } = await createPayPalPendingCharge({
+        chargeType: 'fan_landing_tip',
+        creatorId,
+        payerId: null,
+        amount: tipAmount,
+        currency: tipCurrency,
+        platformFee,
+        creatorEarnings,
+        metadata: { guest_email: email, guest_name: guestName, message },
+        description: `Fan page tip to creator ${creatorId}`,
+      });
+      return NextResponse.json(
+        { success: true, provider: 'paypal', paypalOrderId, currency: tipCurrency, platformFee, creatorEarnings },
+        { headers: corsHeaders },
+      );
+    }
+
     const stripeFeeRate = PLATFORM_FEE_DECIMAL;
 
     const amountMinor = stripeAmountInMinorUnits(tipAmount, tipCurrencyLower);

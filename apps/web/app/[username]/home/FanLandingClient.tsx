@@ -9,6 +9,7 @@ import type { Stripe } from '@stripe/stripe-js';
 import { Heart, Loader2, Music, Pause, Play, Sparkles } from 'lucide-react';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
 import { persistCommunityEntryCreatorClient } from '@/src/lib/community-entry';
+import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 import { Playfair_Display } from 'next/font/google';
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['700'] });
@@ -162,6 +163,7 @@ export function FanLandingClient({
   const [email, setEmail] = useState('');
   const [guestName, setGuestName] = useState('');
   const [tipAmount, setTipAmount] = useState(1);
+  const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bootingPi, setBootingPi] = useState(false);
   const [tipError, setTipError] = useState<string | null>(null);
@@ -629,20 +631,53 @@ export function FanLandingClient({
                   />
                 </div>
                 {tipError && <p className="text-sm text-red-400">{tipError}</p>}
-                <button
-                  type="button"
-                  disabled={bootingPi}
-                  onClick={() => void preparePaymentIntent()}
-                  className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3 font-semibold disabled:opacity-50"
-                >
-                  {bootingPi ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
-                    </span>
-                  ) : (
-                    'Continue to card'
-                  )}
-                </button>
+
+                <div className="flex justify-center gap-2">
+                  {(['card', 'paypal'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setProvider(p)}
+                      className={`rounded-lg px-4 py-1.5 text-xs font-medium transition ${
+                        provider === p
+                          ? 'bg-white/15 text-white'
+                          : 'border border-white/10 bg-transparent text-gray-400 hover:bg-white/5'
+                      }`}
+                    >
+                      {p === 'card' ? 'Card' : 'PayPal'}
+                    </button>
+                  ))}
+                </div>
+
+                {provider === 'card' ? (
+                  <button
+                    type="button"
+                    disabled={bootingPi}
+                    onClick={() => void preparePaymentIntent()}
+                    className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3 font-semibold disabled:opacity-50"
+                  >
+                    {bootingPi ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Preparing…
+                      </span>
+                    ) : (
+                      'Continue to card'
+                    )}
+                  </button>
+                ) : (
+                  <PayPalCheckoutButton
+                    createOrderEndpoint="/api/payments/fan-landing-tip"
+                    createOrderPayload={{
+                      creatorId,
+                      amount: tipAmount,
+                      email: email.trim(),
+                      name: guestName.trim() || undefined,
+                    }}
+                    currency={tipCurrency}
+                    onCaptured={() => onPaymentSuccess()}
+                    onError={setTipError}
+                  />
+                )}
               </div>
             ) : stripeJs && clientSecret ? (
               <div className="mt-4">

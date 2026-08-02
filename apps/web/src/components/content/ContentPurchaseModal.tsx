@@ -5,6 +5,7 @@ import { X, ShoppingCart, Loader2, CheckCircle, AlertCircle } from 'lucide-react
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { getStripeJsPromise } from '@/src/lib/stripe-js-client';
+import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
 
@@ -133,6 +134,8 @@ export function ContentPurchaseModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [booting, setBooting] = useState(false);
+  const [alreadyOwns, setAlreadyOwns] = useState(false);
+  const [provider, setProvider] = useState<'card' | 'paypal'>('card');
 
   const reset = useCallback(() => {
     setClientSecret(null);
@@ -140,8 +143,12 @@ export function ContentPurchaseModal({
     setFormError(null);
     setSuccess(false);
     setBooting(false);
+    setAlreadyOwns(false);
+    setProvider('card');
   }, []);
 
+  // Ownership check always runs; the Stripe PaymentIntent is only created when "Card" is
+  // selected, so picking PayPal doesn't leave an unused, orphaned PaymentIntent behind.
   useEffect(() => {
     if (!isOpen) {
       reset();
@@ -154,31 +161,36 @@ export function ContentPurchaseModal({
       return;
     }
 
-    if (!stripePromise) {
-      setLoadError('Payments are not configured.');
-      setBooting(false);
-      return;
-    }
-
     let cancelled = false;
     setBooting(true);
     setLoadError(null);
 
     (async () => {
       try {
-        const stripe = await stripePromise!;
-        if (!stripe) {
-          if (!cancelled) setLoadError('Payment system unavailable. Check your network or try disabling content blockers.');
-          return;
-        }
-
         const ownRes = await fetch(
           `/api/content/ownership?content_id=${encodeURIComponent(contentId)}&content_type=${encodeURIComponent(contentType)}`,
           { credentials: 'include' }
         );
         const ownData = await ownRes.json();
         if (ownData.success && ownData.data?.owns) {
-          if (!cancelled) setLoadError('You already own this content.');
+          if (!cancelled) {
+            setAlreadyOwns(true);
+            setLoadError('You already own this content.');
+          }
+          return;
+        }
+
+        if (provider !== 'card') {
+          return;
+        }
+
+        if (!stripePromise) {
+          if (!cancelled) setLoadError('Payments are not configured.');
+          return;
+        }
+        const stripe = await stripePromise;
+        if (!stripe) {
+          if (!cancelled) setLoadError('Payment system unavailable. Check your network or try disabling content blockers.');
           return;
         }
 
@@ -209,7 +221,7 @@ export function ContentPurchaseModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, user, contentId, contentType, price, currency, reset]);
+  }, [isOpen, user, contentId, contentType, price, currency, provider, reset]);
 
   if (!isOpen) return null;
 
@@ -263,7 +275,26 @@ export function ContentPurchaseModal({
                 </div>
               )}
 
-              {clientSecret && stripePromise && !booting && !loadError && (
+              {!alreadyOwns && !booting && !(loadError && provider === 'card') && (
+                <div className="flex justify-center gap-2 mb-3">
+                  {(['card', 'paypal'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setProvider(p)}
+                      className={`rounded-lg px-4 py-1.5 text-xs font-medium transition ${
+                        provider === p
+                          ? 'bg-white/15 text-white'
+                          : 'border border-gray-700 bg-transparent text-gray-400 hover:bg-white/5'
+                      }`}
+                    >
+                      {p === 'card' ? 'Card' : 'PayPal'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {provider === 'card' && clientSecret && stripePromise && !booting && !loadError && (
                 <Elements
                   stripe={stripePromise}
                   options={{
@@ -281,6 +312,20 @@ export function ContentPurchaseModal({
                     }}
                   />
                 </Elements>
+              )}
+
+              {provider === 'paypal' && !alreadyOwns && !booting && (
+                <PayPalCheckoutButton
+                  createOrderEndpoint="/api/payments/create-intent"
+                  createOrderPayload={{ content_id: contentId, content_type: contentType, price, currency }}
+                  currency={currency}
+                  onCaptured={() => {
+                    setSuccess(true);
+                    onPurchaseSuccess?.();
+                    setTimeout(() => onClose(), 2000);
+                  }}
+                  onError={setFormError}
+                />
               )}
 
               {formError && (

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { stripe } from '@/src/lib/stripe';
+import { PLATFORM_FEE_DECIMAL } from '@/src/lib/platform-fees';
+import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,6 +38,29 @@ export async function POST(request: NextRequest) {
     if (session.status !== 'active') return NextResponse.json({ error: 'This session has ended' }, { status: 410 });
     if (tipAmount < Number(session.minimum_tip_amount || 1)) {
       return NextResponse.json({ error: `Minimum tip is ${session.minimum_tip_amount}` }, { status: 400 });
+    }
+
+    if (String(body.provider) === 'paypal') {
+      const platformFee = Math.round(tipAmount * PLATFORM_FEE_DECIMAL * 100) / 100;
+      const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
+      const { paypalOrderId } = await createPayPalPendingCharge({
+        chargeType: 'request_room_tip',
+        creatorId: session.creator_id,
+        payerId: null,
+        amount: tipAmount,
+        currency: 'USD',
+        platformFee,
+        creatorEarnings,
+        metadata: {
+          session_id: session.id,
+          song_request: songRequest,
+          tipper_name: tipperName,
+          lead_email: leadEmail,
+          gdpr_consent: gdprConsent,
+        },
+        description: `Request Room tip - ${songRequest}`,
+      });
+      return NextResponse.json({ provider: 'paypal', paypalOrderId });
     }
 
     const amountMinor = Math.round(tipAmount * 100);

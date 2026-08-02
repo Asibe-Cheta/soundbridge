@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import { CREATOR_SHARE_DECIMAL, PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
 
 /** Stripe server SDK requires Node; avoids edge/runtime HTML error pages on failure. */
 export const runtime = 'nodejs';
@@ -89,13 +90,13 @@ export async function POST(request: NextRequest) {
     }
 
     const raw = await request.text();
-    let parsed: { content_id?: string; content_type?: string; price?: number; currency?: string };
+    let parsed: { content_id?: string; content_type?: string; price?: number; currency?: string; provider?: string };
     try {
       parsed = raw ? (JSON.parse(raw) as typeof parsed) : {};
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders });
     }
-    const { content_id, content_type, price, currency } = parsed;
+    const { content_id, content_type, price, currency, provider } = parsed;
 
     if (!content_id || !content_type || price === undefined || !currency) {
       return NextResponse.json(
@@ -227,6 +228,24 @@ export async function POST(request: NextRequest) {
     // 15% platform / 85% creator (MOBILE_PRICING_MODEL_UPDATE.md)
     const platformFee = Math.round(dbPrice * PLATFORM_FEE_DECIMAL * 100) / 100;
     const creatorEarnings = Math.round(dbPrice * CREATOR_SHARE_DECIMAL * 100) / 100;
+
+    if (provider === 'paypal') {
+      const { paypalOrderId } = await createPayPalPendingCharge({
+        chargeType: 'content_purchase',
+        creatorId: creatorId || '',
+        payerId: user.id,
+        amount: dbPrice,
+        currency: dbCurrency,
+        platformFee,
+        creatorEarnings,
+        metadata: { content_id, content_type },
+        description: `Purchase: ${content.title || 'Content'}`,
+      });
+      return NextResponse.json(
+        { success: true, provider: 'paypal', paypalOrderId },
+        { headers: corsHeaders }
+      );
+    }
 
     // Create Stripe Payment Intent
     if (!stripe) {

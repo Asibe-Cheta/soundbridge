@@ -12,6 +12,7 @@ import { isCommunityTipPromptDismissed } from '@/src/lib/community-join-prompt-s
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { TipRoomOwnerPanel } from '@/src/components/creator/TipRoomOwnerPanel';
+import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 
 const PRESETS = [1, 5, 10] as const;
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
@@ -95,6 +96,7 @@ export function TipRoomClient({
   joinCommunityUrl,
 }: TipRoomClientProps) {
   const [tipAmount, setTipAmount] = useState(1);
+  const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bootingPi, setBootingPi] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,23 +278,50 @@ export function TipRoomClient({
               ))}
             </div>
 
+            <div className="flex justify-center gap-2">
+              {(['card', 'paypal'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setProvider(p)}
+                  className={`rounded-lg px-4 py-1.5 text-xs font-medium transition ${
+                    provider === p
+                      ? 'bg-white/15 text-white'
+                      : 'border border-white/10 bg-transparent text-gray-400 hover:bg-white/5'
+                  }`}
+                >
+                  {p === 'card' ? 'Card' : 'PayPal'}
+                </button>
+              ))}
+            </div>
+
             {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-            <button
-              type="button"
-              disabled={bootingPi}
-              onClick={() => void startPayment()}
-              className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3.5 text-lg font-semibold shadow-lg shadow-rose-900/30 disabled:opacity-50"
-            >
-              {bootingPi ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Preparing…
-                </span>
-              ) : (
-                `Pay ${amountLabel}`
-              )}
-            </button>
+            {provider === 'card' ? (
+              <button
+                type="button"
+                disabled={bootingPi}
+                onClick={() => void startPayment()}
+                className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3.5 text-lg font-semibold shadow-lg shadow-rose-900/30 disabled:opacity-50"
+              >
+                {bootingPi ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Preparing…
+                  </span>
+                ) : (
+                  `Pay ${amountLabel}`
+                )}
+              </button>
+            ) : (
+              <PayPalCheckoutButton
+                createOrderEndpoint="/api/payments/tip-room-tip"
+                createOrderPayload={{ creatorId, amount: tipAmount }}
+                currency="GBP"
+                onCaptured={() => void onPaymentSuccess()}
+                onError={setError}
+              />
+            )}
           </div>
         ) : stripeJs ? (
           <Elements stripe={stripeJs} options={{ clientSecret, appearance: { theme: 'night' } }}>

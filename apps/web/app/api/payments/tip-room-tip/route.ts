@@ -9,6 +9,7 @@ import {
 } from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 import { createServerClient } from '@/src/lib/supabase';
+import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
 
 const TIP_ROOM_CURRENCY = 'gbp';
 const STRIPE_MIN_GBP = 0.3;
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       creatorId?: string;
       amount?: number;
       email?: string;
+      provider?: string;
     } | null;
 
     if (!body?.creatorId?.trim()) {
@@ -85,6 +87,25 @@ export async function POST(request: NextRequest) {
 
     const platformFee = Math.round(tipAmount * PLATFORM_FEE_DECIMAL * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
+
+    if (body.provider === 'paypal') {
+      const { paypalOrderId } = await createPayPalPendingCharge({
+        chargeType: 'tip_room',
+        creatorId,
+        payerId: null,
+        amount: tipAmount,
+        currency: 'GBP',
+        platformFee,
+        creatorEarnings,
+        metadata: { guest_email: email },
+        description: `Tip Room tip to creator ${creatorId}`,
+      });
+      return NextResponse.json(
+        { success: true, provider: 'paypal', paypalOrderId, currency: 'GBP', platformFee, creatorEarnings },
+        { headers: corsHeaders },
+      );
+    }
+
     const amountMinor = stripeAmountInMinorUnits(tipAmount);
 
     const { data: creatorBank } = await supabase
