@@ -13,6 +13,7 @@ import {
   getReferralCodeFromMetadata,
   processPartnerAttributionForAuthUser,
 } from '@/src/lib/partner-referrals';
+import { COMMUNITY_ENTRY_CREATOR_ID_COOKIE } from '@/src/lib/community-entry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +41,8 @@ export async function GET(request: NextRequest) {
       cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value?.trim().toLowerCase() || null;
     const signupSourceCookie =
       cookieStore.get(PARTNER_SOURCE_COOKIE)?.value?.trim().toLowerCase() || null;
+    const fanPageCreatorIdCookie =
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() || null;
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -169,6 +172,7 @@ export async function GET(request: NextRequest) {
             await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
               referralCode: referralCodeCookie,
               source: signupSourceCookie,
+              fanPageCreatorId: fanPageCreatorIdCookie,
             });
             
             // Wait a moment for profile to be committed, then check onboarding status

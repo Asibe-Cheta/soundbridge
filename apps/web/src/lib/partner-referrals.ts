@@ -81,6 +81,14 @@ type PartnerAttributionInput = {
   metadata?: Record<string, unknown> | null;
   referralCode?: string | null;
   source?: string | null;
+  /**
+   * Last-visited-fan-page signal (UNIFY_FAN_PAGE_AND_REF.MD) — the creator id from the
+   * existing community-entry cookie (see src/lib/community-entry.ts), read at the same
+   * signup chokepoints as `referralCode`. Only used when no explicit `referralCode` is
+   * present; the RPC resolves whether that creator is a designated Partner and applies
+   * the same commission-attribution logic as the ?ref= flow, or does nothing if not.
+   */
+  fanPageCreatorId?: string | null;
 };
 
 function normalizeText(value: unknown): string | null {
@@ -175,12 +183,17 @@ export async function processPartnerAttribution(
   const metadata = input.metadata ?? {};
   const referralCode = normalizeText(input.referralCode) || getReferralCodeFromMetadata(metadata);
   const source = normalizeText(input.source) || getSignupSourceFromMetadata(metadata);
+  const fanPageCreatorId = input.fanPageCreatorId?.trim() || null;
 
-  if (referralCode) {
+  if (referralCode || fanPageCreatorId) {
     // Prefer RPC (stamps profiles.referred_by_code + referral_signups when partner exists).
+    // Explicit referralCode always takes priority — the RPC only falls back to
+    // fanPageCreatorId (and only credits it if that creator is a designated Partner)
+    // when referralCode is absent, so a signup is never double-attributed.
     const { error } = await supabase.rpc('record_referral_signup', {
       p_referred_user_id: input.userId,
       p_referral_code: referralCode,
+      p_fan_page_creator_id: fanPageCreatorId,
     });
     if (error) {
       console.error('[partner-referrals] record_referral_signup failed:', error.message);
@@ -224,7 +237,7 @@ export async function processPartnerAttribution(
 export async function processPartnerAttributionForAuthUser(
   supabase: SupabaseClient,
   user: Pick<User, 'id' | 'email' | 'user_metadata'>,
-  fallback?: { referralCode?: string | null; source?: string | null },
+  fallback?: { referralCode?: string | null; source?: string | null; fanPageCreatorId?: string | null },
 ) {
   await processPartnerAttribution(supabase, {
     userId: user.id,
@@ -232,6 +245,7 @@ export async function processPartnerAttributionForAuthUser(
     metadata: user.user_metadata as Record<string, unknown>,
     referralCode: fallback?.referralCode,
     source: fallback?.source,
+    fanPageCreatorId: fallback?.fanPageCreatorId,
   });
 }
 

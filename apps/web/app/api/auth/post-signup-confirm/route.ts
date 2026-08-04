@@ -8,6 +8,7 @@ import {
   getReferralCodeFromMetadata,
   processPartnerAttributionForAuthUser,
 } from '@/src/lib/partner-referrals';
+import { COMMUNITY_ENTRY_CREATOR_ID_COOKIE } from '@/src/lib/community-entry';
 
 /**
  * Runs once, right after a client-side supabase.auth.verifyOtp({ type: 'signup' })
@@ -55,6 +56,8 @@ export async function POST() {
       cookieStore.get(PARTNER_REFERRAL_COOKIE)?.value?.trim().toLowerCase() || null;
     const signupSourceCookie =
       cookieStore.get(PARTNER_SOURCE_COOKIE)?.value?.trim().toLowerCase() || null;
+    const fanPageCreatorIdCookie =
+      cookieStore.get(COMMUNITY_ENTRY_CREATOR_ID_COOKIE)?.value?.trim() || null;
 
     try {
       const { data: existingProfile } = await supabase
@@ -94,6 +97,7 @@ export async function POST() {
       await processPartnerAttributionForAuthUser(createServiceClient(), user, {
         referralCode: referralCodeCookie,
         source: signupSourceCookie,
+        fanPageCreatorId: fanPageCreatorIdCookie,
       });
 
       // Give the insert a moment to commit, then check onboarding status with retries.
