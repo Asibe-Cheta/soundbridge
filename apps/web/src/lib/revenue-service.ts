@@ -1,6 +1,5 @@
 import { createBrowserClient } from './supabase';
 import { mergeCreatorRevenueSummaryWithWallet } from './creator-revenue-summary-merge';
-import { isFincraCurrency } from './fincra-currencies';
 
 /** Map wallet ledger rows to Revenue dashboard list (tips/sales hit user_wallets first). */
 function mapWalletRowToRevenueTransaction(w: Record<string, unknown>): RevenueTransaction {
@@ -121,20 +120,28 @@ export class RevenueService {
   /**
    * Get creator's bank account information
    */
-  async getBankAccount(userId: string): Promise<CreatorBankAccount | null> {
+  /**
+   * Goes through GET /api/user/revenue/bank-account rather than selecting
+   * creator_bank_accounts directly — that route strips account_number_encrypted/
+   * routing_number_encrypted and returns only a masked last-4, so the real (now
+   * encrypted) value is never sent to the browser. `userId` is unused now (the
+   * route derives the user from the session cookie) but kept so existing callers
+   * don't need to change.
+   */
+  async getBankAccount(_userId: string): Promise<CreatorBankAccount | null> {
     try {
-      const { data, error } = await this.supabase
-        .from('creator_bank_accounts')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      const response = await fetch('/api/user/revenue/bank-account', { credentials: 'include' });
+      const result = await response.json().catch(() => ({}));
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error fetching bank account:', error);
+      if (!response.ok || !result?.has_account) {
         return null;
       }
 
-      return data || null;
+      return {
+        ...result,
+        account_number_encrypted: '',
+        routing_number_encrypted: '',
+      } as CreatorBankAccount;
     } catch (error) {
       console.error('Error in getBankAccount:', error);
       return null;
@@ -142,35 +149,28 @@ export class RevenueService {
   }
 
   /**
-   * Add or update bank account information
+   * Add or update bank account information.
+   *
+   * Goes through POST /api/user/revenue/bank-account rather than writing to
+   * creator_bank_accounts directly from the browser — encrypting account/routing
+   * numbers (src/lib/encryption.ts) needs the server-only TOTP_ENCRYPTION_KEY, which
+   * can never be shipped to client code. This was previously a direct client-side
+   * upsert that stored plaintext (see WEB_TEAM_WITHDRAWAL_VERIFICATION_BUG_RESPONSE.MD);
+   * `userId` is unused now (the API route derives the user from the session cookie)
+   * but kept in the signature so existing callers don't need to change.
    */
-  async setBankAccount(userId: string, bankData: BankAccountFormData): Promise<{ success: boolean; error?: string }> {
+  async setBankAccount(_userId: string, bankData: BankAccountFormData & Record<string, unknown>): Promise<{ success: boolean; error?: string }> {
     try {
-      // In a real implementation, you would encrypt the account details here
-      // For now, we'll store them as-is (you should implement encryption)
-      
-      // Fincra rail (NGN/GHS/KES): auto-verify on creation; live name match is separate.
-      const isFincraRail = isFincraCurrency(bankData.currency);
-      const { data, error } = await this.supabase
-        .from('creator_bank_accounts')
-        .upsert({
-          user_id: userId,
-          account_holder_name: bankData.account_holder_name,
-          bank_name: bankData.bank_name,
-          account_number_encrypted: bankData.account_number, // TODO: Encrypt this
-          routing_number_encrypted: bankData.routing_number, // TODO: Encrypt this
-          account_type: bankData.account_type,
-          currency: bankData.currency,
-          verification_status: isFincraRail ? 'verified' : 'pending',
-          is_verified: isFincraRail
-        });
+      const response = await fetch('/api/user/revenue/bank-account', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bankData),
+      });
 
-      if (error) {
-        console.error('Error setting bank account:', error);
-        return {
-          success: false,
-          error: error.message
-        };
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return { success: false, error: result?.error || 'Failed to save bank account information' };
       }
 
       return { success: true };

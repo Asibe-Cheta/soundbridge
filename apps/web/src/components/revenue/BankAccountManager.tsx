@@ -6,7 +6,7 @@ import { walletService } from '../../lib/wallet-service';
 import { countryCodeForFincraCurrency, isFincraCurrency } from '../../lib/fincra-currencies';
 import { CountryAwareBankForm } from '../wallet/CountryAwareBankForm';
 import type { CreatorBankAccount, BankAccountFormData } from '../../lib/types/revenue';
-import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Eye, EyeOff, Wallet, RefreshCw, Info } from 'lucide-react';
+import { Building2, CreditCard, Shield, CheckCircle, AlertCircle, Edit, Save, X, Loader2, Wallet, RefreshCw, Info } from 'lucide-react';
 
 interface BankAccountManagerProps {
   userId: string;
@@ -19,7 +19,6 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [showWalletInfo, setShowWalletInfo] = useState(false);
   const [supportedByStripe, setSupportedByStripe] = useState<boolean | null>(null);
@@ -58,11 +57,14 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
       setWalletBalance(balance);
       
       if (account) {
+        // account_number/routing_number start blank — the server never sends the real
+        // (encrypted) value to the browser, so "editing" means re-entering them, same as
+        // any other credential field. See CreatorBankAccount.account_number_masked for display.
         setFormData({
           account_holder_name: account.account_holder_name,
           bank_name: account.bank_name,
-          account_number: account.account_number_encrypted, // In real app, decrypt this
-          routing_number: account.routing_number_encrypted, // In real app, decrypt this
+          account_number: '',
+          routing_number: '',
           account_type: account.account_type,
           currency: account.currency
         });
@@ -274,13 +276,14 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
     setError(null);
     setSuccess(null);
     
-    // Reset form data to current account data
+    // Reset form data to current account data (account_number/routing_number stay
+    // blank — the real value never reaches the browser, see loadBankAccount)
     if (bankAccount) {
       setFormData({
         account_holder_name: bankAccount.account_holder_name,
         bank_name: bankAccount.bank_name,
-        account_number: bankAccount.account_number_encrypted,
-        routing_number: bankAccount.routing_number_encrypted,
+        account_number: '',
+        routing_number: '',
         account_type: bankAccount.account_type,
         currency: bankAccount.currency
       });
@@ -618,20 +621,14 @@ export function BankAccountManager({ userId }: BankAccountManagerProps) {
               </div>
                   </div>
 
-                  {/* Account Number (Masked) */}
+                  {/* Account Number (Masked) — the real number never reaches the browser */}
                   <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                     <div>
                       <p className="text-gray-400 text-sm">Account Number</p>
                       <p className="text-white font-medium">
-                        {showAccountDetails ? formData.account_number : `****${formData.account_number.slice(-4)}`}
+                        {bankAccount.account_number_masked || '****'}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setShowAccountDetails(!showAccountDetails)}
-                      className="p-2 text-gray-400 hover:text-white transition-colors"
-                    >
-                      {showAccountDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
                   </div>
 
                   {isFincraAccount && !isEditing && (

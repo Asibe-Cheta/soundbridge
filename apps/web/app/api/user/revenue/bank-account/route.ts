@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import type { BankAccountFormData } from '../../../../../src/lib/types/revenue';
-import { isFincraCurrency } from '@/src/lib/fincra-currencies';
 import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
+import { encryptSecret, decryptIfEncrypted } from '@/src/lib/encryption';
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,13 +50,13 @@ export async function GET(request: NextRequest) {
 
       // Don't return sensitive information like account numbers
       const bankAccount = fallbackData[0];
-      const { account_number_encrypted, routing_number_encrypted, ...safeData } = bankAccount;
+      const { account_number_encrypted, routing_number_encrypted, account_last4, ...safeData } = bankAccount;
+      const last4 = account_last4 || (account_number_encrypted ? decryptIfEncrypted(account_number_encrypted).slice(-4) : null);
       return NextResponse.json({
         ...safeData,
         has_account: true,
         // Only show last 4 digits of account number
-        account_number_masked: account_number_encrypted ? 
-          `****${account_number_encrypted.slice(-4)}` : null
+        account_number_masked: last4 ? `****${last4}` : null
       });
     }
 
@@ -71,13 +71,13 @@ export async function GET(request: NextRequest) {
 
     // Don't return sensitive information like account numbers
     const bankAccount = data[0];
-    const { account_number_encrypted, routing_number_encrypted, ...safeData } = bankAccount;
+    const { account_number_encrypted, routing_number_encrypted, account_last4, ...safeData } = bankAccount;
+    const last4 = account_last4 || (account_number_encrypted ? decryptIfEncrypted(account_number_encrypted).slice(-4) : null);
     return NextResponse.json({
       ...safeData,
       has_account: true,
       // Only show last 4 digits of account number
-      account_number_masked: account_number_encrypted ? 
-        `****${account_number_encrypted.slice(-4)}` : null
+      account_number_masked: last4 ? `****${last4}` : null
     });
     
   } catch (error) {
@@ -247,20 +247,24 @@ export async function POST(request: NextRequest) {
       routingIdentifier = bankData.iban;
     }
     
-    // Fincra-rail currencies (NGN/GHS/KES): auto-verify on creation; live name match is separate.
-    const isFincraRail = isFincraCurrency(currency);
+    // Fincra-rail currencies (NGN/GHS/KES) auto-verify — enforced by the
+    // apply_fincra_rail_auto_verification DB trigger, not here, so every client
+    // (web, mobile, future) gets the same behavior with nothing to replicate.
+    const rawAccountNumber = String(bankData.account_number);
+    const rawRoutingIdentifier = routingIdentifier || bankData.routing_number || '';
     const { data, error } = await supabase
       .from('creator_bank_accounts')
       .upsert({
         user_id: user.id,
         account_holder_name: bankData.account_holder_name,
         bank_name: bankData.bank_name,
-        account_number_encrypted: bankData.account_number, // TODO: Encrypt this
-        routing_number_encrypted: routingIdentifier || bankData.routing_number || '', // TODO: Encrypt this
+        account_number_encrypted: encryptSecret(rawAccountNumber),
+        routing_number_encrypted: rawRoutingIdentifier ? encryptSecret(rawRoutingIdentifier) : '',
+        account_last4: rawAccountNumber.slice(-4),
         account_type: bankData.account_type || 'checking',
         currency: currency,
-        verification_status: isFincraRail ? 'verified' : 'pending',
-        is_verified: isFincraRail,
+        verification_status: 'pending',
+        is_verified: false,
         verification_attempts: 0
       });
 

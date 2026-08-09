@@ -219,6 +219,33 @@ export function checkEncryptionConfig(): {
   }
 }
 
+/** True if a stored value looks like our iv:authTag:hex encrypted format. */
+export function looksEncrypted(value: string | null | undefined): boolean {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed || !trimmed.includes(':')) return false;
+  const parts = trimmed.split(':');
+  return parts.length === 3 && parts.every((p) => /^[0-9a-fA-F]+$/.test(p));
+}
+
+/**
+ * Read a stored secret that may be legacy plaintext or encrypted (iv:authTag:hex):
+ * decrypts if encrypted, returns as-is otherwise. Use this instead of re-implementing
+ * the encrypted/plaintext check at each call site — creator_bank_accounts had this
+ * duplicated across three files, which is exactly how it drifted out of sync (see
+ * WEB_TEAM_WITHDRAWAL_VERIFICATION_BUG_RESPONSE.MD).
+ */
+export function decryptIfEncrypted(stored: string | null | undefined): string {
+  const v = (stored ?? '').trim();
+  if (!v) return '';
+  if (!looksEncrypted(v)) return v;
+  try {
+    return decryptSecret(v);
+  } catch (e) {
+    console.error('decryptIfEncrypted: decryption failed:', e);
+    throw e;
+  }
+}
+
 // Type exports for TypeScript
 export type EncryptedSecret = string; // Format: "iv:authTag:encrypted"
 export type PlaintextSecret = string;

@@ -3,8 +3,11 @@ export interface CreatorBankAccount {
   user_id: string;
   account_holder_name: string;
   bank_name: string;
+  /** Always empty client-side — the API never sends the real value to the browser. Use account_number_masked for display. */
   account_number_encrypted: string;
   routing_number_encrypted: string;
+  /** e.g. "****9161" — safe to display; the real number never reaches the client. */
+  account_number_masked?: string | null;
   account_type: string;
   currency: string;
   stripe_account_id?: string;
