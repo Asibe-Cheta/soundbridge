@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
+import { sendPayoutReceiptEmail } from '@/src/lib/payouts/send-payout-receipt-email';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 
 const corsHeaders = {
@@ -106,49 +107,57 @@ export async function POST(request: NextRequest) {
           { status: 500, headers: corsHeaders }
         );
       }
-    }
 
-    try {
-      const { data: creatorProfile } = await supabase
-        .from('profiles')
-        .select('email, display_name')
-        .eq('id', pr.creator_id)
-        .maybeSingle();
+      // Fincra-rail payouts get the full PDF receipt (fee breakdown, local-currency amount).
+      // No fincraTransferId here — this is a manual/off-platform payment, not a real transfer.
+      const sentReceipt = await sendPayoutReceiptEmail(supabase, pr.id, null);
 
-      const email = creatorProfile?.email;
-      if (email && pr.status !== 'completed') {
-        const currency = walletCurrency;
-        const symbol =
-          currency === 'NGN'
-            ? '₦'
-            : currency === 'GBP'
-              ? '£'
-              : currency === 'EUR'
-                ? '€'
-                : currency === 'GHS'
-                  ? '₵'
-                  : currency === 'KES'
-                    ? 'KSh'
-                    : '$';
-        const amount = Number(pr.amount ?? 0);
-        const displayName = creatorProfile?.display_name || 'Creator';
-        const html = `
-          <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.5;">
-            <h2 style="margin: 0 0 10px;">Your SoundBridge payout has been recorded</h2>
-            <p style="margin: 0 0 8px;">Hi <b>${displayName}</b>,</p>
-            <p style="margin: 0 0 8px;">A payout of <b>${symbol}${amount.toFixed(2)}</b> has been marked as completed on your account.</p>
-            <p style="margin: 0 0 8px; color: #555; font-size: 13px;">Your wallet balance has been updated. If you received funds via an external transfer, no further action is needed.</p>
-            <p style="margin-top: 16px; color: #666; font-size: 12px;">Support: contact@soundbridge.live</p>
-          </div>
-        `;
-        await SendGridService.sendHtmlEmail(
-          email,
-          `SoundBridge: payout of ${symbol}${amount.toFixed(2)} recorded`,
-          html,
-        );
+      if (!sentReceipt) {
+        // Not a Fincra-rail payout (or the receipt lookup failed) — fall back to the
+        // simple completion notice this endpoint has always sent.
+        try {
+          const { data: creatorProfile } = await supabase
+            .from('profiles')
+            .select('email, display_name')
+            .eq('id', pr.creator_id)
+            .maybeSingle();
+
+          const email = creatorProfile?.email;
+          if (email) {
+            const currency = walletCurrency;
+            const symbol =
+              currency === 'NGN'
+                ? '₦'
+                : currency === 'GBP'
+                  ? '£'
+                  : currency === 'EUR'
+                    ? '€'
+                    : currency === 'GHS'
+                      ? '₵'
+                      : currency === 'KES'
+                        ? 'KSh'
+                        : '$';
+            const amount = Number(pr.amount ?? 0);
+            const displayName = creatorProfile?.display_name || 'Creator';
+            const html = `
+              <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.5;">
+                <h2 style="margin: 0 0 10px;">Your SoundBridge payout has been recorded</h2>
+                <p style="margin: 0 0 8px;">Hi <b>${displayName}</b>,</p>
+                <p style="margin: 0 0 8px;">A payout of <b>${symbol}${amount.toFixed(2)}</b> has been marked as completed on your account.</p>
+                <p style="margin: 0 0 8px; color: #555; font-size: 13px;">Your wallet balance has been updated. If you received funds via an external transfer, no further action is needed.</p>
+                <p style="margin-top: 16px; color: #666; font-size: 12px;">Support: contact@soundbridge.live</p>
+              </div>
+            `;
+            await SendGridService.sendHtmlEmail(
+              email,
+              `SoundBridge: payout of ${symbol}${amount.toFixed(2)} recorded`,
+              html,
+            );
+          }
+        } catch (emailErr) {
+          console.error('Manual complete creator email failed:', emailErr);
+        }
       }
-    } catch (emailErr) {
-      console.error('Manual complete creator email failed:', emailErr);
     }
 
     return NextResponse.json(

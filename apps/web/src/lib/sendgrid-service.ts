@@ -666,6 +666,13 @@ export class SendGridService {
       categories?: string[];
       headers?: Record<string, string>;
       text?: string;
+      /** e.g. a PDF receipt — content must be base64-encoded. */
+      attachments?: Array<{
+        content: string;
+        filename: string;
+        type: string;
+        disposition?: 'attachment' | 'inline';
+      }>;
     }
   ): Promise<boolean> {
     try {
@@ -687,6 +694,16 @@ export class SendGridService {
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
           ...(options?.headers || {}),
         },
+        ...(options?.attachments?.length
+          ? {
+              attachments: options.attachments.map((a) => ({
+                content: a.content,
+                filename: a.filename,
+                type: a.type,
+                disposition: a.disposition ?? 'attachment',
+              })),
+            }
+          : {}),
       });
       return true;
     } catch (error) {

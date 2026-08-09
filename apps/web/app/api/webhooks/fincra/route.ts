@@ -8,6 +8,7 @@ import {
   markPayoutRequestsFailed,
   normalizeFincraPayoutStatus,
 } from '@/src/lib/payouts/fincra-payout-completion';
+import { sendPayoutReceiptEmail } from '@/src/lib/payouts/send-payout-receipt-email';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -154,6 +155,12 @@ export async function POST(request: NextRequest) {
         .from('payouts')
         .update({ status: 'completed', completed_at: completedAt, failure_reason: null })
         .eq('customer_reference', reference);
+    }
+
+    // Withdrawal receipt (PDF + fee breakdown) for each payout this webhook just completed.
+    // Never blocks the webhook response — a receipt failure shouldn't cause Fincra to retry.
+    for (const pr of payoutRows) {
+      await sendPayoutReceiptEmail(supabase, pr.id, primaryReference);
     }
   } else if (normalized === 'failed') {
     await markPayoutRequestsFailed(supabase, references, failureReason);
