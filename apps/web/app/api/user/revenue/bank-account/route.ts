@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import type { BankAccountFormData } from '../../../../../src/lib/types/revenue';
 import { syncFincraWalletWithdrawalMethodsFromCreatorBank } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 import { encryptSecret, decryptIfEncrypted } from '@/src/lib/encryption';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Get the current user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // getSupabaseRouteClient accepts either a session cookie (web) or an
+    // Authorization: Bearer <token> header (mobile) — createRouteHandlerClient
+    // only supported cookies, which is why mobile has its own direct-to-Supabase
+    // write/read path instead of calling this route (see
+    // WEB_TEAM_BANK_ACCOUNT_ENCRYPTION_MOBILE_RESPONSE.MD).
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -91,10 +91,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Get the current user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -224,9 +221,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // TODO: In production, encrypt the account details
-    // For now, we'll store them as-is (you should implement encryption)
-    
     // Prepare routing/bank identifier based on country
     // Store country-specific identifier in routing_number_encrypted field
     // (This field is used generically for routing_number, bank_code, swift_code, branch_code, etc.)
