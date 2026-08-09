@@ -63,15 +63,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // MVP admin alert: notify admin immediately about the new payout request.
-    // Never fail the payout request if email sending fails.
+    // Shared lookup for both emails below. Never fail the payout request over this —
+    // the request itself (above) already succeeded, so any error here just means no emails.
+    let profile: { display_name?: string | null; email?: string | null } | null = null;
     try {
-      const { data: profile } = await service
+      const result = await service
         .from('profiles')
-        .select('display_name')
+        .select('display_name, email')
         .eq('id', user.id)
         .maybeSingle();
+      profile = result.data;
+    } catch (e) {
+      console.error('Payout request: profile lookup for emails failed:', e);
+    }
 
+    const displayName = profile?.display_name || 'Creator';
+    const symbol =
+      currency === 'GBP' ? '£' :
+      currency === 'EUR' ? '€' :
+      currency === 'NGN' ? '₦' :
+      currency === 'GHS' ? '₵' :
+      currency === 'KES' ? 'KSh' :
+      '$';
+
+    // MVP admin alert: notify admin immediately about the new payout request.
+    try {
       const { data: bank } = await service
         .from('creator_bank_accounts')
         .select('currency, bank_name')
@@ -86,17 +102,7 @@ export async function POST(request: NextRequest) {
         bankCurrency === 'KES' ? 'Kenya' :
         bankCurrency;
 
-      const symbol =
-        currency === 'GBP' ? '£' :
-        currency === 'EUR' ? '€' :
-        currency === 'NGN' ? '₦' :
-        currency === 'GHS' ? '₵' :
-        currency === 'KES' ? 'KSh' :
-        '$';
-
-      const displayName = profile?.display_name || 'Creator';
       const adminUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.soundbridge.live'}/admin/payouts`;
-
       const requestId = (data as { request_id?: string }).request_id;
 
       const html = `
@@ -120,6 +126,30 @@ export async function POST(request: NextRequest) {
       );
     } catch (e) {
       console.error('Admin payout alert email failed:', e);
+    }
+
+    // Creator-facing confirmation: withdrawal received, sets expectations up front so
+    // this doesn't need a manual one-off email per request.
+    try {
+      if (profile?.email) {
+        const html = `
+          <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.5;">
+            <h2 style="margin: 0 0 10px;">Your SoundBridge withdrawal request</h2>
+            <p style="margin: 0 0 8px;">Hi ${displayName},</p>
+            <p style="margin: 0 0 8px;">We've received your withdrawal request for <b>${symbol}${Number(amount).toFixed(2)}</b> and it's currently being processed.</p>
+            <p style="margin: 0 0 8px;">Please allow up to <b>4–5 working days</b> for the funds to arrive. We'll send a confirmation email once the payment has been sent.</p>
+            <p style="margin-top: 16px; color: #666; font-size: 12px;">Support: contact@soundbridge.live</p>
+          </div>
+        `;
+
+        await SendGridService.sendHtmlEmail(
+          profile.email,
+          'Your SoundBridge withdrawal request',
+          html
+        );
+      }
+    } catch (e) {
+      console.error('Creator withdrawal-received email failed:', e);
     }
 
     return NextResponse.json({
