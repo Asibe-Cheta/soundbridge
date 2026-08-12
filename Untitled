@@ -1,0 +1,16 @@
+FULL CURSOR PROMPT — PayPal as a Payment Option for One-Time Payments
+Important — check existing code first: Before building anything, inspect the existing Stripe Connect integration, specifically how payments are currently processed for tipping (Tip Room, Live Request Room, in-player tipping), event ticket purchases, and any audio material/merchandise purchases. Check whether Stripe Checkout is already configured to support PayPal as a payment method within the existing Stripe integration (Stripe supports this natively in many regions), since this may significantly reduce the scope of this work versus building a separate, standalone PayPal SDK integration.
+What to build:
+Add PayPal as an available payment method for all existing one-time payment flows: Tip Room tips, Live Request Room tips, in-player music tipping, live audio session tips, event ticket purchases, and audio material/merchandise purchases. Subscriptions are explicitly out of scope for this prompt.
+Approach, in priority order:
+First, check if enabling PayPal within the existing Stripe Checkout configuration is sufficient to cover this requirement. If so, this is a configuration change plus checkout UI update, not a new integration, implement it this way.
+Only if Stripe's native PayPal support is unavailable or insufficient for the required flows, build a separate PayPal integration (using PayPal's official SDK) as a genuinely separate payment option alongside Stripe at checkout.
+UI requirement:
+Wherever a payment method selection currently appears (or where Stripe Checkout is currently embedded) across all the flows listed above, ensure PayPal appears as a selectable option alongside existing card payment methods, using PayPal's standard branded button/UI component, not a custom-built equivalent.
+Scope boundaries:
+This prompt covers incoming, one-time payments only (tips, ticket purchases, material purchases)
+Do NOT include subscription billing anywhere in this prompt
+Do NOT change creator payout methods or payout architecture as part of this prompt, this only affects how a payer chooses to pay, not how creators receive funds
+General rules:
+Follow existing checkout flow styling and component structure throughout
+Ensure transaction records store which payment method was used (Stripe card vs PayPal), matching existing transaction schema conventions, for accurate reconciliation and reporting

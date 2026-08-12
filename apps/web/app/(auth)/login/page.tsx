@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { createClient } from '@supabase/supabase-js';
 import { OAUTH_DUPLICATE_USER_MESSAGE } from '@/src/lib/oauth-duplicate-guard';
+import { userMessageForSupabaseAuthError } from '@/src/lib/supabase-auth-user-message';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -233,7 +234,7 @@ function LoginContent() {
       const { data, error: signInError } = await signIn(formData.email, formData.password);
 
       if (signInError) {
-        setError(signInError.message);
+        setError(userMessageForSupabaseAuthError(signInError.message, signInError.code ?? signInError.status));
         setIsLoading(false);
         return;
       }
@@ -341,7 +342,8 @@ function LoginContent() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      const message = error instanceof Error ? error.message : undefined;
+      setError(message ? userMessageForSupabaseAuthError(message) : 'An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
   };
@@ -481,7 +483,7 @@ function LoginContent() {
     try {
       const { error } = await signInWithProvider(provider, { next: nextAfterAuth });
       if (error) {
-        setError(error.message);
+        setError(userMessageForSupabaseAuthError(error.message, error.code ?? error.status));
       }
     } catch (error) {
       console.error(`${provider} login error:`, error);

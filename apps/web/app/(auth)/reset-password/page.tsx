@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { userMessageForSupabaseAuthError } from '@/src/lib/supabase-auth-user-message';
 import Image from 'next/image';
 
 /**
@@ -38,7 +39,7 @@ function ResetPasswordVerifyInner() {
           const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
           if (cancelled) return;
           if (exErr) {
-            setError(exErr.message);
+            setError(userMessageForSupabaseAuthError(exErr.message, exErr.code ?? exErr.status));
             setWorking(false);
             return;
           }
@@ -60,7 +61,8 @@ function ResetPasswordVerifyInner() {
         router.replace('/forgot-password');
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Verification failed');
+          const message = e instanceof Error ? e.message : undefined;
+          setError(message ? userMessageForSupabaseAuthError(message) : 'Verification failed');
           setWorking(false);
         }
       }

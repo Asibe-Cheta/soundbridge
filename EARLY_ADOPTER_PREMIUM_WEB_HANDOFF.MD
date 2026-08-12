@@ -1,6 +1,8 @@
 # Web Team Handoff — Early Adopter Premium Expiry Conversion
 **From:** Mobile team / Justice  
 **Date:** 2026-06-01  
+**Mobile response (schema + prod status):** `MOBILE_TEAM_EARLY_ADOPTER_PREMIUM_EXPIRY_RESPONSE.MD`  
+**Web status:** ✅ Deployed on Sound Bridge (`aunxdbqukbxyyiusaeqi`) — 102 users granted, expiry **2026-07-01**  
 **Priority:** High — mobile modal is already deployed. It reads `profiles.early_adopter`,
 `profiles.subscription_tier`, and `profiles.subscription_period_end` to decide when to show.
 The DB additions below complete the loop.
@@ -230,16 +232,16 @@ the Upgrade screen).
 
 ---
 
-## Acceptance checklist
+## Acceptance checklist (Sound Bridge production)
 
-- [ ] `early_adopter_conversion` table created
-- [ ] Existing expired early adopters backfilled
-- [ ] Day -7 push notification sends correctly
+- [x] `early_adopter_conversion` table created
+- [x] `profiles` columns + 102 early adopters granted (`premium`, end **2026-07-01**)
+- [ ] Day -7 push notification sends correctly (after Vercel deploy + `CRON_SECRET`)
 - [ ] Day -1 push notification sends correctly  
 - [ ] `subscription_tier` downgraded to `'free'` on expiry day (with Stripe check)
 - [ ] Day +7 push sends to unconverted users
 - [ ] Day +14 push sends to unconverted users
-- [ ] `converted_to_paid` updated via Stripe/RevenueCat webhook
+- [x] `converted_to_paid` wired via Stripe/RevenueCat webhook (code on `main`)
 - [ ] No pushes after day 14
 
 🙏🏾

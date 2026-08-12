@@ -17,6 +17,7 @@ import {
   readPartnerReferralFromClient,
 } from '@/src/lib/partner-referrals';
 import { isMobileBrowser } from '@/src/lib/mobile-platform';
+import { userMessageForSupabaseAuthError } from '@/src/lib/supabase-auth-user-message';
 import Image from 'next/image';
 
 // Loading component for Suspense
@@ -164,7 +165,7 @@ function SignupContent() {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        setError(userMessageForSupabaseAuthError(signUpError.message, signUpError.code ?? signUpError.status));
         setIsLoading(false);
         return;
       }
@@ -221,7 +222,7 @@ function SignupContent() {
     try {
       const { error } = await signInWithProvider(provider, { next: '/dashboard' });
       if (error) {
-        setError(error.message);
+        setError(userMessageForSupabaseAuthError(error.message, error.code ?? error.status));
       }
     } catch (error) {
       console.error(`${provider} login error:`, error);
