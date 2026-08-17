@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { SendGridService } from '@/src/lib/sendgrid-service';
 
 export const SOUND_ACADEMY_SOURCE = 'sound_academy';
 export const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
@@ -137,11 +138,8 @@ async function sendInstitutionalWelcomeEmail(
   expiresAt?: string | null,
   referralLink?: string | null,
 ) {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  if (!apiKey || !email) return;
+  if (!email) return;
 
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'contact@soundbridge.live';
-  const fromName = process.env.SENDGRID_FROM_NAME || 'SoundBridge Team';
   const expiryText = expiresAt
     ? new Date(expiresAt).toLocaleDateString('en-GB', {
         year: 'numeric',
@@ -177,21 +175,10 @@ async function sendInstitutionalWelcomeEmail(
     <p>Justice | SoundBridge</p>
   `;
 
-  await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: { email: fromEmail, name: fromName },
-      personalizations: [{ to: [{ email }] }],
-      subject: 'Your SoundBridge Premium Access is Active',
-      content: [{ type: 'text/html', value: html }],
-    }),
-  }).catch((error) => {
-    console.error('[partner-referrals] institutional welcome email failed:', error);
-  });
+  const sent = await SendGridService.sendHtmlEmail(email, 'Your SoundBridge Premium Access is Active', html);
+  if (!sent) {
+    console.error('[partner-referrals] institutional welcome email failed to send to', email);
+  }
 }
 
 /**

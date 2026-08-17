@@ -46,8 +46,8 @@ export default function LogicChurchJoinPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-950 to-purple-950 px-4 py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-lg">
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-6 shadow-2xl backdrop-blur sm:p-10">
+      <div className="mx-auto w-full max-w-lg animate-fade-in">
+        <div className="animate-slide-up rounded-2xl border border-gray-800 bg-gray-900/70 p-6 shadow-2xl backdrop-blur sm:p-10">
           {/* Logos */}
           <div className="mb-6 flex items-center justify-center gap-4 sm:gap-6">
             <Link href="/">

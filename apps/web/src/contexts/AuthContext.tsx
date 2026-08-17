@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { User, Session } from '@supabase/supabase-js';
 import { createClient } from '@/src/lib/supabase-browser';
 import { ensureSoundAcademyPremiumAccess } from '@/src/lib/partner-referrals';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 export const INSTITUTIONAL_ACCESS_GRANTED_EVENT = 'soundbridge:institutional-access-granted';
 
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [supabase] = useState(() => createClient());
   const soundAcademyGrantInflight = useRef<string | null>(null);
+  const partnerBenefitsCheckInflight = useRef<string | null>(null);
 
   const scheduleSoundAcademyPremiumGrant = (authUser: User) => {
     if (!supabase) return;
@@ -74,6 +76,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => {
         if (soundAcademyGrantInflight.current === authUser.id) {
           soundAcademyGrantInflight.current = null;
+        }
+      });
+  };
+
+  /**
+   * Self-healing check for partner_registrations (e.g. Logic Church) and any
+   * institutional_access grant that's drifted out of sync with
+   * profiles.subscription_tier/status. Goes through a server route (not a
+   * direct client-side supabase call) because partner_registrations/partners
+   * have no RLS policies for the browser's anon-key client to use.
+   */
+  const scheduleEnsurePartnerBenefits = (authUser: User) => {
+    if (partnerBenefitsCheckInflight.current === authUser.id) return;
+    partnerBenefitsCheckInflight.current = authUser.id;
+
+    void fetchWithSupabaseAuth('/api/user/ensure-partner-benefits', { method: 'POST' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        if (data?.changed && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent(INSTITUTIONAL_ACCESS_GRANTED_EVENT));
+        }
+      })
+      .catch((err) => {
+        console.error('[AuthProvider] ensure-partner-benefits check failed:', err);
+      })
+      .finally(() => {
+        if (partnerBenefitsCheckInflight.current === authUser.id) {
+          partnerBenefitsCheckInflight.current = null;
         }
       });
   };
@@ -118,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         event === 'TOKEN_REFRESHED'
       ) {
         scheduleSoundAcademyPremiumGrant(nextSession.user);
+        scheduleEnsurePartnerBenefits(nextSession.user);
       }
     });
 
@@ -152,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(s);
           setUser(s.user);
           scheduleSoundAcademyPremiumGrant(s.user);
+          scheduleEnsurePartnerBenefits(s.user);
         } else {
           const currentPath =
             typeof window !== 'undefined' ? window.location.pathname : '';
@@ -277,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         setError(null);
         scheduleSoundAcademyPremiumGrant(data.user);
+        scheduleEnsurePartnerBenefits(data.user);
       }
 
       return { data, error: null };
