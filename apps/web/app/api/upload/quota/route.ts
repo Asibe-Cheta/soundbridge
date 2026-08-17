@@ -81,6 +81,17 @@ export async function GET(request: NextRequest) {
       (subscription?.tier as string | null | undefined) || normalizedTier,
     );
 
+    console.log('[upload/quota]', {
+      userId: user.id,
+      rpcTier: quota.tier,
+      normalizedTier,
+      profileTier: profile?.subscription_tier ?? null,
+      profileEarlyAdopter: profile?.early_adopter ?? null,
+      profilePeriodEnd: profile?.subscription_period_end ?? null,
+      userSubscriptionTier: subscription?.tier ?? null,
+      effectiveTier,
+    });
+
     if (profile && isEarlyAdopterPremiumGrant(profile)) {
       return NextResponse.json(
         {
