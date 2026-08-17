@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       activated: true,
-      message: "You're all set — your Logic Church benefits are active. Log in to SoundBridge now to see them.",
+      message: "You're all set. Your Logic Church benefits are active, and we've emailed you your referral link. Log in to SoundBridge now to see them.",
     });
   }
 

@@ -158,7 +158,8 @@ async function sendInstitutionalWelcomeEmail(
         : 'Sound Academy';
 
   const referralParagraph = referralLink
-    ? `<p>You also have your own personal referral link, earning you 10% commission on every subscriber who joins through it: <a href="${referralLink}">${referralLink}</a></p>`
+    ? `<p>You also have your own personal referral link, earning you 10% commission on every subscriber who joins through it: <a href="${referralLink}">${referralLink}</a></p>
+       <p>Your fan page link, found in Settings on your profile in the app, works exactly the same way for tracking referrals.</p>`
     : '';
 
   const html = `

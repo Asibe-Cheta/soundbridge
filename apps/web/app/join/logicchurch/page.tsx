@@ -59,13 +59,13 @@ export default function LogicChurchJoinPage() {
                 className="h-auto w-[120px] sm:w-[140px]"
               />
             </Link>
-            <span className="text-2xl font-light text-gray-600">×</span>
+            <span className="text-3xl font-light text-gray-600">×</span>
             <Image
               src="/images/pro-resources/LG.png"
               alt="Logic Church"
-              width={56}
-              height={56}
-              className="h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14"
+              width={110}
+              height={110}
+              className="h-20 w-20 rounded-xl object-cover sm:h-24 sm:w-24"
             />
           </div>
 
@@ -81,7 +81,7 @@ export default function LogicChurchJoinPage() {
             <li className="flex items-start gap-3 rounded-xl border border-purple-500/20 bg-purple-500/10 p-3">
               <span className="mt-0.5 text-lg text-purple-300">✓</span>
               <span className="text-sm text-gray-200">
-                <strong className="text-white">One full year of Premium access</strong> — completely free.
+                <strong className="text-white">One full year of Premium access</strong>, completely free.
               </span>
             </li>
             <li className="flex items-start gap-3 rounded-xl border border-purple-500/20 bg-purple-500/10 p-3">
@@ -92,6 +92,10 @@ export default function LogicChurchJoinPage() {
               </span>
             </li>
           </ul>
+          <p className="mx-auto mt-3 max-w-sm text-center text-xs text-gray-500">
+            We'll email you this link once your account is created. Your fan page link, found in
+            Settings on your profile in the app, works exactly the same way.
+          </p>
 
           {/* Email form */}
           <div className="mt-7">
