@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminAccessDenied, requireAdmin } from '@/src/lib/admin-auth';
 
-const VALID_BADGES = ['abbey_road_institute', 'sound_academy'] as const;
+const VALID_BADGES = ['abbey_road_institute', 'sound_academy', 'logic_church'] as const;
 
 /**
  * One-time convenience action: fills institution_badge from active

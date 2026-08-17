@@ -2,8 +2,17 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 export const SOUND_ACADEMY_SOURCE = 'sound_academy';
 export const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
+export const LOGIC_CHURCH_SOURCE = 'logic_church';
 
-const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUTE_SOURCE]);
+const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUTE_SOURCE, LOGIC_CHURCH_SOURCE]);
+
+/**
+ * Partners whose members get a personal 10% referral link in addition to the
+ * standard 1yr institutional Premium grant (unlike Sound Academy / Abbey Road,
+ * which only grant Premium). Drives both applyPendingPartnerRegistrations()
+ * below and the welcome-email copy.
+ */
+const REFERRAL_LINK_PARTNER_IDS = new Set([LOGIC_CHURCH_SOURCE]);
 
 function isInstitutionalSource(source: string | null | undefined): source is string {
   return !!source && INSTITUTIONAL_SOURCES.has(source);
@@ -126,6 +135,7 @@ async function sendInstitutionalWelcomeEmail(
   institution: string,
   email: string | null | undefined,
   expiresAt?: string | null,
+  referralLink?: string | null,
 ) {
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey || !email) return;
@@ -143,11 +153,18 @@ async function sendInstitutionalWelcomeEmail(
   const partnerLabel =
     institution === ABBEY_ROAD_INSTITUTE_SOURCE
       ? 'Abbey Road Institute'
-      : 'Sound Academy';
+      : institution === LOGIC_CHURCH_SOURCE
+        ? 'Logic Church'
+        : 'Sound Academy';
+
+  const referralParagraph = referralLink
+    ? `<p>You also have your own personal referral link, earning you 10% commission on every subscriber who joins through it: <a href="${referralLink}">${referralLink}</a></p>`
+    : '';
 
   const html = `
     <p>Welcome to SoundBridge.</p>
     <p>Your one year Premium access has been activated as part of the ${partnerLabel} partnership with SoundBridge.</p>
+    ${referralParagraph}
     <p>Here is what to do next:</p>
     <ul>
       <li>Complete your profile with your bio, photo and genre</li>
@@ -176,6 +193,130 @@ async function sendInstitutionalWelcomeEmail(
   });
 }
 
+/**
+ * Generates a unique partners.referral_code for a user from their username,
+ * falling back to appending part of their user id if the plain username is
+ * already taken (mirrors the manual per-user setup scripts under
+ * scripts/partner-referral-setup-*.sql, which use lower(username) as-is).
+ */
+async function createPartnerReferralLink(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ referralCode: string; referralLink: string } | null> {
+  const { data: existing } = await supabase
+    .from('partners')
+    .select('referral_code, referral_link')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (existing?.referral_code && existing?.referral_link) {
+    return { referralCode: existing.referral_code, referralLink: existing.referral_link };
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', userId)
+    .maybeSingle();
+  const baseUsername = normalizeText(profile?.username);
+  if (!baseUsername) return null;
+
+  const candidates = [baseUsername, `${baseUsername}-${userId.slice(0, 6)}`];
+  for (const code of candidates) {
+    const referralLink = `https://soundbridge.live/join?ref=${code}`;
+    const { error } = await supabase.from('partners').insert({
+      user_id: userId,
+      referral_code: code,
+      referral_link: referralLink,
+      commission_rate: 0.10,
+    });
+    if (!error) return { referralCode: code, referralLink };
+    // 23505 = unique_violation on referral_code; try the next candidate.
+    if ((error as { code?: string }).code !== '23505') {
+      console.error('[partner-referrals] createPartnerReferralLink insert failed:', error.message);
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Matches the signed-up user's email against pending partner_registrations
+ * rows (see supabase/migrations/20260816120000_logic_church_partner_registrations.sql)
+ * and, for each match, applies institutional Premium (+ a referral link, for
+ * partners in REFERRAL_LINK_PARTNER_IDS) exactly as if they'd signed up
+ * through the ?source= flow — then marks the registration provisioned.
+ * Safe to call on every signup/session-load; no-ops when there's no pending row.
+ */
+export async function applyPendingPartnerRegistrations(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string | null | undefined,
+) {
+  const normalizedEmail = normalizeText(email);
+  if (!normalizedEmail) return;
+
+  const { data: pending, error } = await supabase
+    .from('partner_registrations')
+    .select('id, partner_id')
+    .ilike('email', normalizedEmail)
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('[partner-referrals] applyPendingPartnerRegistrations lookup failed:', error.message);
+    return;
+  }
+  if (!pending || pending.length === 0) return;
+
+  for (const registration of pending) {
+    const partnerId = String(registration.partner_id);
+
+    const { error: grantError } = await supabase.rpc('grant_institutional_access', {
+      p_user_id: userId,
+      p_institution: partnerId,
+      p_access_tier: 'premium',
+    });
+    if (grantError) {
+      console.error('[partner-referrals] grant_institutional_access (registration) failed:', grantError.message);
+      continue;
+    }
+
+    let referralLink: string | null = null;
+    if (REFERRAL_LINK_PARTNER_IDS.has(partnerId)) {
+      const referral = await createPartnerReferralLink(supabase, userId);
+      referralLink = referral?.referralLink ?? null;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('institution_badge')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!profile?.institution_badge) {
+      const { error: badgeError } = await supabase
+        .from('profiles')
+        .update({ institution_badge: partnerId, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (badgeError) {
+        console.error('[partner-referrals] institution_badge update failed:', badgeError.message);
+      }
+    }
+
+    await supabase
+      .from('partner_registrations')
+      .update({ status: 'provisioned', provisioned_user_id: userId, provisioned_at: new Date().toISOString() })
+      .eq('id', registration.id);
+
+    const { data: accessRow } = await supabase
+      .from('institutional_access')
+      .select('expires_at')
+      .eq('user_id', userId)
+      .eq('institution', partnerId)
+      .maybeSingle();
+
+    await sendInstitutionalWelcomeEmail(partnerId, normalizedEmail, accessRow?.expires_at ?? null, referralLink);
+  }
+}
+
 export async function processPartnerAttribution(
   supabase: SupabaseClient,
   input: PartnerAttributionInput,
@@ -184,6 +325,10 @@ export async function processPartnerAttribution(
   const referralCode = normalizeText(input.referralCode) || getReferralCodeFromMetadata(metadata);
   const source = normalizeText(input.source) || getSignupSourceFromMetadata(metadata);
   const fanPageCreatorId = input.fanPageCreatorId?.trim() || null;
+
+  // Email-matched partner pre-registrations (e.g. Logic Church) — independent
+  // of the ?source=/?ref= cookie flow used by Sound Academy / Abbey Road.
+  await applyPendingPartnerRegistrations(supabase, input.userId, input.email);
 
   if (referralCode || fanPageCreatorId) {
     // Prefer RPC (stamps profiles.referred_by_code + referral_signups when partner exists).

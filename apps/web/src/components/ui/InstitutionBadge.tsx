@@ -1,16 +1,18 @@
 import React from 'react';
 import Image from 'next/image';
 
-export type InstitutionBadgeId = 'abbey_road_institute' | 'sound_academy';
+export type InstitutionBadgeId = 'abbey_road_institute' | 'sound_academy' | 'logic_church';
 
 const BADGE_ASSETS: Record<InstitutionBadgeId, { src: string; label: string }> = {
   abbey_road_institute: { src: '/images/badges/abb-badge.png', label: 'Abbey Road Institute' },
   sound_academy: { src: '/images/badges/sa-2.png', label: 'Sound Academy' },
+  logic_church: { src: '/images/badges/LG.png', label: 'Logic Church' },
 };
 
 export const INSTITUTION_BADGE_OPTIONS: { value: InstitutionBadgeId; label: string }[] = [
   { value: 'abbey_road_institute', label: 'Abbey Road Institute' },
   { value: 'sound_academy', label: 'Sound Academy' },
+  { value: 'logic_church', label: 'Logic Church' },
 ];
 
 interface InstitutionBadgeProps {
