@@ -7,7 +7,9 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useDashboard } from '@/src/hooks/useDashboard';
-import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase, Radio } from 'lucide-react';
+import { Settings, Upload, Calendar, Music, BarChart3, Users, Activity, AlertCircle, X, AlertTriangle, TrendingUp, Heart, Play, FileAudio, Clock, Plus, MessageCircle, Home, Star, DollarSign, Briefcase, Radio, Video } from 'lucide-react';
+import { AppStoreBadgeLink } from '@/src/components/marketing/AppStoreBadgeLink';
+import { GooglePlayBadgeLink } from '@/src/components/marketing/GooglePlayBadgeLink';
 import SubscriptionDashboard from '../../src/components/subscription/SubscriptionDashboard';
 import { RevenueDashboard } from '../../src/components/revenue/RevenueDashboard';
 import { BankAccountManager } from '../../src/components/revenue/BankAccountManager';
@@ -18,6 +20,7 @@ import { AudienceIntelligencePanel } from '../../src/components/analytics/Audien
 import { EventPollPanel } from '../../src/components/analytics/EventPollPanel';
 import { resolveEffectiveTier } from '../../src/lib/effective-subscription-tier';
 import { EarnMoneyLiveNudge } from '../../src/components/feature-nudges/EarnMoneyLiveNudge';
+import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
@@ -36,8 +39,9 @@ export default function DashboardPage() {
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'revenue' | 'service-provider' | 'availability' | 'settings'
+    'overview' | 'content' | 'analytics' | 'followers' | 'subscription' | 'revenue' | 'service-provider' | 'availability' | 'go-live' | 'settings'
   >('overview');
+  const [liveStatus, setLiveStatus] = useState<{ live: boolean; viewerCount?: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
@@ -52,6 +56,25 @@ export default function DashboardPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Live status for the Go Live tab (mobile-only broadcasting; web just shows this read-only)
+  useEffect(() => {
+    if (!user || activeTab !== 'go-live') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetchWithSupabaseAuth(`/api/live-streams/active?userId=${user.id}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setLiveStatus(data);
+      } catch (error) {
+        console.error('Error loading live status:', error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, activeTab]);
 
   // Load creator types to check if user is already a service provider
   useEffect(() => {
@@ -104,6 +127,7 @@ export default function DashboardPage() {
       ? [{ id: 'tip-room', label: 'Tip Room', icon: DollarSign, href: `/tip/${profile.username}` }]
       : []),
     { id: 'service-provider', label: 'Service Provider', icon: Briefcase },
+    { id: 'go-live', label: 'Go Live', icon: Video },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -201,6 +225,7 @@ export default function DashboardPage() {
                         | 'revenue'
                         | 'service-provider'
                         | 'availability'
+                        | 'go-live'
                         | 'settings'
                     )
                   }
@@ -684,6 +709,56 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeTab === 'go-live' && (
+            <div style={{
+              background: 'var(--bg-secondary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '1rem',
+              padding: '2rem',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '4rem',
+                height: '4rem',
+                background: 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <Video size={32} style={{ color: 'white' }} />
+              </div>
+
+              {liveStatus?.live ? (
+                <>
+                  <h3 className="text-xl font-bold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+                    You&apos;re live right now
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0' }}>
+                    {liveStatus.viewerCount ?? 0} watching · broadcasting from the SoundBridge mobile app
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-bold" style={{ fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
+                    Go Live is available on the SoundBridge mobile app
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
+                    Download it on iOS or Android to start streaming to your audience.
+                  </p>
+                </>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <AppStoreBadgeLink size="md" />
+                <GooglePlayBadgeLink size="md" />
+              </div>
+            </div>
+          )}
+
           {activeTab === 'content' && (
             <ContentManager
               tracks={tracks}
@@ -768,6 +843,7 @@ export default function DashboardPage() {
           {activeTab !== 'overview' &&
             activeTab !== 'content' &&
             activeTab !== 'availability' &&
+            activeTab !== 'go-live' &&
             activeTab !== 'revenue' &&
             activeTab !== 'service-provider' &&
             activeTab !== 'subscription' &&

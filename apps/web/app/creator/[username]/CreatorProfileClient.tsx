@@ -77,6 +77,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
   const [isLoading, setIsLoading] = useState(true); // Start as true since we need to load data
   const [error, setError] = useState<string | null>(null);
   const [creator] = useState<CreatorProfile>(initialCreator);
+  const [liveStream, setLiveStream] = useState<{ liveStreamId: string; viewerCount: number } | null>(null);
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -245,6 +246,32 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
       cancelled = true;
     };
   }, [username]);
+
+  // Live indicator — mobile-only broadcasting, but the badge shows on both
+  // web and mobile profiles. Polls rather than subscribing directly, since
+  // going live/ending is infrequent; viewer_count would need Realtime if a
+  // sub-minute-accurate count mattered here, which it doesn't for a profile
+  // badge (the in-stream viewer screen is where that matters).
+  useEffect(() => {
+    let cancelled = false;
+    const loadLiveStatus = async () => {
+      try {
+        const response = await fetchWithSupabaseAuth(`/api/live-streams/active?userId=${creator.id}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        setLiveStream(data?.live ? { liveStreamId: data.liveStreamId, viewerCount: data.viewerCount ?? 0 } : null);
+      } catch {
+        // Non-fatal — profile still renders without the live badge.
+      }
+    };
+    void loadLiveStatus();
+    const interval = setInterval(loadLiveStatus, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [creator.id]);
 
   // Load user tier for tipping features
   useEffect(() => {
@@ -581,6 +608,12 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                     {creator.institution_badge && (
                       <span className="inline-flex items-center ml-2">
                         <InstitutionBadge institutionBadge={creator.institution_badge} size={isMobile ? 16 : 18} />
+                      </span>
+                    )}
+                    {liveStream && (
+                      <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-red-600 text-white text-xs font-bold align-middle">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        LIVE
                       </span>
                     )}
                   </h1>

@@ -20,7 +20,9 @@ export type PushPreferenceKind =
   /** Wallet credit from gig completion */
   | 'gig_wallet'
   /** Verification lifecycle updates (approved / declined). */
-  | 'verification';
+  | 'verification'
+  /** A followed creator started a live stream. No dedicated column yet — falls back to the general 'enabled' toggle. */
+  | 'live_stream';
 
 function rowAllows(row: Record<string, unknown> | null | undefined, key: string): boolean {
   if (!row) return true;
@@ -74,6 +76,8 @@ export async function canReceivePushOfKind(
       return rowAllows(row, 'enabled');
     }
     case 'verification':
+      return rowAllows(row, 'enabled');
+    case 'live_stream':
       return rowAllows(row, 'enabled');
     default:
       return true;

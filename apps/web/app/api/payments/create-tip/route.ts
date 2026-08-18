@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
       userTier?: string;
       paymentMethod?: string;
       trackId?: string;
+      liveStreamId?: string;
     };
     try {
       body = raw ? (JSON.parse(raw) as typeof body) : {};
@@ -179,9 +180,12 @@ export async function POST(request: NextRequest) {
       userTier: _userTierIgnored = 'free',
       paymentMethod = 'card',
       trackId: trackIdRaw,
+      liveStreamId: liveStreamIdRaw,
     } = body;
 
     const trackId = typeof trackIdRaw === 'string' && trackIdRaw.trim() ? trackIdRaw.trim() : null;
+    const liveStreamIdCandidate =
+      typeof liveStreamIdRaw === 'string' && liveStreamIdRaw.trim() ? liveStreamIdRaw.trim() : null;
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -231,6 +235,20 @@ export async function POST(request: NextRequest) {
           { error: 'Track does not belong to this creator' },
           { status: 400, headers: corsHeaders },
         );
+      }
+    }
+
+    let liveStreamId: string | null = null;
+    if (liveStreamIdCandidate) {
+      const { data: liveStreamRow } = await supabase
+        .from('live_streams')
+        .select('id, user_id, status')
+        .eq('id', liveStreamIdCandidate)
+        .maybeSingle();
+      // Silently drop rather than error — a tip attempted right as a stream
+      // ends shouldn't fail the whole tip, it just won't be tagged to it.
+      if (liveStreamRow && liveStreamRow.user_id === creatorId && liveStreamRow.status === 'active') {
+        liveStreamId = liveStreamRow.id;
       }
     }
 
@@ -329,6 +347,7 @@ export async function POST(request: NextRequest) {
         creator_id: creatorId,
         creator_user_id: creatorId,
         ...(trackId ? { trackId } : {}),
+        ...(liveStreamId ? { liveStreamId } : {}),
       },
       description: `Tip to creator ${creatorId}`,
     };
@@ -391,6 +410,7 @@ export async function POST(request: NextRequest) {
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
         ...(trackId ? { track_id: trackId } : {}),
+        ...(liveStreamId ? { live_stream_id: liveStreamId } : {}),
       })
       .select()
       .single();
@@ -406,7 +426,8 @@ export async function POST(request: NextRequest) {
         message: message,
         is_anonymous: isAnonymous || false,
         stripe_payment_intent_id: paymentIntent.id,
-        status: 'pending'
+        status: 'pending',
+        ...(liveStreamId ? { live_stream_id: liveStreamId } : {}),
       });
 
     if (tipError) {

@@ -135,6 +135,8 @@ async function recoverMissingTipRowsFromMetadata(
   const message = typeof meta.tipMessage === 'string' ? meta.tipMessage : '';
   const isAnonymous = meta.isAnonymous === 'true';
   const trackId = typeof meta.trackId === 'string' && meta.trackId.trim() ? meta.trackId.trim() : null;
+  const liveStreamId =
+    typeof meta.liveStreamId === 'string' && meta.liveStreamId.trim() ? meta.liveStreamId.trim() : null;
 
   const { error: ctErr } = await supabase.from('creator_tips').insert({
     creator_id: creatorId,
@@ -145,6 +147,7 @@ async function recoverMissingTipRowsFromMetadata(
     is_anonymous: isAnonymous,
     stripe_payment_intent_id: paymentIntentId,
     status: 'pending',
+    ...(liveStreamId ? { live_stream_id: liveStreamId } : {}),
   });
   if (ctErr && (ctErr as { code?: string }).code !== '23505') {
     console.error('[finalizeTip] recover creator_tips insert:', ctErr);
@@ -162,6 +165,7 @@ async function recoverMissingTipRowsFromMetadata(
     platform_fee: platformFee,
     creator_earnings: creatorEarnings,
     ...(trackId ? { track_id: trackId } : {}),
+    ...(liveStreamId ? { live_stream_id: liveStreamId } : {}),
   });
   if (tipsErr && (tipsErr as { code?: string }).code !== '23505') {
     console.error('[finalizeTip] recover tips insert:', tipsErr);
