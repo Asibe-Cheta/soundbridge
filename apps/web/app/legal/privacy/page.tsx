@@ -54,7 +54,7 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Last updated: January 15, 2025
+            Last updated: August 19, 2026
           </p>
         </div>
 
@@ -158,8 +158,78 @@ export default function PrivacyPolicy() {
               2.4 Cookies and Tracking
             </h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              We use cookies and similar technologies to enhance your experience, analyze usage, and provide personalized content. You can control cookie settings through your browser preferences.
+              We use cookies and similar technologies to enhance your experience, analyze usage, and provide personalized content, including cookies that attribute a signup to a referral link or partner campaign so we can apply the correct benefits and commission tracking. You can control cookie settings through your browser preferences.
             </p>
+
+            <h3 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.5 Location Data
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>We collect location information in several ways:</p>
+            <ul style={{
+              listStyle: 'disc',
+              paddingLeft: '1.5rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '1rem'
+            }}>
+              <li><strong>Precise device location (mobile app):</strong> With your permission, we collect GPS location from your device to power features such as nearby event recommendations, venue listings, and service discovery. This may include periodic background location updates while the app is not actively in use, so we can notify you of relevant local events; you can disable this at any time in your device settings.</li>
+              <li><strong>Browser location (web):</strong> With your permission, we use your browser&apos;s location services for location-based features such as availability and scheduling.</li>
+              <li><strong>Approximate location from IP address:</strong> We infer an approximate location from your IP address for purposes such as detecting your country for payment and currency settings, and for security and fraud prevention.</li>
+            </ul>
+
+            <h3 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.6 Identity Verification Data
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              For certain features, such as verifying a creator&apos;s identity before enabling payouts, we use a third-party identity verification provider. This may involve collecting a government-issued ID and a selfie or other biometric verification data, which is processed by our identity verification provider on our behalf to confirm your identity and comply with financial and anti-fraud regulations.
+            </p>
+
+            <h3 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.7 Financial and Payout Information
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              If you receive payouts as a creator, we collect and store bank account or other payout details (such as account and routing numbers) needed to send you funds. This information is encrypted at rest and used solely to process your payouts through our payment and payout providers.
+            </p>
+
+            <h3 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.8 Diagnostic and Crash Data
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              We use an error-monitoring service to automatically collect crash reports, error logs, and performance data when something goes wrong in the app or website, including technical details such as device type, operating system, and the sequence of actions leading up to an error. This helps us diagnose and fix problems.
+            </p>
+
+            <h3 style={{
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '0.75rem'
+            }}>
+              2.9 Account Sign-In, Subscriptions, and Notifications
+            </h3>
+            <ul style={{
+              listStyle: 'disc',
+              paddingLeft: '1.5rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '1rem'
+            }}>
+              <li><strong>Social sign-in:</strong> If you sign in using Google, Apple, or Facebook, we receive basic profile information from that provider, such as your name and email address, as permitted by your settings with that provider.</li>
+              <li><strong>Subscriptions and purchases:</strong> If you subscribe through the mobile app stores, our subscription management provider shares purchase and subscription status information with us so we can grant the correct access level.</li>
+              <li><strong>Push notifications:</strong> If you enable push notifications, we store a device push token used to deliver notifications to you, such as alerts about tips, messages, or when a creator you follow goes live.</li>
+            </ul>
           </section>
 
           <section style={{ marginBottom: '2rem' }}>
@@ -189,6 +259,9 @@ export default function PrivacyPolicy() {
               <li>Detect and prevent fraud and abuse</li>
               <li>Comply with legal obligations</li>
               <li>Improve our services and develop new features</li>
+              <li>Show you relevant nearby events and location-based recommendations</li>
+              <li>Verify creator identity and comply with financial regulations before enabling payouts</li>
+              <li>Diagnose and fix technical errors and crashes</li>
             </ul>
           </section>
 
@@ -240,18 +313,32 @@ export default function PrivacyPolicy() {
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
             }}>
-              4.1 Service Providers
+              5.1 Service Providers
             </h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              We may share information with trusted third-party service providers who assist us in operating the Platform, such as hosting, analytics, and payment processing.
+              We may share information with trusted third-party service providers who assist us in operating the Platform, including:
             </p>
+            <ul style={{
+              listStyle: 'disc',
+              paddingLeft: '1.5rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '1rem'
+            }}>
+              <li>Payment and payout processors, to process tips, purchases, subscriptions, and creator payouts</li>
+              <li>An identity verification provider, to confirm creator identity before enabling payouts</li>
+              <li>Cloud hosting and storage providers, to host the Platform and store uploaded content</li>
+              <li>An error-monitoring provider, to help us diagnose and fix technical issues</li>
+              <li>A subscription management provider, for mobile app store purchases</li>
+              <li>Email and push notification providers, to deliver account and activity notifications</li>
+              <li>Analytics providers, to help us understand how the Platform is used</li>
+            </ul>
 
             <h3 style={{
               fontWeight: '600',
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
             }}>
-              4.2 Legal Requirements
+              5.2 Legal Requirements
             </h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               We may disclose information if required by law, court order, or government request, or to protect our rights, property, or safety.
@@ -262,7 +349,7 @@ export default function PrivacyPolicy() {
               color: 'var(--text-primary)',
               marginBottom: '0.75rem'
             }}>
-              4.3 Business Transfers
+              5.3 Business Transfers
             </h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               In the event of a merger, acquisition, or sale of assets, your information may be transferred as part of the transaction.
