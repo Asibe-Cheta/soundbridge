@@ -60,9 +60,6 @@ export function WelcomeConfirmation({ isOpen, onComplete }: WelcomeConfirmationP
               <Sparkles className="w-5 h-5 text-purple-400" />
               <span className="text-lg font-semibold text-white">Pro Active</span>
             </div>
-            <p className="text-sm text-white/70">
-              🛡️ 7-day money-back guarantee
-            </p>
           </div>
         ) : (
           <div className="mb-8 p-4 bg-white/5 rounded-lg border border-white/10 inline-block">

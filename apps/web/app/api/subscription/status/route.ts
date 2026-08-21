@@ -189,13 +189,8 @@ export async function GET(request: NextRequest) {
       payout_threshold: 50.00
     };
 
-    // Check if within 7-day money-back guarantee window
-    let withinGuarantee = false;
-    if (finalSubscription && ['premium', 'unlimited'].includes(finalSubscription.tier) && finalSubscription.subscription_start_date) {
-      const startDate = new Date(finalSubscription.subscription_start_date);
-      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      withinGuarantee = daysSinceStart <= 7 && finalSubscription.money_back_guarantee_eligible;
-    }
+    // Money-back guarantee discontinued (hard cutoff, not grandfathered) — always false now.
+    const withinGuarantee = false;
 
     // Get usage limits
     const { data: uploadLimit } = await supabase.rpc('check_upload_limit', { p_user_id: user.id });
@@ -232,12 +227,12 @@ export async function GET(request: NextRequest) {
           searches: searchLimit || { used: 0, limit: 5, remaining: 5, is_unlimited: false },
           messages: unlimitedMessages
         },
+        // Discontinued for all subscribers — kept in the response shape so older
+        // clients that read these fields don't break, but always inert now.
         moneyBackGuarantee: {
-          eligible: finalSubscription?.money_back_guarantee_eligible || false,
+          eligible: false,
           withinWindow: withinGuarantee,
-          daysRemaining: withinGuarantee && finalSubscription?.subscription_start_date
-            ? Math.max(0, 7 - Math.floor((Date.now() - new Date(finalSubscription.subscription_start_date).getTime()) / (1000 * 60 * 60 * 24)))
-            : 0
+          daysRemaining: 0
         },
         features: {
           // Upload limits: Free=3 lifetime, Premium=7/month, Unlimited=unlimited

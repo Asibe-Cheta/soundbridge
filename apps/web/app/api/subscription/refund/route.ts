@@ -6,14 +6,20 @@ import { cookies } from 'next/headers';
 
 /**
  * POST /api/subscription/refund
- * Process a refund request for 7-day money-back guarantee
- * 
- * Request Body:
- * {
- *   "selectedTrackIds": ["uuid1", "uuid2", "uuid3"] // Optional, required if user has >3 tracks
- * }
+ * DISCONTINUED — the 7-day money-back guarantee has been removed for all
+ * subscribers (hard cutoff, not grandfathered). Subscription payments are
+ * non-refundable per the Terms of Service. Left in place (rather than
+ * deleted) so the route returns a clear, deliberate response instead of a
+ * 404 if any client still calls it.
  */
 export async function POST(request: NextRequest) {
+  return NextResponse.json(
+    { error: 'Subscription refunds are no longer available. Subscription payments are non-refundable — see our Terms of Service.' },
+    { status: 410 },
+  );
+}
+
+async function _disabledRefundHandler(request: NextRequest) {
   try {
     const supabase = createServerComponentClient({ cookies });
     const supabaseAdmin = createServiceClient();

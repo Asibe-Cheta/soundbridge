@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useOnboarding } from '@/src/contexts/OnboardingContext';
-import { ArrowRight, ArrowLeft, Check, Shield } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { PUBLIC_TIER_LIMITS } from '@/src/constants/public-tier-limits';
 
 interface TierSelectionProps {
@@ -164,17 +164,6 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
                 </li>
               </ul>
 
-              {/* Money-Back Guarantee */}
-              <div className="mb-6 p-3 bg-purple-500/20 rounded-lg border border-purple-500/50">
-                <div className="flex items-center gap-2 text-purple-300 mb-1">
-                  <Shield size={16} />
-                  <span className="text-sm font-semibold">7-day money-back guarantee</span>
-                </div>
-                <p className="text-xs text-white/70">
-                  Full refund if not satisfied within 7 days
-                </p>
-              </div>
-
               <button
                 className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
                   selectedTier === 'premium'
@@ -228,17 +217,6 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
                   <span className="text-sm">Highest priority support</span>
                 </li>
               </ul>
-
-              {/* Money-Back Guarantee */}
-              <div className="mb-6 p-3 bg-yellow-500/20 rounded-lg border border-yellow-500/50">
-                <div className="flex items-center gap-2 text-yellow-300 mb-1">
-                  <Shield size={16} />
-                  <span className="text-sm font-semibold">7-day money-back guarantee</span>
-                </div>
-                <p className="text-xs text-white/70">
-                  Full refund if not satisfied within 7 days
-                </p>
-              </div>
 
               <button
                 className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${

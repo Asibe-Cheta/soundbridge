@@ -256,10 +256,13 @@ export default function TermsOfService() {
                 <strong>Subscription Plans:</strong> We offer Free, Premium (£6.99/month or £69.99/year), and Unlimited (£12.99/month or £129.99/year) subscription plans with different features, upload limits, storage capacity, and processing capabilities.
               </p>
               <p>
-                <strong>Billing and Payments:</strong> Paid subscriptions are billed monthly or annually. All Premium and Unlimited plans include a 7-day money-back guarantee. You can request a full refund within 7 days of payment if you're not satisfied.
+                <strong>Billing and Payments:</strong> Paid subscriptions are billed monthly or annually. Subscription payments are non-refundable, except where required by applicable law.
               </p>
               <p>
-                <strong>Automatic Renewal:</strong> Subscriptions automatically renew unless cancelled before the next billing cycle. You can cancel your subscription at any time through your account settings.
+                <strong>Automatic Renewal:</strong> Subscriptions automatically renew unless cancelled before the next billing cycle. You can cancel your subscription at any time through your account settings. Cancelling stops future billing but does not refund the current billing period; you retain access through the end of the period you&apos;ve already paid for.
+              </p>
+              <p>
+                <strong>Creator Payouts and Withdrawal Issues:</strong> We do not issue refunds for tips, purchases, or gig payments simply because a user changes their mind. However, if you are a creator and believe a withdrawal or payout you initiated was not received, contact us at contact@soundbridge.live with details of the transaction (date, amount, and payout method). We investigate validated, evidence-backed reports of missing or failed transfers and will correct genuine payout errors on our end.
               </p>
               <p>
                 <strong>Feature Changes:</strong> We reserve the right to modify subscription features, limits, and pricing with 30 days' notice. Continued use constitutes acceptance of changes.

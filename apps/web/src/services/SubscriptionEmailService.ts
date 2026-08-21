@@ -122,8 +122,7 @@ export class SubscriptionEmailService {
           invoice_url: data.invoiceUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=billing`,
           dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
           support_email: 'contact@soundbridge.live',
-          app_name: 'SoundBridge',
-          money_back_guarantee_text: '7-day money-back guarantee'
+          app_name: 'SoundBridge'
         },
         subject: `Welcome to SoundBridge Pro! 🎉`
       };

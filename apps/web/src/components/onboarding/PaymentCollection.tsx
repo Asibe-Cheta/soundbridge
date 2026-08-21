@@ -70,7 +70,7 @@ function PaymentForm({ period, selectedTier, onSuccess, onBack, setError }: {
       <div className="bg-white/5 rounded-lg p-4 space-y-2">
         <div className="flex items-center gap-2 text-green-400 text-sm">
           <Shield size={16} />
-          <span>7-day money-back guarantee</span>
+          <span>Cancel anytime</span>
         </div>
         <div className="flex items-center gap-2 text-white/70 text-sm">
           <Lock size={16} />
@@ -160,12 +160,12 @@ export function PaymentCollection({ isOpen, onSuccess, onBack, selectedTier = 'p
         {/* Content */}
         <div className="p-6 md:p-8">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">
-            Upgrade to {tierName} - Risk Free
+            Upgrade to {tierName}
           </h2>
 
           <p className="text-white/80 text-center mb-6">
             You'll be charged £{amounts[period]} today to start your {tierName} subscription.
-            If you're not satisfied within 7 days, simply request a refund from your billing settings for a full refund - no questions asked.
+            You can cancel anytime from your account settings — cancelling stops future billing, and you'll keep access through the end of your current billing period.
           </p>
 
           {/* Billing Period Selection */}
