@@ -46,6 +46,19 @@ export default function DashboardPage() {
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
 
+  // Land on the Subscription tab after a successful Stripe checkout redirect
+  // (?success=true), so SubscriptionDashboard's own "🎉 Welcome to..." banner
+  // and activation-polling logic actually mount. Read via window.location
+  // directly (not useSearchParams) to avoid requiring a Suspense boundary
+  // around this whole page.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setActiveTab('subscription');
+    }
+  }, []);
+
   // Handle mobile responsiveness
   useEffect(() => {
     const handleResize = () => {

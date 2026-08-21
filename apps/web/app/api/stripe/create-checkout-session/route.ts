@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       ...(applyFoundingMemberCoupon && foundingMemberCouponId
         ? { discounts: [{ coupon: foundingMemberCouponId }] }
         : {}),
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/dashboard?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin}/pricing?canceled=true`,
       // Note: Do NOT set customer_email when customer is set - Stripe only allows one
       metadata: {
