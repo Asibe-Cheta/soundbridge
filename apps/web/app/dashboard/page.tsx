@@ -378,6 +378,14 @@ export default function DashboardPage() {
                     href: '/request-room',
                     gradient: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)'
                   },
+                  ...(profile?.username ? [{
+                    icon: DollarSign,
+                    title: 'Tip Room',
+                    subtitle: 'Let fans support you directly',
+                    description: 'View your tip page',
+                    href: `/tip/${profile.username}`,
+                    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  }] : []),
                   ...(!isServiceProvider && !isLoadingCreatorTypes ? [{
                     icon: Briefcase,
                     title: 'Become a Service Provider',
