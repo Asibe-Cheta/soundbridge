@@ -181,6 +181,25 @@ async function broadcastCampaignPush(
     }
   }
 
+  // Dual-write to the in-app Notifications inbox (WEB_TEAM_NOTIFICATIONS_TABLE_MIGRATION.md's
+  // "recommended" backend enhancement) — covers force-closed apps, dismissed OS notifications,
+  // and multi-device users, none of which get the mobile app's own on-receive persistence.
+  for (let i = 0; i < targets.length; i += PREFERENCE_CHUNK_SIZE) {
+    const chunk = targets.slice(i, i + PREFERENCE_CHUNK_SIZE);
+    const rows = chunk.map((t) => ({
+      user_id: t.id,
+      type: 'campaign',
+      title: content.title,
+      body: content.body,
+      data: { type: 'campaign', campaignId, deepLink, url: deepLink },
+      read: false,
+    }));
+    const { error: notifErr } = await supabase.from('notifications').insert(rows);
+    if (notifErr) {
+      console.error('[campaign-notifications] notifications table dual-write failed:', notifErr.message);
+    }
+  }
+
   return { sent: messages.length, optedOut };
 }
 
