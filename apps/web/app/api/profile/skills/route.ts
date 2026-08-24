@@ -34,11 +34,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's skills
+    // Public profile view: caller may request another user's skills via ?user_id=,
+    // falling back to their own when viewing/editing their own profile.
+    const targetUserId = request.nextUrl.searchParams.get('user_id') || user.id;
+
+    // Get target user's skills
     const { data: skills, error: skillsError } = await supabase
       .from('profile_skills')
       .select('id, skill, created_at')
-      .eq('user_id', user.id)
+      .eq('user_id', targetUserId)
       .order('created_at', { ascending: false });
 
     if (skillsError) {

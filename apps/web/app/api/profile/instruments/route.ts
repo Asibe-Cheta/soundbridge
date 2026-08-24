@@ -34,11 +34,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's instruments
+    // Public profile view: caller may request another user's instruments via ?user_id=,
+    // falling back to their own when viewing/editing their own profile.
+    const targetUserId = request.nextUrl.searchParams.get('user_id') || user.id;
+
+    // Get target user's instruments
     const { data: instruments, error: instrumentsError } = await supabase
       .from('profile_instruments')
       .select('id, instrument, created_at')
-      .eq('user_id', user.id)
+      .eq('user_id', targetUserId)
       .order('created_at', { ascending: false });
 
     if (instrumentsError) {

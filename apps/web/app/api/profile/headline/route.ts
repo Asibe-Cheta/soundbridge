@@ -33,11 +33,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's profile
+    // Public profile view: caller may request another user's headline via ?user_id=,
+    // falling back to their own when viewing/editing their own profile.
+    const targetUserId = request.nextUrl.searchParams.get('user_id') || user.id;
+
+    // Get target user's profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, professional_headline')
-      .eq('id', user.id)
+      .eq('id', targetUserId)
       .single();
 
     if (profileError) {
