@@ -58,6 +58,9 @@ interface PushTarget {
 
 async function fetchAllPushTargets(supabase: SupabaseClient): Promise<PushTarget[]> {
   const targets: PushTarget[] = [];
+  // Same device token can be left behind on more than one profile row (e.g. switching
+  // test accounts on one phone) — dedupe on the token so that device isn't sent N copies.
+  const seenTokens = new Set<string>();
   let from = 0;
   for (;;) {
     const { data, error } = await supabase
@@ -73,7 +76,12 @@ async function fetchAllPushTargets(supabase: SupabaseClient): Promise<PushTarget
     if (!data?.length) break;
 
     for (const row of data as { id: string; expo_push_token: string | null }[]) {
-      if (row.expo_push_token && isValidExpoPushToken(row.expo_push_token)) {
+      if (
+        row.expo_push_token &&
+        isValidExpoPushToken(row.expo_push_token) &&
+        !seenTokens.has(row.expo_push_token)
+      ) {
+        seenTokens.add(row.expo_push_token);
         targets.push({ id: row.id, expo_push_token: row.expo_push_token });
       }
     }
