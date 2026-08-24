@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
-import { verifyStreamWebhookSignature } from '@/src/lib/cloudflare-stream';
+import { verifyStreamWebhookAuth } from '@/src/lib/cloudflare-stream';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 
 /**
@@ -15,11 +15,10 @@ import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
  */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
-  const signatureHeader = request.headers.get('Webhook-Signature');
+  const authHeader = request.headers.get('cf-webhook-auth');
 
-  const isValid = await verifyStreamWebhookSignature(rawBody, signatureHeader);
-  if (!isValid) {
-    console.error('[webhooks/cloudflare-stream] invalid signature');
+  if (!verifyStreamWebhookAuth(authHeader)) {
+    console.error('[webhooks/cloudflare-stream] invalid or missing cf-webhook-auth');
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 

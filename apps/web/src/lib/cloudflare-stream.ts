@@ -13,9 +13,17 @@
  *                                     dashboard -> Stream -> any video ->
  *                                     the customer-<code>.cloudflarestream.com
  *                                     part of its playback URL)
- *   CLOUDFLARE_STREAM_WEBHOOK_SECRET — returned when the webhook notification
- *                                     URL is registered; used to verify the
- *                                     Webhook-Signature header on incoming events
+ *   CLOUDFLARE_STREAM_WEBHOOK_SECRET — a secret YOU choose (not returned by
+ *                                     Cloudflare) when registering the live
+ *                                     input notification webhook via
+ *                                     Notifications -> Destinations in the
+ *                                     dashboard — https://developers.cloudflare.com/stream/stream-live/webhooks/
+ *                                     (a *separate* system from the HMAC-signed
+ *                                     `PUT /accounts/{id}/stream/webhook`
+ *                                     VOD-ready notifications; live_input
+ *                                     events are unrelated to that endpoint).
+ *                                     Cloudflare echoes it back verbatim in the
+ *                                     cf-webhook-auth header on every request.
  */
 
 const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4';
@@ -120,45 +128,26 @@ export async function stopLiveInput(cloudflareStreamId: string): Promise<void> {
 }
 
 /**
- * Verifies the Webhook-Signature header Cloudflare Stream sends on live_input
- * events. Header shape: "time=<unix_ts>,sig1=<hex_hmac_sha256>". Signed
- * string is `${time}.${rawBody}`. https://developers.cloudflare.com/stream/stream-live/webhooks
+ * Verifies the cf-webhook-auth header Cloudflare's Notifications system sends
+ * on live_input events (connected/disconnected/errored) — a plaintext secret
+ * you chose yourself when creating the webhook destination, echoed back
+ * verbatim on every request. NOT an HMAC signature — live_input events go
+ * through Notifications -> Destinations, a separate system from the
+ * HMAC-signed `PUT /accounts/{id}/stream/webhook` VOD-ready notifications.
+ * https://developers.cloudflare.com/stream/stream-live/webhooks/
+ * https://developers.cloudflare.com/notifications/get-started/configure-webhooks/
  */
-export async function verifyStreamWebhookSignature(rawBody: string, header: string | null): Promise<boolean> {
-  if (!header) return false;
+export function verifyStreamWebhookAuth(header: string | null): boolean {
   const secret = process.env.CLOUDFLARE_STREAM_WEBHOOK_SECRET;
   if (!secret) {
     console.error('[cloudflare-stream] CLOUDFLARE_STREAM_WEBHOOK_SECRET not configured — rejecting webhook');
     return false;
   }
+  if (!header || header.length !== secret.length) return false;
 
-  const parts = Object.fromEntries(
-    header.split(',').map((pair) => {
-      const [key, value] = pair.split('=');
-      return [key?.trim(), value?.trim()];
-    }),
-  );
-  const time = parts.time;
-  const sig1 = parts.sig1;
-  if (!time || !sig1) return false;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`${time}.${rawBody}`));
-  const expectedHex = Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  if (expectedHex.length !== sig1.length) return false;
   let mismatch = 0;
-  for (let i = 0; i < expectedHex.length; i++) {
-    mismatch |= expectedHex.charCodeAt(i) ^ sig1.charCodeAt(i);
+  for (let i = 0; i < secret.length; i++) {
+    mismatch |= header.charCodeAt(i) ^ secret.charCodeAt(i);
   }
   return mismatch === 0;
 }
