@@ -13,6 +13,7 @@ import {
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 import { isTippableCreator } from '@/src/lib/tippable-creator';
 import { createServiceClient } from '@/src/lib/supabase';
+import { handleGiftBundleTip } from '@/src/lib/gift-bundle-tip';
 
 // Currencies Stripe can charge in directly. Others (e.g. NGN, KES, GHS) fall back to USD; local payout at withdrawal.
 const STRIPE_SUPPORTED_CURRENCIES = new Set([
@@ -250,6 +251,23 @@ export async function POST(request: NextRequest) {
       if (liveStreamRow && liveStreamRow.user_id === creatorId && liveStreamRow.status === 'active') {
         liveStreamId = liveStreamRow.id;
       }
+    }
+
+    // Gift Bundle path: no Stripe involved at all — debit the prepaid balance and
+    // complete the tip synchronously. Skips every Stripe-specific step below
+    // (currency support, minimum charge amount, PaymentIntent creation).
+    if (paymentMethod === 'gift_bundle') {
+      return handleGiftBundleTip({
+        service,
+        user,
+        creatorId,
+        amount: Number(amount),
+        message,
+        isAnonymous,
+        trackId,
+        liveStreamId,
+        corsHeaders,
+      });
     }
 
     // Resolve tip currency from creator's wallet (WEB_TEAM_TIP_CURRENCY_FIX)
