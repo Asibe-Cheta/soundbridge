@@ -1,15 +1,15 @@
 -- =============================================================================
--- Partner referral setup — dannymoffat09@gmail.com (prod: aunxdbqukbxyyiusaeqi)
+-- Partner referral setup — saliclintonreal@gmail.com (prod: aunxdbqukbxyyiusaeqi)
 -- =============================================================================
--- What this script does (same bundle as the 4-creator batch / Dan Edmund):
+-- What this script does (same bundle as dannymoffat / 4-creator batch):
 --   1. Ensures profiles.role = 'creator'
 --   2. Grants 1 year Premium (NOT permanent — see note below)
 --   3. Creates a partners row + referral link, 10% commission (standard rate)
 --
 -- Reference precedents on prod:
 --   Dan Edmund (danedmund)     — permanent Premium (subscription_period_end IS NULL)
---   4-creator batch (2026-xx)  — 1 year Premium, 10% commission
---   This grant follows the 4-creator batch: 1 year Premium, 10% commission.
+--   4-creator batch / dannymoffat09 — 1 year Premium, 10% commission
+--   This grant follows the same standard bundle: 1 year Premium, 10% commission.
 --
 -- Referral tracking:
 --   When fans sign up via /join?ref=<code>, the app calls record_referral_signup().
@@ -17,7 +17,9 @@
 --   community_entry_creator_id on the new fan's profile.
 --
 -- Run in Supabase SQL Editor: preview §1 first — it must return exactly 1 row
--- with user_id NOT NULL before uncommenting any APPLY block.
+-- with user_id NOT NULL before uncommenting any APPLY block. If existing_partner_id
+-- is already NOT NULL, this person is already a partner — stop, nothing to do
+-- (or use the per-user upsert near §4 if only the code/link needs fixing).
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -39,12 +41,12 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.profiles p ON p.id = u.id
 LEFT JOIN public.partners pt ON pt.user_id = p.id
-WHERE lower(u.email) = lower('dannymoffat09@gmail.com');
+WHERE lower(u.email) = lower('saliclintonreal@gmail.com');
 
 
 -- Stop here if user_id is NULL (no account with this email) or if a partners
--- row already exists (existing_partner_id NOT NULL) — re-running §5 would then
--- need the per-user upsert at the bottom instead of the INSERT.
+-- row already exists (existing_partner_id NOT NULL) — this person is already
+-- a partner, nothing further to run.
 
 -- -----------------------------------------------------------------------------
 -- 2) APPLY — set role = creator (only if not already creator)
@@ -56,7 +58,7 @@ SET
   updated_at = now()
 FROM auth.users u
 WHERE p.id = u.id
-  AND lower(u.email) = lower('dannymoffat09@gmail.com')
+  AND lower(u.email) = lower('saliclintonreal@gmail.com')
   AND COALESCE(p.role, 'listener') IS DISTINCT FROM 'creator';
 */
 
@@ -81,7 +83,7 @@ SET
   updated_at                = now()
 FROM auth.users u
 WHERE p.id = u.id
-  AND lower(u.email) = lower('dannymoffat09@gmail.com');
+  AND lower(u.email) = lower('saliclintonreal@gmail.com');
 */
 
 -- Optional: also record institutional grant (audit trail). Safe to run in addition to §3.
@@ -94,7 +96,7 @@ SELECT public.grant_institutional_access(
 )
 FROM auth.users u
 JOIN public.profiles p ON p.id = u.id
-WHERE lower(u.email) = lower('dannymoffat09@gmail.com');
+WHERE lower(u.email) = lower('saliclintonreal@gmail.com');
 */
 
 -- -----------------------------------------------------------------------------
@@ -110,7 +112,7 @@ SELECT
   0.10
 FROM auth.users u
 JOIN public.profiles p ON p.id = u.id
-WHERE lower(u.email) = lower('dannymoffat09@gmail.com')
+WHERE lower(u.email) = lower('saliclintonreal@gmail.com')
   AND p.username IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM public.partners pt WHERE pt.user_id = p.id)
 ON CONFLICT (referral_code) DO NOTHING;
@@ -126,7 +128,7 @@ SET
 FROM public.profiles p, auth.users u
 WHERE pt.user_id = p.id
   AND p.id = u.id
-  AND lower(u.email) = lower('dannymoffat09@gmail.com');
+  AND lower(u.email) = lower('saliclintonreal@gmail.com');
 */
 
 -- -----------------------------------------------------------------------------
@@ -147,4 +149,4 @@ SELECT
 FROM auth.users u
 JOIN public.profiles p ON p.id = u.id
 LEFT JOIN public.partners pt ON pt.user_id = p.id
-WHERE lower(u.email) = lower('dannymoffat09@gmail.com');
+WHERE lower(u.email) = lower('saliclintonreal@gmail.com');
