@@ -40,6 +40,9 @@ export interface AudioTrack {
   like_count: number;
   is_public: boolean;
   created_at: string;
+  // Sound Movement / Division tags (NSO_STAGE1.MD) — curated, read-only. Empty for
+  // almost every track; only Stage 1's founding artist has any tagged yet.
+  sound_tags?: { movementName: string; divisionName: string }[];
   // Computed fields
   creator?: CreatorProfile;
   formatted_duration?: string;

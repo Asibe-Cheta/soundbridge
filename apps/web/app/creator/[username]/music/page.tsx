@@ -454,6 +454,13 @@ export default function MusicPage({ params }: MusicPageProps) {
                     <h3 className="font-medium text-white truncate">
                       {track.title}
                     </h3>
+                    {track.sound_tags && track.sound_tags.length > 0 && (
+                      <p className="text-xs text-red-400 truncate">
+                        {track.sound_tags
+                          .map((t) => `${t.movementName} · ${t.divisionName}`)
+                          .join(', ')}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-400 truncate">
                       {track.creator?.display_name || 'Unknown Artist'}
                     </p>

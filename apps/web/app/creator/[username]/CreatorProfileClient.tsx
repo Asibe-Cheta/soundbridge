@@ -1004,6 +1004,13 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-white truncate">{track.title}</h4>
+                        {track.sound_tags && track.sound_tags.length > 0 && (
+                          <p className="text-xs text-red-400 truncate">
+                            {track.sound_tags
+                              .map((t) => `${t.movementName} · ${t.divisionName}`)
+                              .join(', ')}
+                          </p>
+                        )}
                         <p className="text-sm text-gray-400 truncate">
                           {track.genre || 'Music'} · {new Date(track.created_at || Date.now()).getFullYear()}
                         </p>
