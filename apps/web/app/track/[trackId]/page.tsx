@@ -5,6 +5,7 @@ import type { Database } from '@/src/lib/types';
 import { notFound } from 'next/navigation';
 import TrackActionsClient from '@/src/components/track/TrackActionsClient';
 import { TrackLiveInterestSettings } from '@/src/components/track/TrackLiveInterestSettings';
+import { TrackSoundDivisionSection, type SoundDivisionOption } from '@/src/components/track/TrackSoundDivisionSection';
 import { SellContentSection } from '@/src/components/monetization/SellContentSection';
 import { ContentPurchaseSection } from '@/src/components/monetization/ContentPurchaseSection';
 import { getSiteUrl } from '@/src/lib/site-url';
@@ -197,6 +198,33 @@ export default async function TrackPage({ params }: Props) {
     ...(durationIso ? { duration: durationIso } : {}),
   };
 
+  // Sound Division self-service tagging (NSO_1B.MD) — gated purely by
+  // sound_movements.founding_artist_id, generalises to any recognised movement
+  // artist, not hardcoded to any one artist. Empty for almost every creator.
+  let soundDivisionOptions: SoundDivisionOption[] = [];
+  let initialSoundDivisionIds: string[] = [];
+  if (isOwner && user) {
+    const { data: divisionRows } = await supabase
+      .from('sound_divisions')
+      .select('id, name, display_order, sound_movements!inner ( name, founding_artist_id )')
+      .eq('sound_movements.founding_artist_id', user.id)
+      .order('display_order', { ascending: true });
+
+    soundDivisionOptions = (divisionRows || []).map((d) => ({
+      id: d.id as string,
+      name: d.name as string,
+      movementName: ((d.sound_movements as unknown as { name?: string } | null)?.name) || '',
+    }));
+
+    if (soundDivisionOptions.length > 0) {
+      const { data: taggedRows } = await supabase
+        .from('track_sound_divisions')
+        .select('division_id')
+        .eq('track_id', track.id);
+      initialSoundDivisionIds = (taggedRows || []).map((t) => t.division_id as string);
+    }
+  }
+
   // Fetch latest takedown (if any) for this track so owner can submit counter-notice
   const { data: takedown } = await supabase
     .from('takedowns')
@@ -245,6 +273,13 @@ export default async function TrackPage({ params }: Props) {
               </span>
             </div>
           )}
+
+          <TrackSoundDivisionSection
+            trackId={track.id}
+            isOwner={isOwner}
+            options={soundDivisionOptions}
+            initialSelectedIds={initialSoundDivisionIds}
+          />
 
           {(track as { tracklist?: string | null }).tracklist && (
             <div className="mb-6 rounded-lg border border-gray-700 bg-gray-900/40 p-4">
