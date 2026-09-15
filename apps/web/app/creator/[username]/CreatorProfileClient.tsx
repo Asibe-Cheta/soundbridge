@@ -51,6 +51,7 @@ import { VerifiedBadge } from '../../../src/components/ui/VerifiedBadge';
 import { InstitutionBadge } from '../../../src/components/ui/InstitutionBadge';
 import { fetchWithSupabaseAuth } from '../../../src/lib/fetch-with-supabase-auth';
 import { OpenInAppProfileBanner } from '../../../src/components/app/OpenInAppProfileBanner';
+import { SOUND_MOVEMENT_LOGOS } from '../../../src/lib/sound-movement-branding';
 
 type CreatorAlbumCard = {
   id: string;
@@ -1005,11 +1006,18 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-white truncate">{track.title}</h4>
                         {track.sound_tags && track.sound_tags.length > 0 && (
-                          <p className="text-xs text-red-400 truncate">
-                            {track.sound_tags
-                              .map((t) => `${t.movementName} · ${t.divisionName}`)
-                              .join(', ')}
-                          </p>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {SOUND_MOVEMENT_LOGOS[track.sound_tags[0].movementSlug] && (
+                              <img
+                                src={SOUND_MOVEMENT_LOGOS[track.sound_tags[0].movementSlug]}
+                                alt={track.sound_tags[0].movementName}
+                                className="h-4 w-4 object-contain flex-shrink-0"
+                              />
+                            )}
+                            <p className="text-xs text-red-400 truncate">
+                              {track.sound_tags.map((t) => t.divisionName).join(', ')}
+                            </p>
+                          </div>
                         )}
                         <p className="text-sm text-gray-400 truncate">
                           {track.genre || 'Music'} · {new Date(track.created_at || Date.now()).getFullYear()}

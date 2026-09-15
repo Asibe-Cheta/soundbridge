@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { createBrowserClient } from '@/src/lib/supabase';
+import { SOUND_MOVEMENT_LOGOS } from '@/src/lib/sound-movement-branding';
 
 /**
  * Self-service Sound Division tagging (NSO_1B.MD / WEB_TEAM_NSO_1B.MD). Only
@@ -19,6 +20,7 @@ export interface SoundDivisionOption {
   id: string;
   name: string;
   movementName: string;
+  movementSlug: string;
 }
 
 interface TrackSoundDivisionSectionProps {
@@ -45,6 +47,7 @@ export function TrackSoundDivisionSection({
   }
 
   const movementName = options[0].movementName;
+  const movementLogo = SOUND_MOVEMENT_LOGOS[options[0].movementSlug];
   const isDirty = selected.size !== baseline.size || [...selected].some((id) => !baseline.has(id));
 
   const toggle = (id: string) => {
@@ -91,7 +94,11 @@ export function TrackSoundDivisionSection({
   return (
     <div className="mb-6 rounded-lg border border-gray-700 bg-gray-900/40 p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Sparkles size={16} className="text-amber-400" />
+        {movementLogo ? (
+          <img src={movementLogo} alt={movementName} className="h-5 w-5 object-contain" />
+        ) : (
+          <Sparkles size={16} className="text-amber-400" />
+        )}
         Sound Division
       </div>
       <p className="text-sm text-gray-400 mt-1 mb-3">

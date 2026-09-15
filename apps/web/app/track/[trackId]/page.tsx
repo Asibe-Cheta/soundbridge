@@ -206,15 +206,19 @@ export default async function TrackPage({ params }: Props) {
   if (isOwner && user) {
     const { data: divisionRows } = await supabase
       .from('sound_divisions')
-      .select('id, name, display_order, sound_movements!inner ( name, founding_artist_id )')
+      .select('id, name, display_order, sound_movements!inner ( name, slug, founding_artist_id )')
       .eq('sound_movements.founding_artist_id', user.id)
       .order('display_order', { ascending: true });
 
-    soundDivisionOptions = (divisionRows || []).map((d) => ({
-      id: d.id as string,
-      name: d.name as string,
-      movementName: ((d.sound_movements as unknown as { name?: string } | null)?.name) || '',
-    }));
+    soundDivisionOptions = (divisionRows || []).map((d) => {
+      const movement = d.sound_movements as unknown as { name?: string; slug?: string } | null;
+      return {
+        id: d.id as string,
+        name: d.name as string,
+        movementName: movement?.name || '',
+        movementSlug: movement?.slug || '',
+      };
+    });
 
     if (soundDivisionOptions.length > 0) {
       const { data: taggedRows } = await supabase

@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import SearchDropdown from '@/src/components/search/SearchDropdown';
 import { ArrowLeft, Music, Play, Pause, Heart, Share2, MoreHorizontal, Loader2, AlertCircle, Copy, User, Upload, Bell, Settings, Home, Calendar, Mic, Users, Menu, X, LogOut } from 'lucide-react';
 import { getSiteUrl } from '@/src/lib/site-url';
+import { SOUND_MOVEMENT_LOGOS } from '@/src/lib/sound-movement-branding';
 
 interface MusicPageProps {
   params: Promise<{ username: string }>;
@@ -455,11 +456,18 @@ export default function MusicPage({ params }: MusicPageProps) {
                       {track.title}
                     </h3>
                     {track.sound_tags && track.sound_tags.length > 0 && (
-                      <p className="text-xs text-red-400 truncate">
-                        {track.sound_tags
-                          .map((t) => `${t.movementName} · ${t.divisionName}`)
-                          .join(', ')}
-                      </p>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {SOUND_MOVEMENT_LOGOS[track.sound_tags[0].movementSlug] && (
+                          <img
+                            src={SOUND_MOVEMENT_LOGOS[track.sound_tags[0].movementSlug]}
+                            alt={track.sound_tags[0].movementName}
+                            className="h-4 w-4 object-contain flex-shrink-0"
+                          />
+                        )}
+                        <p className="text-xs text-red-400 truncate">
+                          {track.sound_tags.map((t) => t.divisionName).join(', ')}
+                        </p>
+                      </div>
                     )}
                     <p className="text-sm text-gray-400 truncate">
                       {track.creator?.display_name || 'Unknown Artist'}

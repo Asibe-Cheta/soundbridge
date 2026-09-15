@@ -60,14 +60,17 @@ export async function GET(
     // Sound Movement / Division tags (NSO_STAGE1.MD) — curated, read-only badge data.
     // No tags for most creators yet (Stage 1 only), so this is a no-op join for them.
     const trackIds = (data || []).map((t) => t.id as string);
-    const tagsByTrackId = new Map<string, { movementName: string; divisionName: string }[]>();
+    const tagsByTrackId = new Map<
+      string,
+      { movementName: string; movementSlug: string; divisionName: string }[]
+    >();
     if (trackIds.length > 0) {
       const { data: tagRows, error: tagError } = await supabase
         .from('track_sound_divisions')
         .select(
           `
           track_id,
-          sound_divisions ( name, sound_movements ( name ) )
+          sound_divisions ( name, sound_movements ( name, slug ) )
         `,
         )
         .in('track_id', trackIds);
@@ -77,13 +80,14 @@ export async function GET(
       } else {
         for (const row of (tagRows || []) as unknown as {
           track_id: string;
-          sound_divisions: { name: string; sound_movements: { name: string } | null } | null;
+          sound_divisions: { name: string; sound_movements: { name: string; slug: string } | null } | null;
         }[]) {
           const divisionName = row.sound_divisions?.name;
           const movementName = row.sound_divisions?.sound_movements?.name;
-          if (!divisionName || !movementName) continue;
+          const movementSlug = row.sound_divisions?.sound_movements?.slug;
+          if (!divisionName || !movementName || !movementSlug) continue;
           const list = tagsByTrackId.get(row.track_id) || [];
-          list.push({ movementName, divisionName });
+          list.push({ movementName, movementSlug, divisionName });
           tagsByTrackId.set(row.track_id, list);
         }
       }
