@@ -54,9 +54,27 @@ const faqItems: { q: string; a: React.ReactNode }[] = [
     q: 'What ways can I earn on SoundBridge?',
     a: (
       <>
-        You can earn through tips and song requests (Request Room), live engagement, event ticket sales, gig and
-        professional services, and a monthly listen-based reward for top-performing tracks. What you earn depends on
-        how you use the platform and what you offer fans.
+        You can earn through tips (in-app and via Tip Room), song requests (Request Room), live engagement, event
+        ticket sales, gig and professional services, and a monthly listen-based reward for top-performing tracks.
+        What you earn depends on how you use the platform and what you offer fans.
+      </>
+    ),
+  },
+  {
+    q: 'What is Tip Room, and how does it help me earn?',
+    a: (
+      <>
+        Tip Room is your personal, no-login tipping link and QR code (
+        <code className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-base">
+          soundbridge.live/tip/yourusername
+        </code>
+        ) — built for the moment someone at your show or merch table wants to tip you on the spot, without
+        downloading the app or creating an account. It&apos;s a static, permanent QR code you can print once and
+        reuse forever. See the{' '}
+        <Link href="/help/tip-room" className="text-red-500 hover:underline font-medium">
+          Tip Room guide
+        </Link>{' '}
+        for how to find your QR code and use it at a live show.
       </>
     ),
   },
@@ -305,6 +323,11 @@ export default function EarnOnSoundBridgePage() {
                 <li>
                   <Link href="/help/sharing" className="text-red-500 hover:underline font-medium">
                     Sharing content and your profile
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/help/tip-room" className="text-red-500 hover:underline font-medium">
+                    Tip Room: get tipped at live shows with a QR code
                   </Link>
                 </li>
               </ul>
