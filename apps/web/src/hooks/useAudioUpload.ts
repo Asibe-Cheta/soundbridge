@@ -50,6 +50,13 @@ export function useAudioUpload(): [UploadState, UploadActions] {
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Synchronous re-entrancy lock (SOCIAL_VALIDATION.MD) — state.isUploading alone isn't
+  // enough: a true rapid double-click can fire uploadTrack twice before React commits the
+  // first setState, so both calls would read the same stale isUploading=false. A ref
+  // updates synchronously, closing that race regardless of render timing. The DB trigger
+  // (20260916000000_prevent_duplicate_track_uploads.sql) is the hard backstop either way;
+  // this just avoids two full uploads + a confusing rejection error on the client.
+  const isUploadingRef = useRef(false);
 
   const setAudioFile = useCallback((file: File | null, uploadContentType: 'music' | 'podcast' | 'mixtape' | 'audio_book' = 'music') => {
     if (!file) {
@@ -221,6 +228,10 @@ export function useAudioUpload(): [UploadState, UploadActions] {
     trackData: Omit<TrackUploadData, 'audioFile' | 'coverArtFile'>,
     qualitySettings?: AudioQualitySettings
   ): Promise<{ success: boolean; trackId?: string }> => {
+    if (isUploadingRef.current) {
+      return { success: false };
+    }
+
     if (!user) {
       setState(prev => ({
         ...prev,
@@ -238,6 +249,8 @@ export function useAudioUpload(): [UploadState, UploadActions] {
       }));
       return { success: false };
     }
+
+    isUploadingRef.current = true;
 
     // Create abort controller for cancellation
     abortControllerRef.current = new AbortController();
@@ -299,6 +312,8 @@ export function useAudioUpload(): [UploadState, UploadActions] {
         error: error instanceof Error ? error.message : 'Upload failed'
       }));
       return { success: false };
+    } finally {
+      isUploadingRef.current = false;
     }
   }, [user, state.audioFile, state.coverArtFile]);
 
@@ -306,6 +321,7 @@ export function useAudioUpload(): [UploadState, UploadActions] {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    isUploadingRef.current = false;
 
     setState(prev => ({
       ...prev,
