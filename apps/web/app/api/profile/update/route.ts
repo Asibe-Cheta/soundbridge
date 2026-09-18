@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
     console.log('📝 Profile update data:', body);
     const {
       display_name,
+      first_name,
+      last_name,
       username,
       avatar_url,
       location,
@@ -64,6 +66,10 @@ export async function POST(request: NextRequest) {
     const updateData: any = {};
 
     if (display_name !== undefined) updateData.display_name = display_name;
+    // Additive, optional — display_name remains the only field used for display anywhere
+    // (WEB_TEAM_FIRST_LAST_NAME.MD). No validation beyond display_name's own.
+    if (first_name !== undefined) updateData.first_name = first_name;
+    if (last_name !== undefined) updateData.last_name = last_name;
     if (username !== undefined) updateData.username = username;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (location !== undefined) updateData.location = location;

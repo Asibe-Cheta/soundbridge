@@ -74,6 +74,10 @@ export async function POST(request: NextRequest) {
       // Basic profile fields
       role: databaseRole,
       display_name: display_name,
+      // Additive, optional — display_name remains the only field used for display anywhere
+      // (WEB_TEAM_FIRST_LAST_NAME.MD). No validation beyond display_name's own.
+      first_name: body.first_name || null,
+      last_name: body.last_name || null,
       username: body.username || null, // Handle username from frontend
       bio: body.bio || null,
       country: body.country || null,
