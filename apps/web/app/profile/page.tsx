@@ -235,6 +235,11 @@ export default function ProfilePage() {
   const [isMobile, setIsMobile] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: 'Your Name',
+    // Additive, optional — display_name stays the only field used for display anywhere
+    // (WEB_TEAM_FIRST_LAST_NAME.MD). Empty string, not a placeholder, since these have no
+    // sensible default the way displayName's fallback chain does.
+    firstName: '',
+    lastName: '',
     username: 'username',
     bio: 'Tell your story...',
     location: 'Location not set',
@@ -371,6 +376,8 @@ export default function ProfilePage() {
           setProfileData(prev => ({
             ...prev,
             displayName: data.profile.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your Name',
+            firstName: data.profile.first_name || '',
+            lastName: data.profile.last_name || '',
             username: data.profile.username || user?.email?.split('@')[0] || 'username',
             bio: data.profile.bio || 'Tell your story...',
             location: data.profile.location || 'Location not set',
@@ -466,6 +473,8 @@ export default function ProfilePage() {
         body: JSON.stringify({
           userId: user?.id,
           display_name: profileData.displayName,
+          first_name: profileData.firstName || null,
+          last_name: profileData.lastName || null,
           username: profileData.username,
           bio: profileData.bio,
           location: profileData.location,
@@ -1213,6 +1222,29 @@ export default function ProfilePage() {
               className="form-input"
               value={profileData.displayName}
               onChange={(e) => handleInputChange('displayName', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          {/* Additive, optional — not shown anywhere for display, only collected for future
+              personalization use cases (WEB_TEAM_FIRST_LAST_NAME.MD). Display Name above
+              remains the only field used publicly. */}
+          <div className="form-group">
+            <label className="form-label">First Name (optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={profileData.firstName}
+              onChange={(e) => handleInputChange('firstName', e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Last Name (optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={profileData.lastName}
+              onChange={(e) => handleInputChange('lastName', e.target.value)}
               disabled={!isEditing}
             />
           </div>
