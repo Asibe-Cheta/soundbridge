@@ -16,6 +16,8 @@ import { Footer } from '../../../src/components/layout/Footer';
 import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { COUNTRY_ADDRESS_CONFIGS, DEFAULT_CONFIG, getCountryConfig, extractCityFromAddressFields } from '../../../src/config/countryAddressConfigs';
 import { geocodeAddress, buildAddressString } from '../../../src/lib/geocoding';
+import { CoOrganizerTagField, type CoOrganizerUser } from '../../../src/components/events/CoOrganizerTagField';
+import { createClient as createBrowserSupabaseClient } from '../../../src/lib/supabase-browser';
 
 function CreateEventLoading() {
   return (
@@ -50,6 +52,7 @@ function CreateEventContent() {
   const [publishOption, setPublishOption] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
   const [eventDisclaimerAccepted, setEventDisclaimerAccepted] = useState(false);
+  const [coOrganizers, setCoOrganizers] = useState<CoOrganizerUser[]>([]);
 
   // Location states (country-based address fields)
   const [selectedCountry, setSelectedCountry] = useState<string>('GB'); // Default to UK
@@ -361,6 +364,29 @@ function CreateEventContent() {
         setPublishStatus('error');
       } else {
         setPublishStatus('success');
+
+        // Fire-and-forget: tag co-organisers against the newly created event.
+        // Table is publicly readable but INSERT is RLS-gated to the event's own
+        // creator (tagged_by = auth.uid() AND events.creator_id = auth.uid()),
+        // so this only succeeds because we're the creator writing right after
+        // our own event's insert went through.
+        const createdEventId = result.data?.id;
+        if (createdEventId && coOrganizers.length > 0 && user) {
+          const rows = coOrganizers.map((co) => ({
+            event_id: createdEventId,
+            user_id: co.userId,
+            tagged_by: user.id,
+          }));
+          createBrowserSupabaseClient()
+            .from('event_co_organizers')
+            .insert(rows)
+            .then(({ error: coOrganizerError }) => {
+              if (coOrganizerError) {
+                console.error('❌ Failed to tag co-organizers:', coOrganizerError);
+              }
+            });
+        }
+
         // Reset form
         setTitle('');
         setDescription('');
@@ -374,6 +400,7 @@ function CreateEventContent() {
         setPrice('');
         setMaxAttendees('');
         setGeocodeError(null);
+        setCoOrganizers([]);
         imageActions.resetUpload();
       }
     } catch (error) {
@@ -870,6 +897,22 @@ function CreateEventContent() {
                 subtitle="Drag & drop or click to browse"
                 accept="image/*"
                 maxSize={5 * 1024 * 1024} // 5MB
+              />
+            </div>
+
+            {/* Co-Organizers */}
+            <div className="card">
+              <h3 style={{ color: '#EC4899', marginBottom: '0.5rem' }}>
+                Co-Organisers
+              </h3>
+              <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                Tag other registered SoundBridge users as co-organisers for this event.
+              </p>
+              <CoOrganizerTagField
+                value={coOrganizers}
+                onChange={setCoOrganizers}
+                currentUserId={user?.id}
+                disabled={isPublishing}
               />
             </div>
 
