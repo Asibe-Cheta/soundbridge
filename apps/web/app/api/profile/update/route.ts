@@ -62,6 +62,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate username format server-side (this endpoint is now also used to persist
+    // username edits from Settings/Edit Profile, not just onboarding — the client-side
+    // check-username call is UX only, this is the real enforcement). Same rules as
+    // /api/onboarding/check-username so both entry points agree on what's valid.
+    let normalizedUsername: string | undefined;
+    if (username !== undefined && username !== null) {
+      if (typeof username !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'Username must be a string' },
+          { status: 400 }
+        );
+      }
+      normalizedUsername = username.toLowerCase().trim();
+      if (normalizedUsername.length < 3) {
+        return NextResponse.json(
+          { success: false, error: 'Username must be at least 3 characters' },
+          { status: 400 }
+        );
+      }
+      if (normalizedUsername.length > 30) {
+        return NextResponse.json(
+          { success: false, error: 'Username must be no more than 30 characters' },
+          { status: 400 }
+        );
+      }
+      if (!/^[a-z0-9_]+$/.test(normalizedUsername)) {
+        return NextResponse.json(
+          { success: false, error: 'Username can only contain lowercase letters, numbers, and underscores' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update the user's profile
     const updateData: any = {};
 
@@ -70,7 +103,7 @@ export async function POST(request: NextRequest) {
     // (WEB_TEAM_FIRST_LAST_NAME.MD). No validation beyond display_name's own.
     if (first_name !== undefined) updateData.first_name = first_name;
     if (last_name !== undefined) updateData.last_name = last_name;
-    if (username !== undefined) updateData.username = username;
+    if (normalizedUsername !== undefined) updateData.username = normalizedUsername;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
     if (location !== undefined) updateData.location = location;
     if (bio !== undefined) updateData.bio = bio;
@@ -118,6 +151,12 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('❌ Error updating profile:', updateError);
+        if (updateError.code === '23505') {
+          return NextResponse.json(
+            { success: false, error: 'Username is already taken' },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { success: false, error: `Failed to update profile: ${updateError.message}` },
           { status: 500 }
@@ -137,6 +176,12 @@ export async function POST(request: NextRequest) {
 
       if (createError) {
         console.error('❌ Error creating profile:', createError);
+        if (createError.code === '23505') {
+          return NextResponse.json(
+            { success: false, error: 'Username is already taken' },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { success: false, error: `Failed to create profile: ${createError.message}` },
           { status: 500 }
