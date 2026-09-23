@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 
 export async function GET(
@@ -8,9 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const { supabase, user: viewer } = await getSupabaseRouteClient(request, false);
     const resolvedParams = await params;
-    const { data: { user: viewer } } = await supabase.auth.getUser();
     const blockedUserIds = new Set<string>();
     if (viewer?.id) {
       const service = createServiceClient();
@@ -104,11 +102,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     const resolvedParams = await params;
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
@@ -219,11 +214,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     const resolvedParams = await params;
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
@@ -308,11 +300,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
     const resolvedParams = await params;
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(

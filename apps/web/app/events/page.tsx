@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FixedSizeGrid as Grid } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
 import { Search, Filter, TrendingUp, Music, Users, Calendar, Mic, AlertCircle, User, Plus, LogOut, Bell, Settings, Play, Pause, Heart, Share2, Loader2, Upload, Menu, X, Home, MapPin, DollarSign, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
@@ -17,21 +15,23 @@ import SearchDropdown from '../../src/components/search/SearchDropdown';
 import { ThemeToggle } from '../../src/components/ui/ThemeToggle';
 import type { EventCategory } from '../../src/lib/types/event';
 
-// Virtual grid constants
-const EVENT_CARD_WIDTH = 320;     // Width of each event card
-const EVENT_ITEM_HEIGHT = 350;    // Height of each event card
-const EVENT_CONTAINER_HEIGHT = 700;
+// Grid layout constants
+const EVENT_CARD_MIN_WIDTH = 320; // Minimum width of each event card before wrapping
 const GRID_GAP = 20;              // Gap between grid items
 
-// Event card component for virtual grid
-interface VirtualEventItemProps {
-  columnIndex: number;
-  rowIndex: number;
-  style: React.CSSProperties;
-  data: {
-    events: any[];
-    columnsCount: number;
-  };
+// Events don't have a generic `price` field — only price_gbp/price_ngn/price_usd/price_eur
+// (see src/lib/types/event.ts). Matches the event detail page's own convention of treating
+// "nothing set" as free (that page branches on the same price_gbp/price_ngn checks).
+function getEventPriceLabel(event: any): string {
+  if (event.price_gbp && event.price_gbp > 0) return `£${event.price_gbp}`;
+  if (event.price_ngn && event.price_ngn > 0) return `₦${event.price_ngn}`;
+  if (event.price_usd && event.price_usd > 0) return `$${event.price_usd}`;
+  if (event.price_eur && event.price_eur > 0) return `€${event.price_eur}`;
+  return 'Free';
+}
+
+function getEventPriceAmount(event: any): number {
+  return event.price_gbp || event.price_ngn || event.price_usd || event.price_eur || 0;
 }
 
 // Mobile list item component for Instagram-style layout
@@ -114,7 +114,7 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
             borderRadius: '8px',
             fontWeight: '600'
           }}>
-            {(event as any).price === 0 ? 'Free' : `$${(event as any).price}`}
+            {getEventPriceLabel(event)}
           </div>
         </div>
 
@@ -187,24 +187,14 @@ const MobileEventItem = ({ event }: MobileEventItemProps) => {
   );
 };
 
-const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventItemProps) => {
-  const { events, columnsCount } = data;
-  const index = rowIndex * columnsCount + columnIndex;
-  const event = events[index];
-
-  if (!event) {
-    return <div style={style}></div>;
-  }
-
+const EventCard = ({ event }: { event: any }) => {
   return (
-    <div style={{ ...style, padding: `${GRID_GAP / 2}px` }}>
-      <Link 
-        href={`/events/${event.id}`} 
-        style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}
-      >
-        <div className="event-card" style={{ 
+    <Link
+      href={`/events/${event.id}`}
+      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+    >
+        <div className="event-card" style={{
           width: '100%',
-          height: `${EVENT_ITEM_HEIGHT - GRID_GAP}px`,
           background: 'var(--bg-card)',
           border: '1px solid var(--border-primary)',
           borderRadius: '16px',
@@ -277,7 +267,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
               borderRadius: '12px',
               fontWeight: '600'
             }}>
-              {event.price === 0 ? 'Free' : `$${event.price}`}
+              {getEventPriceLabel(event)}
             </div>
 
             <div
@@ -352,8 +342,7 @@ const VirtualEventItem = ({ columnIndex, rowIndex, style, data }: VirtualEventIt
             </div>
           </div>
         </div>
-      </Link>
-    </div>
+    </Link>
   );
 };
 
@@ -449,7 +438,7 @@ export default function EventsPage() {
     // Price filter
     if (selectedPrice !== 'all') {
       filtered = filtered.filter(event => {
-        const price = (event as any).price || 0;
+        const price = getEventPriceAmount(event);
         switch (selectedPrice) {
           case 'free':
             return price === 0;
@@ -475,22 +464,16 @@ export default function EventsPage() {
         filtered.sort((a, b) => (b.attendeeCount || 0) - (a.attendeeCount || 0));
         break;
       case 'price-low':
-        filtered.sort((a, b) => ((a as any).price || 0) - ((b as any).price || 0));
+        filtered.sort((a, b) => getEventPriceAmount(a) - getEventPriceAmount(b));
         break;
       case 'price-high':
-        filtered.sort((a, b) => ((b as any).price || 0) - ((a as any).price || 0));
+        filtered.sort((a, b) => getEventPriceAmount(b) - getEventPriceAmount(a));
         break;
     }
 
     return filtered;
   }, [eventsState.events, searchQuery, selectedGenre, selectedLocation, selectedDate, selectedPrice, sortBy]);
 
-  // Calculate grid dimensions
-  const calculateColumns = useCallback((containerWidth: number) => {
-    const availableWidth = containerWidth - GRID_GAP;
-    const cardWidthWithGap = EVENT_CARD_WIDTH + GRID_GAP;
-    return Math.max(1, Math.floor(availableWidth / cardWidthWithGap));
-  }, []);
 
   // Fetch search suggestions for events
   const fetchSearchSuggestions = useCallback(async (query: string) => {
@@ -1036,23 +1019,23 @@ export default function EventsPage() {
             )}
           </div>
           
-          <div className="events-grid-container" style={{ height: EVENT_CONTAINER_HEIGHT }}>
+          <div className="events-grid-container">
             {eventsState.loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)' }}>
                   <Loader2 size={24} className="animate-spin" />
                   <span>Loading events...</span>
                 </div>
               </div>
             ) : eventsState.error ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--error)' }}>
                   <AlertCircle size={24} />
                   <span>Error loading events: {eventsState.error}</span>
                 </div>
               </div>
             ) : filteredEvents.length === 0 ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
                 <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
                   <Calendar size={48} style={{ marginBottom: '1rem', opacity: '0.5' }} />
                   <h3>No events found</h3>
@@ -1080,31 +1063,18 @@ export default function EventsPage() {
                     ))}
                   </div>
                 ) : (
-                  /* Desktop Grid View */
-                  <AutoSizer>
-                    {({ height, width }) => {
-                      const columnsCount = Math.max(1, Math.floor((width - GRID_GAP) / (EVENT_CARD_WIDTH + GRID_GAP)));
-                      const rowCount = Math.ceil(filteredEvents.length / columnsCount);
-
-                      return (
-                        <Grid
-                          columnCount={columnsCount}
-                          columnWidth={EVENT_CARD_WIDTH}
-                          height={height}
-                          itemCount={filteredEvents.length}
-                          rowCount={rowCount}
-                          rowHeight={EVENT_ITEM_HEIGHT}
-                          width={width}
-                          itemData={{
-                            events: filteredEvents,
-                            columnsCount
-                          }}
-                        >
-                          {VirtualEventItem}
-                        </Grid>
-                      );
+                  /* Desktop Grid View — plain CSS grid, rows size themselves to content */
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(auto-fill, minmax(${EVENT_CARD_MIN_WIDTH}px, 1fr))`,
+                      gap: `${GRID_GAP}px`,
                     }}
-                  </AutoSizer>
+                  >
+                    {filteredEvents.map((event) => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
                 )}
               </>
             )}
