@@ -440,10 +440,13 @@ class EventNotificationService {
               // AdminDistributionScreen/MyCommunityScreen/AudioPlayerContext already write
               // to on mobile) — event_notifications alone never surfaced this push in the
               // user's Notifications screen, only as a device-level push.
+              // notifications.type has a CHECK constraint — confirmed 'event' is allowed
+              // ('event_announcement' is not), matching the same value used in the push
+              // payload's data.type above.
               if (notificationRow) {
-                await getSupabaseAdmin().from('notifications').insert({
+                const { error: notifInsertError } = await getSupabaseAdmin().from('notifications').insert({
                   user_id: notificationRow.user_id,
-                  type: 'event_announcement',
+                  type: 'event',
                   title: notificationRow.title,
                   body: notificationRow.body,
                   related_id: notificationRow.event_id,
@@ -452,6 +455,9 @@ class EventNotificationService {
                   data: { eventId: notificationRow.event_id, notificationId: notificationRow.id },
                   read: false,
                 });
+                if (notifInsertError) {
+                  console.error('❌ Failed to insert in-app notification row:', notifInsertError);
+                }
               }
 
               sentCount++;
