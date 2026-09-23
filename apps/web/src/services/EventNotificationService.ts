@@ -375,7 +375,10 @@ class EventNotificationService {
           title: notification.title,
           body: notification.body,
           data: {
-            type: 'event.announcement',
+            // Must be exactly 'event' or 'event_reminder' — mobile's handleDeepLink only
+            // builds soundbridge://event/{eventId} for those two values; 'event.announcement'
+            // silently matched nothing, so tapping the notification just opened the app.
+            type: 'event',
             eventId: notification.event_id,
             notificationId: notification.id,
             action: 'VIEW_EVENT',
@@ -432,6 +435,24 @@ class EventNotificationService {
               await getSupabaseAdmin().rpc('increment_user_notification_count', {
                 p_user_id: notifications.find(n => n.id === notificationId)?.user_id
               });
+
+              // Mirror into the app's canonical in-app-notification-feed table (same one
+              // AdminDistributionScreen/MyCommunityScreen/AudioPlayerContext already write
+              // to on mobile) — event_notifications alone never surfaced this push in the
+              // user's Notifications screen, only as a device-level push.
+              if (notificationRow) {
+                await getSupabaseAdmin().from('notifications').insert({
+                  user_id: notificationRow.user_id,
+                  type: 'event_announcement',
+                  title: notificationRow.title,
+                  body: notificationRow.body,
+                  related_id: notificationRow.event_id,
+                  related_type: 'event',
+                  action_url: `/events/${notificationRow.event_id}`,
+                  data: { eventId: notificationRow.event_id, notificationId: notificationRow.id },
+                  read: false,
+                });
+              }
 
               sentCount++;
             } else {
