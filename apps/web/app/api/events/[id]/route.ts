@@ -2,6 +2,66 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 
+// Same mapping POST /api/events applies before insert — kept identical so an edit form
+// reusing the creation form's category picker (mobile-friendly labels) doesn't need its
+// own copy of this map or to know the underlying DB enum values.
+const EVENT_CATEGORY_MAP: Record<string, string> = {
+  'Music Concert': 'Secular',
+  'Birthday Party': 'Other',
+  'Carnival': 'Carnival',
+  'Get Together': 'Other',
+  'Music Karaoke': 'Secular',
+  'Comedy Night': 'Other',
+  'Gospel Concert': 'Gospel',
+  'Instrumental': 'Classical',
+  'Jazz Room': 'Jazz',
+  'Workshop': 'Other',
+  'Conference': 'Conference',
+  'Festival': 'Carnival',
+  'Other': 'Other',
+};
+
+// Union of the DB enum values and every possible EVENT_CATEGORY_MAP output — accepts
+// either a raw enum value or one of the mobile-friendly labels above (already normalized
+// by the time this is checked).
+const VALID_EVENT_CATEGORIES = [
+  'Christian', 'Secular', 'Carnival', 'Gospel', 'Hip-Hop',
+  'Afrobeat', 'Jazz', 'Classical', 'Rock', 'Pop', 'Other', 'Conference',
+];
+
+// Only these columns may be changed via PUT/PATCH — matches exactly what POST accepts on
+// create, minus creation-only fields (creator_id, current_attendees, the disclaimer pair).
+// Prevents a client from mass-assigning arbitrary columns through an update body.
+const EVENT_UPDATABLE_FIELDS = [
+  'title', 'description', 'event_date', 'location', 'venue', 'category',
+  'city', 'country', 'latitude', 'longitude',
+  'price_gbp', 'price_ngn', 'max_attendees', 'image_url',
+] as const;
+
+/**
+ * Normalizes category (if present) through EVENT_CATEGORY_MAP and strips any field not in
+ * EVENT_UPDATABLE_FIELDS. Returns an error string if category is present but invalid after
+ * normalization, otherwise null.
+ */
+function sanitizeEventUpdate(rawBody: Record<string, unknown>): { data: Record<string, unknown>; error: string | null } {
+  const data: Record<string, unknown> = {};
+  for (const field of EVENT_UPDATABLE_FIELDS) {
+    if (rawBody[field] !== undefined) {
+      data[field] = rawBody[field];
+    }
+  }
+
+  if (typeof data.category === 'string') {
+    const normalized = EVENT_CATEGORY_MAP[data.category] || data.category;
+    if (!VALID_EVENT_CATEGORIES.includes(normalized)) {
+      return { data, error: 'Invalid category' };
+    }
+    data.category = normalized;
+  }
+
+  return { data, error: null };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -133,32 +193,22 @@ export async function PUT(
       );
     }
 
-    const updateData = await request.json();
-
-    // Validate category if provided
-    if (updateData.category) {
-      const validCategories = [
-        'Christian', 'Secular', 'Carnival', 'Gospel', 'Hip-Hop',
-        'Afrobeat', 'Jazz', 'Classical', 'Rock', 'Pop', 'Other'
-      ];
-
-      if (!validCategories.includes(updateData.category)) {
-        return NextResponse.json(
-          { error: 'Invalid category' },
-          { status: 400 }
-        );
-      }
-    }
+    const rawBody = await request.json();
 
     // Validate date if provided
-    if (updateData.event_date) {
-      const eventDate = new Date(updateData.event_date);
+    if (rawBody.event_date) {
+      const eventDate = new Date(rawBody.event_date);
       if (isNaN(eventDate.getTime())) {
         return NextResponse.json(
           { error: 'Invalid event date' },
           { status: 400 }
         );
       }
+    }
+
+    const { data: updateData, error: sanitizeError } = sanitizeEventUpdate(rawBody);
+    if (sanitizeError) {
+      return NextResponse.json({ error: sanitizeError }, { status: 400 });
     }
 
     // Update event
@@ -245,7 +295,22 @@ export async function PATCH(
       );
     }
 
-    const updateData = await request.json();
+    const rawBody = await request.json();
+
+    if (rawBody.event_date) {
+      const eventDate = new Date(rawBody.event_date);
+      if (isNaN(eventDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid event date' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const { data: updateData, error: sanitizeError } = sanitizeEventUpdate(rawBody);
+    if (sanitizeError) {
+      return NextResponse.json({ error: sanitizeError }, { status: 400 });
+    }
 
     // Update event
     const { data: event, error: updateError } = await supabase
