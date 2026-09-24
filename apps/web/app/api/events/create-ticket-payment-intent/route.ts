@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { stripe } from '@/src/lib/stripe';
 import { addStripePaymentIntentIdToMetadata } from '@/src/lib/stripe-payment-intent-metadata';
 import {
@@ -119,23 +120,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get event organizer's Stripe Connect account from creator_bank_accounts table
-    const { data: bankAccount, error: bankAccountError } = await supabase
+    // Get event organizer's Stripe Connect account from creator_bank_accounts table.
+    // Must use the service-role client here, not the buyer's own RLS-scoped `supabase` —
+    // creator_bank_accounts RLS only allows a row's owner to read it, so a buyer's request
+    // querying the ORGANIZER's row got 0 rows back every time, regardless of currency or
+    // verification status. Confirmed directly: an anon-key read of a real verified
+    // organizer's row returned "0 rows" despite the row genuinely existing and being
+    // verified — this was firing the generic "has not set up payment account" error for
+    // every ticket purchase attempt, on every event, not just currency-mismatched ones.
+    const serviceClient = createServiceClient();
+    const { data: bankAccount } = await serviceClient
       .from('creator_bank_accounts')
-      .select('stripe_account_id, is_verified')
+      .select('stripe_account_id, is_verified, currency')
       .eq('user_id', event.creator_id)
       .single();
 
-    // Alternative: Check if stripe_account_id exists in profiles table (fallback)
-    let stripeAccountId = bankAccount?.stripe_account_id;
-    if (!stripeAccountId) {
-      const { data: organizerProfile } = await supabase
-        .from('profiles')
-        .select('stripe_account_id')
-        .eq('id', event.creator_id)
-        .single();
-      stripeAccountId = organizerProfile?.stripe_account_id;
-    }
+    const stripeAccountId = bankAccount?.stripe_account_id;
 
     if (!stripeAccountId) {
       return NextResponse.json(
