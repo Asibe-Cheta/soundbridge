@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { stripe } from '@/src/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
+import { Expo } from 'expo-server-sdk';
+import { getExpoPushClient } from '@/src/lib/expo-push-client';
 import { incrementEventTicketSales } from '@/src/lib/event-analytics';
 import { linkEventPromotionTicketPurchase } from '@/src/lib/event-promotion-tracking';
 import { SubscriptionEmailService } from '@/src/services/SubscriptionEmailService';
@@ -222,8 +224,10 @@ export async function POST(request: NextRequest) {
       console.error('[confirm-ticket-purchase] event analytics:', analyticsErr);
     }
 
-    // Update event attendee count
-    if (event.max_attendees) {
+    // Update event attendee count — was previously gated behind `event.max_attendees`
+    // being set, so any event with no attendee cap never had its attendee count updated
+    // at all, regardless of real ticket sales. Attendance should be tracked either way.
+    {
       const { error: updateError } = await supabaseAdmin
         .from('events')
         .update({
@@ -235,6 +239,67 @@ export async function POST(request: NextRequest) {
         console.error('Error updating event attendee count:', updateError);
         // Don't fail the request, just log the error
       }
+    }
+
+    // Notify the organizer a ticket sold. This has never fired for anyone before —
+    // confirm-ticket-purchase never wrote to `notifications` at all, and separately
+    // 'ticket_sold' wasn't even an allowed value until the CHECK constraint was widened.
+    try {
+      const { data: buyerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', user.id)
+        .maybeSingle();
+      const buyerName = buyerProfile?.display_name || buyerProfile?.username || 'Someone';
+
+      const notifTitle = `New ticket sold for ${event.title}`;
+      const notifBody = `${buyerName} bought a ticket to ${event.title}`;
+
+      const { error: notifInsertError } = await supabaseAdmin.from('notifications').insert({
+        user_id: event.creator_id,
+        type: 'ticket_sold',
+        title: notifTitle,
+        body: notifBody,
+        related_id: eventId,
+        related_type: 'event',
+        action_url: `/events/${eventId}`,
+        data: { eventId, ticketId: createdTickets[0]?.id },
+        read: false,
+      });
+      if (notifInsertError) {
+        console.error('[confirm-ticket-purchase] notification insert:', notifInsertError);
+      }
+
+      // Also push to the organizer's device — same pattern as sendQueuedNotifications.
+      const { data: organizerProfileForPush } = await supabaseAdmin
+        .from('profiles')
+        .select('expo_push_token')
+        .eq('id', event.creator_id)
+        .maybeSingle();
+      let organizerPushToken = organizerProfileForPush?.expo_push_token;
+      if (!organizerPushToken) {
+        const { data: tokenRow } = await supabaseAdmin
+          .from('user_push_tokens')
+          .select('push_token')
+          .eq('user_id', event.creator_id)
+          .order('last_used_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        organizerPushToken = tokenRow?.push_token;
+      }
+      if (organizerPushToken && Expo.isExpoPushToken(organizerPushToken)) {
+        await getExpoPushClient().sendPushNotificationsAsync([{
+          to: organizerPushToken,
+          sound: 'default',
+          title: notifTitle,
+          body: notifBody,
+          data: { type: 'event', eventId, action: 'VIEW_EVENT' },
+          channelId: 'events',
+          priority: 'high',
+        }]);
+      }
+    } catch (notifErr) {
+      console.error('[confirm-ticket-purchase] notification insert threw:', notifErr);
     }
 
     // Fetch organizer profile details for email. profiles has no full_name/email columns
