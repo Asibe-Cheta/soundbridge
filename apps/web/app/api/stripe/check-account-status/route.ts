@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Get user's Stripe account ID from database
     const { data: bankAccount, error: bankAccountError } = await supabase
       .from('creator_bank_accounts')
-      .select('stripe_account_id')
+      .select('stripe_account_id, currency')
       .eq('user_id', user.id as any)
       .single() as { data: any; error: any };
 
@@ -121,7 +121,12 @@ export async function POST(request: NextRequest) {
         detailsSubmitted: account.details_submitted,
         verificationStatus: verificationStatus,
         isVerified: isVerified,
-        requirements: account.requirements
+        requirements: account.requirements,
+        // The currency this Stripe Connect account is actually registered for — an event
+        // priced in any other currency can't sell tickets through it (Stripe/Fincra are
+        // separate providers per-currency). Use this for a proactive check at event-creation
+        // time rather than only failing at ticket-purchase time.
+        currency: bankAccount.currency ?? null
       }
     }, { status: 200, headers: corsHeaders });
 

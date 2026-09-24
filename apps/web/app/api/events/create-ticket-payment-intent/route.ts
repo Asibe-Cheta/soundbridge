@@ -152,6 +152,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Stripe (GBP/EUR/USD) and Fincra (NGN/GHS/KES) are separate providers — a Stripe
+    // Connect account registered for one currency cannot receive a transfer in another.
+    // creator_bank_accounts.currency records which one the organizer actually connected;
+    // catching a mismatch here up front avoids a confusing generic Stripe error later and
+    // tells the ORGANIZER (not the buyer, who can't act on this) what's actually wrong.
+    if (bankAccount?.currency && bankAccount.currency.toUpperCase() !== validCurrency) {
+      const symbols: Record<string, string> = { GBP: '£', NGN: '₦' };
+      const ticketSymbol = symbols[validCurrency] || validCurrency;
+      const accountCurrency = bankAccount.currency.toUpperCase();
+      const accountSymbol = symbols[accountCurrency] || accountCurrency;
+      return NextResponse.json(
+        {
+          error: `This event's ticket price is in ${ticketSymbol} (${validCurrency}), but the event organizer's connected payment account only supports ${accountSymbol} (${accountCurrency}). The organizer needs to update the event's ticket price currency or connect a ${validCurrency}-compatible payment account before tickets can be sold for this event.`,
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Initialize Stripe
     if (!stripe) {
       return NextResponse.json(
