@@ -42,6 +42,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // A falsy-but-not-undefined quantity (0, null) skips the `= 1` default above and would
+    // otherwise silently produce zero ticket records below, then crash on createdTickets[0]
+    // after the charge has already succeeded — turning that into a clear error instead.
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return NextResponse.json(
+        { error: `Invalid quantity: ${quantity}` },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     // Initialize Stripe
     if (!stripe) {
       return NextResponse.json(
@@ -227,17 +237,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch organizer profile details for email
-    const { data: organizerProfile } = await supabase
+    // Fetch organizer profile details for email. profiles has no full_name/email columns
+    // (confirmed live — both 42703) — display_name is the real column, and email only
+    // lives on auth.users, so it needs the admin API via the service-role client.
+    const { data: organizerProfile } = await supabaseAdmin
       .from('profiles')
-      .select('full_name, email')
+      .select('display_name')
       .eq('id', event.creator_id)
       .single();
+    const { data: organizerAuthUser } = await supabaseAdmin.auth.admin.getUserById(event.creator_id);
 
     // Send ticket confirmation email to buyer
     try {
-      // Format amount for display (convert from smallest unit)
-      const amountFormatted = (amount / 100).toFixed(2);
+      // Format amount for display (convert from smallest unit) — was referencing an
+      // undefined `amount` variable (real var is amountMinor), throwing a ReferenceError
+      // on every purchase; caught by this try/catch so it never surfaced as a 500, it just
+      // silently skipped sending the confirmation email every single time.
+      const amountFormatted = (amountMinor / 100).toFixed(2);
       const currencySymbol = currency.toUpperCase() === 'GBP' ? '£' : '₦';
 
       await SubscriptionEmailService.sendTicketConfirmation({
@@ -253,8 +269,8 @@ export async function POST(request: NextRequest) {
         currency: currency.toUpperCase(),
         purchaseDate: new Date().toISOString(),
         paymentIntentId: paymentIntentId,
-        organizerName: organizerProfile?.full_name,
-        organizerEmail: organizerProfile?.email,
+        organizerName: organizerProfile?.display_name,
+        organizerEmail: organizerAuthUser?.user?.email,
       });
     } catch (emailError) {
       // Log email error but don't fail ticket creation
