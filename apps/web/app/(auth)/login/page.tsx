@@ -903,7 +903,7 @@ function LoginContent() {
         <div style={{ textAlign: 'center', color: '#999' }}>
           Don&apos;t have an account?{' '}
           <Link
-            href="/signup"
+            href={searchParams.get('redirectTo') ? `/signup?redirectTo=${encodeURIComponent(searchParams.get('redirectTo')!)}` : '/signup'}
             style={{
               color: '#EC4899',
               textDecoration: 'none',

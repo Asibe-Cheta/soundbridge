@@ -138,12 +138,9 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
   }, [user?.id, event?.id, event?.city, event?.location]);
 
   const handleRSVP = async () => {
-    if (!user) {
-      // Redirect to login
-      return;
-    }
-
-    if (!event) return;
+    // Login-gating for a logged-out visitor happens at the call site
+    // (saveIntentAndGoToLogin) — this guard is just defensive.
+    if (!user || !event) return;
 
     try {
       setRsvpLoading(true);
@@ -171,6 +168,52 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
   const handleLike = () => {
     setIsLiked(!isLiked);
   };
+
+  // Saves what a logged-out visitor was trying to do, then sends them to login. Uses
+  // localStorage (not sessionStorage) because it needs to survive not just this tab but a
+  // same-browser round trip through email verification (the existing signup flow already
+  // relies on localStorage for exactly that reason — see 'signup_email'/'signup_profile_data'
+  // in the signup page). Consumed by the effect below the moment `user` becomes truthy.
+  const saveIntentAndGoToLogin = (action: 'rsvp' | 'buy_ticket') => {
+    try {
+      localStorage.setItem(
+        'pending_event_action',
+        JSON.stringify({ action, eventId: resolvedParams.id, ts: Date.now() }),
+      );
+    } catch {
+      /* localStorage unavailable (private browsing etc.) — login still works, just won't auto-resume */
+    }
+    router.push(`/login?redirectTo=${encodeURIComponent(`/events/${resolvedParams.id}`)}`);
+  };
+
+  // Resumes a saved intent the moment the visitor is authenticated — completes the RSVP
+  // immediately, or opens the ticket modal, rather than leaving them on a generic page after
+  // login. Ignores anything older than 30 minutes or for a different event (e.g. they opened
+  // a second event's link in the same browser before finishing login on the first).
+  useEffect(() => {
+    if (!user?.id || !event?.id) return;
+    let pending: { action: 'rsvp' | 'buy_ticket'; eventId: string; ts: number } | null = null;
+    try {
+      const raw = localStorage.getItem('pending_event_action');
+      pending = raw ? JSON.parse(raw) : null;
+    } catch {
+      pending = null;
+    }
+    if (!pending || pending.eventId !== event.id || Date.now() - pending.ts > 30 * 60 * 1000) return;
+
+    try {
+      localStorage.removeItem('pending_event_action');
+    } catch {
+      /* ignore */
+    }
+
+    if (pending.action === 'rsvp') {
+      void handleRSVP();
+    } else if (pending.action === 'buy_ticket') {
+      setShowTicketModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, event?.id]);
 
   const handleTicketPurchaseSuccess = (ticketData: any) => {
     console.log('Ticket purchased successfully:', ticketData);
@@ -404,54 +447,36 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                {/* Buy Ticket button for paid events */}
-                {event && ((event.price_gbp && event.price_gbp > 0) || (event.price_ngn && event.price_ngn > 0)) ? (
-                  user ? (
-                    <button
-                      className="btn-primary"
-                      onClick={() => setShowTicketModal(true)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
-                    >
-                      <DollarSign size={16} />
-                      Buy Ticket
-                    </button>
-                  ) : (
-                    <Link href="/login" style={{ textDecoration: 'none' }}>
-                      <button 
-                        className="btn-primary" 
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
-                      >
-                        <DollarSign size={16} />
-                        Login to Buy Ticket
-                      </button>
-                    </Link>
-                  )
+                {/* Buy Ticket / RSVP are visible to every visitor, logged in or not — viewing
+                    never requires login, only completing the action does. A logged-out tap
+                    saves the intent (saveIntentAndGoToLogin) and sends them to login; the
+                    pending-intent effect above resumes it the moment they're authenticated. */}
+                {event && ((event.price_gbp && event.price_gbp > 0) || (event.price_ngn && event.price_ngn > 0) || (event.price_ghs && event.price_ghs > 0)) ? (
+                  <button
+                    className="btn-primary"
+                    onClick={() => (user ? setShowTicketModal(true) : saveIntentAndGoToLogin('buy_ticket'))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#EC4899' }}
+                  >
+                    <DollarSign size={16} />
+                    Buy Ticket
+                  </button>
                 ) : (
                   /* RSVP button for free events */
-                  user ? (
-                    <button
-                      className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
-                      onClick={handleRSVP}
-                      disabled={rsvpLoading}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                      {rsvpLoading ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : isRSVPed ? (
-                        <CheckCircle size={16} />
-                      ) : (
-                        <Calendar size={16} />
-                      )}
-                      {isRSVPed ? 'Cancel RSVP' : 'RSVP Now'}
-                    </button>
-                  ) : (
-                    <Link href="/login" style={{ textDecoration: 'none' }}>
-                      <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Calendar size={16} />
-                        Login to RSVP
-                      </button>
-                    </Link>
-                  )
+                  <button
+                    className={isRSVPed ? 'btn-secondary' : 'btn-primary'}
+                    onClick={() => (user ? handleRSVP() : saveIntentAndGoToLogin('rsvp'))}
+                    disabled={rsvpLoading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    {rsvpLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : isRSVPed ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <Calendar size={16} />
+                    )}
+                    {isRSVPed ? 'Cancel RSVP' : 'RSVP Now'}
+                  </button>
                 )}
                 <EventBookmarkButton eventId={event.id} />
                 <EventShareButton

@@ -63,7 +63,7 @@ function AuthConfirmContent() {
       }
 
       if (mobile) {
-        router.replace('/signup/continue');
+        router.replace(next !== '/dashboard' ? `/signup/continue?redirectTo=${encodeURIComponent(next)}` : '/signup/continue');
       } else {
         router.replace(needsOnboarding ? '/?onboarding=true' : next);
       }

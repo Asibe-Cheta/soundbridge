@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { PostSignupAppHandoff } from '@/src/components/auth/PostSignupAppHandoff';
 import { isMobileBrowser } from '@/src/lib/mobile-platform';
@@ -12,18 +12,20 @@ import { useAuth } from '@/src/contexts/AuthContext';
 
 function SignupContinueContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo');
   const { user, loading } = useAuth();
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!isMobileBrowser()) {
-      router.replace('/dashboard');
+      router.replace(redirectTo || '/dashboard');
       return;
     }
     const stored = readPartnerReferralFromClient();
     setReferralCode(stored.referralCode);
-  }, [router]);
+  }, [router, redirectTo]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,7 +65,7 @@ function SignupContinueContent() {
         />
       </Link>
 
-      <PostSignupAppHandoff referralCode={referralCode} webContinueHref="/dashboard" />
+      <PostSignupAppHandoff referralCode={referralCode} webContinueHref={redirectTo || '/dashboard'} />
     </div>
   );
 }

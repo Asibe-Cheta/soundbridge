@@ -157,12 +157,18 @@ function SignupContent() {
       const username = generateUsername(formData.email, formData.firstName, formData.lastName);
       
       // Sign up with Supabase (role will be collected during onboarding)
-      const { data, error: signUpError } = await signUp(formData.email, formData.password, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        ...(referralCode ? { referred_by_code: referralCode } : {}),
-        ...(signupSource ? { source: signupSource } : {}),
-      });
+      const redirectTo = searchParams.get('redirectTo');
+      const { data, error: signUpError } = await signUp(
+        formData.email,
+        formData.password,
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          ...(referralCode ? { referred_by_code: referralCode } : {}),
+          ...(signupSource ? { source: signupSource } : {}),
+        },
+        redirectTo || undefined,
+      );
 
       if (signUpError) {
         setError(userMessageForSupabaseAuthError(signUpError.message, signUpError.code ?? signUpError.status));
@@ -188,12 +194,16 @@ function SignupContent() {
         // Redirect to dashboard or email confirmation page
         if (data.session) {
           if (isMobileBrowser()) {
-            router.push('/signup/continue');
+            router.push(
+              redirectTo ? `/signup/continue?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup/continue',
+            );
           } else {
-            router.push('/dashboard');
+            router.push(redirectTo || '/dashboard');
           }
         } else {
-          // Email confirmation required - redirect to verification page
+          // Email confirmation required - redirect to verification page. The saved intent
+          // itself survives this via redirectTo already being baked into signUp's
+          // emailRedirectTo above (auth/callback's `next` param), not via this URL.
           router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
         }
       }
@@ -220,7 +230,8 @@ function SignupContent() {
     setIsLoading(true);
 
     try {
-      const { error } = await signInWithProvider(provider, { next: '/dashboard' });
+      const redirectTo = searchParams.get('redirectTo');
+      const { error } = await signInWithProvider(provider, { next: redirectTo || '/dashboard' });
       if (error) {
         setError(userMessageForSupabaseAuthError(error.message, error.code ?? error.status));
       }

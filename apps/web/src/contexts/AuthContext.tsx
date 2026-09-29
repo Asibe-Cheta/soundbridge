@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signUp: (email: string, password: string, metadata?: any) => Promise<{ data: any; error: any }>;
+  signUp: (email: string, password: string, metadata?: any, redirectTo?: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
   signInWithProvider: (
     provider: 'google' | 'facebook' | 'apple',
@@ -320,17 +320,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, metadata?: any) => {
+  const signUp = async (email: string, password: string, metadata?: any, redirectTo?: string) => {
     if (!supabase) {
       return { data: null, error: new Error('Supabase client not initialized') };
     }
     try {
+      // /auth/callback already reads a `next` param for where to send the user once their
+      // email is confirmed (see auth/callback/route.ts) — threading redirectTo through here
+      // is what lets a saved intent (e.g. "buy ticket for event X") survive the email
+      // verification round trip, not just an immediate-session signup.
+      const emailRedirectTo = redirectTo
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+        : `${window.location.origin}/auth/callback`;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo,
         },
       });
       return { data, error };
