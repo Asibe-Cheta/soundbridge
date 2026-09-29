@@ -394,7 +394,22 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
 
         {/* Event Header */}
         <section className="hero-section">
-          <div className="featured-creator">
+          <div
+            className="featured-creator"
+            style={{
+              // .featured-creator's own CSS sets a random stock-photo background — this
+              // overrides it with the event's real flyer/image (falling back to a plain
+              // gradient when the event has none), and gives it a real minimum height so
+              // the photo is actually visible once .hero-section drops to `height: auto`
+              // on mobile instead of collapsing to just the text's height.
+              backgroundImage: event.image_url
+                ? `url(${event.image_url})`
+                : 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6))',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              minHeight: '320px',
+            }}
+          >
             <div className="featured-creator-content">
               {event.isFeatured && (
                 <div style={{
@@ -414,7 +429,9 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
               <p style={{ color: '#ccc', marginBottom: '1rem' }}>
                 {event.creator?.display_name || 'Unknown Creator'}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
+              {/* flexWrap so this reflows to multiple lines on narrow screens instead of
+                  overflowing the card and getting cut off (e.g. the attending count) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem 1.5rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Calendar size={20} />
                   <span>{event.formattedDate}</span>
@@ -504,14 +521,18 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
                           style={{
                             display: 'flex',
                             justifyContent: 'space-between',
+                            gap: '0.75rem',
                             padding: '0.5rem 0.75rem',
                             background: 'rgba(255, 255, 255, 0.05)',
                             borderRadius: '8px',
                             opacity: soldOut ? 0.6 : 1,
                           }}
                         >
-                          <span>{tier.name}{soldOut ? ' (Sold Out)' : ''}</span>
-                          <span style={{ color: '#EC4899', fontWeight: '600' }}>{formatTierPrice(tier)}</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {tier.name}
+                            {soldOut ? ' (Sold Out)' : ''}
+                          </span>
+                          <span style={{ color: '#EC4899', fontWeight: '600', flexShrink: 0 }}>{formatTierPrice(tier)}</span>
                         </div>
                       );
                     })}
