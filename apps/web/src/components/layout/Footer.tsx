@@ -22,19 +22,23 @@ export function Footer() {
   const footerLinkClass = isMobile ? 'text-xs leading-tight' : 'text-sm';
 
   return (
-    <footer className="section">
-      
+    // Extra bottom padding reserves clear space below the last real content on every
+    // page — CookieConsentToast renders a "Cookie settings" button fixed to the
+    // viewport's bottom-right corner site-wide, and without this, scrolling to the
+    // true bottom of a page put that button directly on top of footer text/links.
+    <footer className="section" style={{ paddingBottom: isMobile ? '4.5rem' : '2rem' }}>
+
       <div className="grid grid-4">
         {/* Company Card */}
         <div className="card">
           <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
             theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
           }`}>Company</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <Link className={footerLinkClass} href="/about" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -43,7 +47,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/careers" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -52,7 +56,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/press" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -61,7 +65,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/blog" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -75,52 +79,52 @@ export function Footer() {
           <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
             theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
           }`}>Creators</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <Link className={footerLinkClass} href="/upload" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Music size={isMobile ? 12 : 16} /> Upload Music
             </Link>
             <Link className={footerLinkClass} href="/upload" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Mic size={isMobile ? 12 : 16} /> Start Podcast
             </Link>
             <Link className={footerLinkClass} href="/create-event" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Calendar size={isMobile ? 12 : 16} /> Create Event
             </Link>
             <Link className={footerLinkClass} href="/pro-resources" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Users size={isMobile ? 12 : 16} /> Resources
             </Link>
@@ -132,11 +136,11 @@ export function Footer() {
           <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
             theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
           }`}>Community</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <Link className={footerLinkClass} href="/discover" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -145,7 +149,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/events" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -154,7 +158,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/forums" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -163,7 +167,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/guidelines" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -177,59 +181,59 @@ export function Footer() {
           <h3 className={`font-semibold ${isMobile ? 'mb-2 text-sm' : 'mb-4 text-base'} ${
             theme === 'dark' ? 'text-pink-500' : 'text-pink-600'
           }`}>Support</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.3rem' : '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <Link className={footerLinkClass} href="/help" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <HelpCircle size={isMobile ? 12 : 16} /> Help Center
             </Link>
             <Link className={footerLinkClass} href="/contact" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Mail size={isMobile ? 12 : 16} /> Contact
             </Link>
             <Link className={footerLinkClass} href="/legal/privacy" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <Shield size={isMobile ? 12 : 16} /> Privacy Policy
             </Link>
             <Link className={footerLinkClass} href="/legal/terms" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: isMobile ? '0.3rem' : '0.5rem',
+              gap: '0.5rem',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
               <FileText size={isMobile ? 12 : 16} /> Terms
             </Link>
             <Link className={footerLinkClass} href="/legal/copyright" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -238,7 +242,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/aml-policy" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -247,7 +251,7 @@ export function Footer() {
             <Link className={footerLinkClass} href="/legal/dmca" style={{ 
               color: 'var(--text-primary)', 
               textDecoration: 'none', 
-              padding: isMobile ? '0.3rem' : '0.5rem', 
+              padding: '0.5rem', 
               borderRadius: '8px', 
               transition: 'all 0.3s ease',
             }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -275,7 +279,7 @@ export function Footer() {
         }}>
           <Link className={footerLinkClass} href="#" style={{ 
             color: 'var(--text-secondary)', 
-            padding: isMobile ? '0.3rem' : '0.5rem', 
+            padding: '0.5rem', 
             borderRadius: '8px', 
             transition: 'all 0.3s ease' 
           }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -283,7 +287,7 @@ export function Footer() {
           </Link>
           <Link className={footerLinkClass} href="#" style={{ 
             color: 'var(--text-secondary)', 
-            padding: isMobile ? '0.3rem' : '0.5rem', 
+            padding: '0.5rem', 
             borderRadius: '8px', 
             transition: 'all 0.3s ease' 
           }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -291,7 +295,7 @@ export function Footer() {
           </Link>
           <Link className={footerLinkClass} href="#" style={{ 
             color: 'var(--text-secondary)', 
-            padding: isMobile ? '0.3rem' : '0.5rem', 
+            padding: '0.5rem', 
             borderRadius: '8px', 
             transition: 'all 0.3s ease' 
           }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -299,7 +303,7 @@ export function Footer() {
           </Link>
           <Link className={footerLinkClass} href="#" style={{ 
             color: 'var(--text-secondary)', 
-            padding: isMobile ? '0.3rem' : '0.5rem', 
+            padding: '0.5rem', 
             borderRadius: '8px', 
             transition: 'all 0.3s ease' 
           }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -307,38 +311,16 @@ export function Footer() {
           </Link>
         </div>
         
+        {/* Privacy/Terms/Copyright/AML/DMCA already live in the Support card above —
+            repeating all five here just made an already-long mobile footer longer.
+            Cookies is the only one of these not covered there, so it's the only one kept. */}
         <div
-          className={`flex justify-center gap-2 sm:gap-4 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+          className={`flex justify-center text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
         >
-          <Link className={footerLinkClass} href="/legal/privacy" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>Privacy</Link>
-          <span>•</span>
-          <Link className={footerLinkClass} href="/legal/terms" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>Terms</Link>
-          <span>•</span>
-          <Link className={footerLinkClass} href="/legal/copyright" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>Copyright</Link>
-          <span>•</span>
-          <Link className={footerLinkClass} href="/aml-policy" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>AML</Link>
-          <span>•</span>
-          <Link className={footerLinkClass} href="/legal/dmca" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>DMCA</Link>
-          <span>•</span>
-          <Link className={footerLinkClass} href="/cookies" style={{ 
-            color: 'var(--text-secondary)', 
-            textDecoration: 'none' 
-          }}>Cookies</Link>
+          <Link className={footerLinkClass} href="/cookies" style={{
+            color: 'var(--text-secondary)',
+            textDecoration: 'none'
+          }}>Cookie Policy</Link>
         </div>
       </div>
     </footer>
