@@ -21,7 +21,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   if (!event) {
-    return { title: 'Event | SoundBridge' };
+    return { title: 'Event' };
   }
 
   const description =
@@ -29,7 +29,9 @@ export async function generateMetadata({
     `${event.venue || event.location} · ${new Date(event.event_date).toLocaleDateString()}`;
 
   return {
-    title: `${event.title} | SoundBridge`,
+    // Bare title — the root layout's title template ('%s | SoundBridge') already appends
+    // the suffix; adding it here too produced "Event | SoundBridge | SoundBridge".
+    title: event.title,
     description,
     openGraph: {
       title: event.title,
