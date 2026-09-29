@@ -239,6 +239,38 @@ export async function POST(request: NextRequest) {
       console.error('[confirm-ticket-purchase] insert_platform_revenue:', err);
     }
 
+    // GHS-priced tickets are charged to the buyer in USD (Stripe rejects GHS on this
+    // platform account) and never go through a Stripe Connect transfer to the organizer —
+    // unlike GBP/NGN tickets, which are already paid out directly by Stripe at charge time.
+    // So for GHS specifically, credit the organizer's cut to their internal wallet here,
+    // tagged distinctly from a tip, so it's withdrawable via the existing (already
+    // currency-generic) Fincra payout path.
+    if (paymentIntent.metadata.displayCurrency === 'GHS') {
+      try {
+        const { error: walletError } = await supabaseAdmin.rpc('add_wallet_transaction', {
+          user_uuid: event.creator_id,
+          transaction_type: 'ticket_sale',
+          amount: organizerAmountMajor,
+          description: `Ticket sale: ${event.title}`,
+          reference_id: paymentIntentId,
+          metadata: {
+            event_id: eventId,
+            tier_id: tierId,
+            ticket_id: createdTickets[0]?.id,
+            display_currency: 'GHS',
+            display_amount: paymentIntent.metadata.displayTotalAmount ?? null,
+          },
+          p_currency: 'USD',
+          p_stripe_payment_intent_id: paymentIntentId,
+        });
+        if (walletError) {
+          console.error('[confirm-ticket-purchase] GHS wallet credit failed:', walletError);
+        }
+      } catch (walletErr) {
+        console.error('[confirm-ticket-purchase] GHS wallet credit threw:', walletErr);
+      }
+    }
+
     try {
       await incrementEventTicketSales(supabaseAdmin, eventId, quantity, amountMajor);
       await linkEventPromotionTicketPurchase(supabaseAdmin, user.id, eventId);

@@ -10,6 +10,8 @@ import {
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
 import { PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { currencyService } from '@/src/lib/currency-service';
+import { pickVerifiedFincraCreatorBankAccount } from '@/src/lib/payouts/sync-fincra-withdrawal-method-from-creator-bank';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
         creator_id,
         price_gbp,
         price_ngn,
+        price_ghs,
         max_attendees,
         current_attendees,
         country
@@ -83,6 +86,7 @@ export async function POST(request: NextRequest) {
       id: string;
       price_gbp: number | null;
       price_ngn: number | null;
+      price_ghs: number | null;
       quantity_available: number | null;
       quantity_sold: number;
       discount_percent: number | null;
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
       const { data: tierRow, error: tierError } = await supabase
         .from('event_ticket_tiers')
         .select(
-          'id, event_id, price_gbp, price_ngn, quantity_available, quantity_sold, discount_percent, discount_quantity_limit, discount_quantity_used',
+          'id, event_id, price_gbp, price_ngn, price_ghs, quantity_available, quantity_sold, discount_percent, discount_quantity_limit, discount_quantity_used',
         )
         .eq('id', tierId)
         .single();
@@ -117,23 +121,31 @@ export async function POST(request: NextRequest) {
     let validCurrency: string;
     if (currency) {
       validCurrency = currency.toUpperCase();
-      if (!['GBP', 'NGN'].includes(validCurrency)) {
+      if (!['GBP', 'NGN', 'GHS'].includes(validCurrency)) {
         return NextResponse.json(
-          { error: 'Invalid currency. Must be GBP or NGN' },
+          { error: 'Invalid currency. Must be GBP, NGN, or GHS' },
           { status: 400, headers: corsHeaders }
         );
       }
     } else if (tier) {
-      validCurrency = tier.price_gbp && tier.price_gbp > 0 ? 'GBP' : 'NGN';
+      validCurrency = tier.price_gbp && tier.price_gbp > 0
+        ? 'GBP'
+        : tier.price_ngn && tier.price_ngn > 0
+        ? 'NGN'
+        : 'GHS';
     } else {
-      // Default to GBP if event has GBP price, otherwise NGN
-      validCurrency = event.price_gbp && event.price_gbp > 0 ? 'GBP' : 'NGN';
+      // Default to GBP if event has GBP price, then NGN, then GHS
+      validCurrency = event.price_gbp && event.price_gbp > 0
+        ? 'GBP'
+        : event.price_ngn && event.price_ngn > 0
+        ? 'NGN'
+        : 'GHS';
     }
 
     // Get price from the tier (if selected) or the event, based on currency
-    const standardPrice = tier
-      ? (validCurrency === 'GBP' ? tier.price_gbp : tier.price_ngn) || 0
-      : (validCurrency === 'GBP' ? event.price_gbp : event.price_ngn) || 0;
+    const priceField = (source: { price_gbp: number | null; price_ngn: number | null; price_ghs: number | null }) =>
+      validCurrency === 'GBP' ? source.price_gbp : validCurrency === 'NGN' ? source.price_ngn : source.price_ghs;
+    const standardPrice = (tier ? priceField(tier) : priceField(event)) || 0;
 
     const discountActive =
       !!tier &&
@@ -168,7 +180,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get event organizer's Stripe Connect account from creator_bank_accounts table.
     // Must use the service-role client here, not the buyer's own RLS-scoped `supabase` —
     // creator_bank_accounts RLS only allows a row's owner to read it, so a buyer's request
     // querying the ORGANIZER's row got 0 rows back every time, regardless of currency or
@@ -177,45 +188,71 @@ export async function POST(request: NextRequest) {
     // verified — this was firing the generic "has not set up payment account" error for
     // every ticket purchase attempt, on every event, not just currency-mismatched ones.
     const serviceClient = createServiceClient();
-    const { data: bankAccount } = await serviceClient
-      .from('creator_bank_accounts')
-      .select('stripe_account_id, is_verified, currency')
-      .eq('user_id', event.creator_id)
-      .single();
 
-    const stripeAccountId = bankAccount?.stripe_account_id;
-
-    if (!stripeAccountId) {
-      return NextResponse.json(
-        { error: 'Event organizer has not set up payment account. Please contact event organizer.' },
-        { status: 400, headers: corsHeaders }
+    // GHS tickets don't use a Stripe Connect transfer at all — Stripe's UK-registered
+    // platform account rejects GHS outright, so the buyer is charged in USD instead (below)
+    // and the organizer's cut is credited to their internal wallet, from which the existing
+    // Fincra payout path converts and pays out in GHS. So the payout-account requirement
+    // here is a verified GHS Fincra bank account, not a Stripe Connect account.
+    let stripeAccountId: string | null = null;
+    if (validCurrency === 'GHS') {
+      const { data: bankRows } = await serviceClient
+        .from('creator_bank_accounts')
+        .select('stripe_account_id, is_verified, currency, updated_at')
+        .eq('user_id', event.creator_id);
+      const ghsBank = pickVerifiedFincraCreatorBankAccount(
+        (bankRows ?? []).filter((r) => String(r.currency || '').toUpperCase() === 'GHS'),
       );
-    }
+      if (!ghsBank) {
+        return NextResponse.json(
+          {
+            error:
+              'Event organizer has not connected a verified GHS payout account. Please contact event organizer.',
+          },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    } else {
+      const { data: bankAccount } = await serviceClient
+        .from('creator_bank_accounts')
+        .select('stripe_account_id, is_verified, currency')
+        .eq('user_id', event.creator_id)
+        .single();
 
-    // Verify Stripe account is verified (if bank account record exists)
-    if (bankAccount && !bankAccount.is_verified) {
-      return NextResponse.json(
-        { error: 'Event organizer payment account is not verified. Please contact event organizer.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+      stripeAccountId = bankAccount?.stripe_account_id ?? null;
 
-    // Stripe (GBP/EUR/USD) and Fincra (NGN/GHS/KES) are separate providers — a Stripe
-    // Connect account registered for one currency cannot receive a transfer in another.
-    // creator_bank_accounts.currency records which one the organizer actually connected;
-    // catching a mismatch here up front avoids a confusing generic Stripe error later and
-    // tells the ORGANIZER (not the buyer, who can't act on this) what's actually wrong.
-    if (bankAccount?.currency && bankAccount.currency.toUpperCase() !== validCurrency) {
-      const symbols: Record<string, string> = { GBP: '£', NGN: '₦' };
-      const ticketSymbol = symbols[validCurrency] || validCurrency;
-      const accountCurrency = bankAccount.currency.toUpperCase();
-      const accountSymbol = symbols[accountCurrency] || accountCurrency;
-      return NextResponse.json(
-        {
-          error: `This event's ticket price is in ${ticketSymbol} (${validCurrency}), but the event organizer's connected payment account only supports ${accountSymbol} (${accountCurrency}). The organizer needs to update the event's ticket price currency or connect a ${validCurrency}-compatible payment account before tickets can be sold for this event.`,
-        },
-        { status: 400, headers: corsHeaders }
-      );
+      if (!stripeAccountId) {
+        return NextResponse.json(
+          { error: 'Event organizer has not set up payment account. Please contact event organizer.' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // Verify Stripe account is verified (if bank account record exists)
+      if (bankAccount && !bankAccount.is_verified) {
+        return NextResponse.json(
+          { error: 'Event organizer payment account is not verified. Please contact event organizer.' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // Stripe (GBP/EUR/USD) and Fincra (NGN/GHS/KES) are separate providers — a Stripe
+      // Connect account registered for one currency cannot receive a transfer in another.
+      // creator_bank_accounts.currency records which one the organizer actually connected;
+      // catching a mismatch here up front avoids a confusing generic Stripe error later and
+      // tells the ORGANIZER (not the buyer, who can't act on this) what's actually wrong.
+      if (bankAccount?.currency && bankAccount.currency.toUpperCase() !== validCurrency) {
+        const symbols: Record<string, string> = { GBP: '£', NGN: '₦' };
+        const ticketSymbol = symbols[validCurrency] || validCurrency;
+        const accountCurrency = bankAccount.currency.toUpperCase();
+        const accountSymbol = symbols[accountCurrency] || accountCurrency;
+        return NextResponse.json(
+          {
+            error: `This event's ticket price is in ${ticketSymbol} (${validCurrency}), but the event organizer's connected payment account only supports ${accountSymbol} (${accountCurrency}). The organizer needs to update the event's ticket price currency or connect a ${validCurrency}-compatible payment account before tickets can be sold for this event.`,
+          },
+          { status: 400, headers: corsHeaders }
+        );
+      }
     }
 
     // Initialize Stripe
@@ -248,26 +285,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // GHS is display-only for Stripe purposes: the buyer is actually charged in USD
+    // (Stripe rejects GHS on this platform account), converted from the organizer's GHS
+    // price via the same live-rate currencyService the Fincra payout path already uses.
+    const isGhsDisplay = validCurrency === 'GHS';
+    const chargeCurrency = isGhsDisplay ? 'USD' : validCurrency;
+    const displayTotalAmountMajor = isGhsDisplay ? Math.round(ticketPrice * quantity * 100) / 100 : null;
+    const chargeTicketPrice = isGhsDisplay
+      ? await currencyService.convertCurrency(ticketPrice, 'GHS', 'USD')
+      : ticketPrice;
+
     // Calculate total amount and fees
-    // Amount stored in smallest currency unit (pence for GBP, kobo for NGN)
-    // Both GBP and NGN use 100 as multiplier (1 GBP = 100 pence, 1 NGN = 100 kobo)
-    const amountPerTicket = Math.round(ticketPrice * 100);
+    // Amount stored in smallest currency unit (pence for GBP, kobo for NGN, cents for USD)
+    const amountPerTicket = Math.round(chargeTicketPrice * 100);
     const totalAmount = amountPerTicket * quantity;
-    
+
     // Platform fee: 15% of total amount (MOBILE_PRICING_MODEL_UPDATE.md)
     const platformFeeAmount = Math.round(totalAmount * 0.15);
-    
+
     // Organizer receives: 85% of total amount
     const organizerAmount = totalAmount - platformFeeAmount;
 
-    // Create Stripe Payment Intent with application fee and transfer
+    // GHS tickets skip the Stripe Connect transfer (no Connect destination — organizer is
+    // paid via the wallet + existing Fincra payout path instead, wired up in
+    // confirm-ticket-purchase once the charge succeeds).
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
-      currency: validCurrency.toLowerCase(),
-      application_fee_amount: platformFeeAmount,
-      transfer_data: {
-        destination: stripeAccountId,
-      },
+      currency: chargeCurrency.toLowerCase(),
+      ...(isGhsDisplay
+        ? {}
+        : {
+            application_fee_amount: platformFeeAmount,
+            transfer_data: { destination: stripeAccountId! },
+          }),
       automatic_payment_methods: { enabled: true },
       ...(customerId ? paymentIntentCustomerOptions(customerId) : {}),
       metadata: {
@@ -275,8 +325,8 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         quantity: quantity.toString(),
         platformFeePercentage: String(PLATFORM_FEE_PERCENT),
-        ticketPrice: ticketPrice.toString(),
-        currency: validCurrency,
+        ticketPrice: chargeTicketPrice.toString(),
+        currency: chargeCurrency,
         charge_type: 'event_ticket',
         platform_fee_amount: String(platformFeeAmount),
         platform_fee_percent: String(PLATFORM_FEE_PERCENT),
@@ -284,6 +334,9 @@ export async function POST(request: NextRequest) {
         reference_id: eventId,
         ...(tier ? { tierId: tier.id, usedDiscount: String(discountActive) } : {}),
         creator_user_id: (event as { creator_id?: string }).creator_id ?? '',
+        ...(isGhsDisplay
+          ? { displayCurrency: 'GHS', displayTicketPrice: ticketPrice.toString(), displayTotalAmount: String(displayTotalAmountMajor) }
+          : {}),
       },
       description: `${quantity}x ticket(s) for ${event.title}`,
       receipt_email: user.email || undefined,
@@ -296,7 +349,8 @@ export async function POST(request: NextRequest) {
         stripe_client_secret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amount: totalAmount,
-        currency: validCurrency.toLowerCase(),
+        currency: chargeCurrency.toLowerCase(),
+        ...(isGhsDisplay ? { displayCurrency: 'GHS', displayAmount: displayTotalAmountMajor } : {}),
         ...(customerId && ephemeral_key_secret
           ? { customer_id: customerId, ephemeral_key_secret }
           : {}),

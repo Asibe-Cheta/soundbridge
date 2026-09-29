@@ -19,6 +19,7 @@ type TierRow = {
   description: string | null;
   price_gbp: number | null;
   price_ngn: number | null;
+  price_ghs: number | null;
   quantity_available: number | null;
   quantity_sold: number;
   discount_percent: number | null;
@@ -28,8 +29,9 @@ type TierRow = {
 };
 
 /** Whether p_currency's price on this tier is still at the discounted rate, and what it resolves to. */
-function resolveTierPrice(tier: TierRow, currency: 'GBP' | 'NGN') {
-  const standardPrice = currency === 'GBP' ? tier.price_gbp : tier.price_ngn;
+function resolveTierPrice(tier: TierRow, currency: 'GBP' | 'NGN' | 'GHS') {
+  const standardPrice =
+    currency === 'GBP' ? tier.price_gbp : currency === 'NGN' ? tier.price_ngn : tier.price_ghs;
   const discountActive =
     tier.discount_percent != null &&
     tier.discount_quantity_limit != null &&
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { data: tiers, error } = await service
     .from('event_ticket_tiers')
     .select(
-      'id, name, description, price_gbp, price_ngn, quantity_available, quantity_sold, discount_percent, discount_quantity_limit, discount_quantity_used, display_order',
+      'id, name, description, price_gbp, price_ngn, price_ghs, quantity_available, quantity_sold, discount_percent, discount_quantity_limit, discount_quantity_used, display_order',
     )
     .eq('event_id', eventId)
     .order('display_order', { ascending: true });
@@ -75,6 +77,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ...tier,
     gbp: resolveTierPrice(tier as TierRow, 'GBP'),
     ngn: resolveTierPrice(tier as TierRow, 'NGN'),
+    ghs: resolveTierPrice(tier as TierRow, 'GHS'),
   }));
 
   return NextResponse.json({ tiers: enriched }, { headers: corsHeaders });
@@ -86,9 +89,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * creation succeeds (same fire-and-forget pattern as event_co_organizers), not merged
  * into POST /api/events itself.
  *
- * Body: { tiers: [{ name, description?, price_gbp?, price_ngn?, quantity_available?,
+ * Body: { tiers: [{ name, description?, price_gbp?, price_ngn?, price_ghs?, quantity_available?,
  *                     discount_percent?, discount_quantity_limit? }, ...] }
- * At least one of price_gbp/price_ngn is required per tier. discount_percent and
+ * At least one of price_gbp/price_ngn/price_ghs is required per tier. discount_percent and
  * discount_quantity_limit must both be present together or both absent.
  */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -125,9 +128,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const priceGbp = t.price_gbp != null ? Number(t.price_gbp) : null;
     const priceNgn = t.price_ngn != null ? Number(t.price_ngn) : null;
-    if (priceGbp == null && priceNgn == null) {
+    const priceGhs = t.price_ghs != null ? Number(t.price_ghs) : null;
+    if (priceGbp == null && priceNgn == null && priceGhs == null) {
       return NextResponse.json(
-        { error: `tiers[${i}] must have price_gbp or price_ngn` },
+        { error: `tiers[${i}] must have price_gbp, price_ngn, or price_ghs` },
         { status: 400, headers: corsHeaders },
       );
     }
@@ -152,6 +156,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       description: typeof t.description === 'string' ? t.description.trim() || null : null,
       price_gbp: priceGbp,
       price_ngn: priceNgn,
+      price_ghs: priceGhs,
       quantity_available: t.quantity_available != null ? Number(t.quantity_available) : null,
       discount_percent: discountPercent,
       discount_quantity_limit: discountLimit,
