@@ -74,12 +74,14 @@ export async function POST(request: NextRequest) {
     // Check if ticket already exists for this payment intent (idempotency)
     const { data: existingTicket, error: checkError } = await supabase
       .from('purchased_event_tickets')
-      .select('id, ticket_code, status, amount_paid')
+      .select('id, ticket_code, status, amount_paid, currency')
       .eq('payment_intent_id', paymentIntentId)
       .single();
 
     if (existingTicket && !checkError) {
-      // Ticket already created for this payment intent (amount_paid stored in major units)
+      // Ticket already created for this payment intent (amount_paid stored in major units,
+      // in whatever currency was actually stored on the ticket — GHS for GHS purchases,
+      // the real charged currency otherwise — not necessarily the PaymentIntent's currency).
       const platformFeeAmount = Math.round((existingTicket.amount_paid * PLATFORM_FEE_DECIMAL) * 100) / 100;
       const organizerAmount = Math.round((existingTicket.amount_paid - platformFeeAmount) * 100) / 100;
 
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
           ticket_code: existingTicket.ticket_code,
           quantity: quantity,
           amount_paid: existingTicket.amount_paid,
-          currency: currency.toLowerCase(),
+          currency: (existingTicket.currency || currency).toLowerCase(),
           payment_intent_id: paymentIntentId,
           purchase_date: new Date().toISOString(),
           status: existingTicket.status,
@@ -159,12 +161,13 @@ export async function POST(request: NextRequest) {
       ticketCodes.push(codeData);
     }
 
-    // 15% platform fee, 85% to organizer (MOBILE_PRICING_MODEL_UPDATE.md)
+    // 15% platform fee, 85% to organizer (MOBILE_PRICING_MODEL_UPDATE.md) — these are the
+    // REAL amounts actually charged/settled in the PaymentIntent's own currency (USD for
+    // GHS-display tickets), used for platform_revenue bookkeeping and the GHS wallet credit
+    // below. They intentionally do NOT feed the ticket record for GHS purchases — see
+    // ticketTotalAmountMajor below.
     const platformFeeAmountMajor = Math.round(amountMajor * PLATFORM_FEE_DECIMAL * 100) / 100;
     const organizerAmountMajor = Math.round((amountMajor - platformFeeAmountMajor) * 100) / 100;
-    const amountPerTicketMajor = amountMajor / quantity;
-    const platformFeePerTicket = platformFeeAmountMajor / quantity;
-    const organizerPerTicket = organizerAmountMajor / quantity;
 
     // Tier this purchase was for, if any — set by create-ticket-payment-intent's
     // metadata, not re-derived here, so the ticket record always reflects exactly what
@@ -172,19 +175,36 @@ export async function POST(request: NextRequest) {
     const tierId = paymentIntent.metadata.tierId || null;
     const usedDiscount = paymentIntent.metadata.usedDiscount === 'true';
 
+    // Ticket records and the buyer-facing email show what the organizer actually priced the
+    // ticket at — GHS for GHS purchases (from the PaymentIntent's own metadata, not
+    // anything the client sends, since the client isn't a trusted source of the amount),
+    // the real charged currency otherwise. This is purely a receipt-display number; the
+    // actual money movement (platform_revenue, wallet credit) always uses the real USD
+    // amounts above.
+    const isGhsDisplay = paymentIntent.metadata.displayCurrency === 'GHS';
+    const parsedDisplayTotal = isGhsDisplay ? Number(paymentIntent.metadata.displayTotalAmount) : NaN;
+    const ticketCurrency = isGhsDisplay ? 'GHS' : currency.toUpperCase();
+    const ticketTotalAmountMajor =
+      isGhsDisplay && Number.isFinite(parsedDisplayTotal) ? parsedDisplayTotal : amountMajor;
+    const ticketPlatformFeeTotal = Math.round(ticketTotalAmountMajor * PLATFORM_FEE_DECIMAL * 100) / 100;
+    const ticketOrganizerTotal = Math.round((ticketTotalAmountMajor - ticketPlatformFeeTotal) * 100) / 100;
+    const ticketAmountPerTicket = ticketTotalAmountMajor / quantity;
+    const ticketPlatformFeePerTicket = ticketPlatformFeeTotal / quantity;
+    const ticketOrganizerPerTicket = ticketOrganizerTotal / quantity;
+
     // Create ticket records (one per ticket) — store amounts in major units
     const ticketRecords = ticketCodes.map((ticketCode) => ({
       event_id: eventId,
       user_id: user.id,
       ticket_code: ticketCode,
       quantity: 1, // Each record represents one ticket
-      amount_paid: Math.round(amountPerTicketMajor * 100) / 100,
-      currency: currency.toUpperCase(),
+      amount_paid: Math.round(ticketAmountPerTicket * 100) / 100,
+      currency: ticketCurrency,
       payment_intent_id: paymentIntentId,
       purchase_date: new Date().toISOString(),
       status: 'active',
-      platform_fee_amount: Math.round(platformFeePerTicket * 100) / 100,
-      organizer_amount: Math.round(organizerPerTicket * 100) / 100,
+      platform_fee_amount: Math.round(ticketPlatformFeePerTicket * 100) / 100,
+      organizer_amount: Math.round(ticketOrganizerPerTicket * 100) / 100,
       payment_method_type: paymentMethodType,
       tier_id: tierId,
     }));
@@ -245,7 +265,7 @@ export async function POST(request: NextRequest) {
     // So for GHS specifically, credit the organizer's cut to their internal wallet here,
     // tagged distinctly from a tip, so it's withdrawable via the existing (already
     // currency-generic) Fincra payout path.
-    if (paymentIntent.metadata.displayCurrency === 'GHS') {
+    if (isGhsDisplay) {
       try {
         const { error: walletError } = await supabaseAdmin.rpc('add_wallet_transaction', {
           user_uuid: event.creator_id,
@@ -368,12 +388,13 @@ export async function POST(request: NextRequest) {
 
     // Send ticket confirmation email to buyer
     try {
-      // Format amount for display (convert from smallest unit) — was referencing an
-      // undefined `amount` variable (real var is amountMinor), throwing a ReferenceError
-      // on every purchase; caught by this try/catch so it never surfaced as a 500, it just
-      // silently skipped sending the confirmation email every single time.
-      const amountFormatted = (amountMinor / 100).toFixed(2);
-      const currencySymbol = currency.toUpperCase() === 'GBP' ? '£' : '₦';
+      // Format amount for display using the ticket's own display currency/amount (GHS for
+      // GHS purchases, the real charged currency otherwise) — was previously referencing
+      // an undefined `amount` variable (real var is amountMinor), throwing a
+      // ReferenceError on every purchase; caught by this try/catch so it never surfaced as
+      // a 500, it just silently skipped sending the confirmation email every single time.
+      const amountFormatted = ticketTotalAmountMajor.toFixed(2);
+      const currencySymbol = ticketCurrency === 'GBP' ? '£' : ticketCurrency === 'GHS' ? '₵' : '₦';
 
       await SubscriptionEmailService.sendTicketConfirmation({
         userEmail: user.email || '',
@@ -385,7 +406,7 @@ export async function POST(request: NextRequest) {
         ticketCodes: ticketCodes,
         quantity: quantity,
         amountPaid: `${currencySymbol}${amountFormatted}`,
-        currency: currency.toUpperCase(),
+        currency: ticketCurrency,
         purchaseDate: new Date().toISOString(),
         paymentIntentId: paymentIntentId,
         organizerName: organizerProfile?.display_name,
@@ -406,13 +427,13 @@ export async function POST(request: NextRequest) {
         user_id: ticket.user_id,
         ticket_code: ticket.ticket_code,
         quantity: quantity,
-        amount_paid: amountMajor,
-        currency: currency.toLowerCase(),
+        amount_paid: ticketTotalAmountMajor,
+        currency: ticketCurrency.toLowerCase(),
         payment_intent_id: ticket.payment_intent_id,
         purchase_date: ticket.purchase_date,
         status: ticket.status,
-        platform_fee_amount: platformFeeAmountMajor,
-        organizer_amount: organizerAmountMajor,
+        platform_fee_amount: ticketPlatformFeeTotal,
+        organizer_amount: ticketOrganizerTotal,
         // Include all ticket codes for multi-ticket purchases
         all_ticket_codes: ticketCodes,
       },
