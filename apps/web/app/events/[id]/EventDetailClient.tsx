@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '../../../src/components/layout/Footer';
-import { FloatingCard } from '../../../src/components/ui/FloatingCard';
 import { EventTicketPurchaseModal } from '../../../src/components/events/EventTicketPurchaseModal';
 import { EventBookmarkButton } from '../../../src/components/events/EventBookmarkButton';
 import { EventShareButton } from '../../../src/components/events/EventShareButton';
@@ -17,7 +16,7 @@ import { trackEventPageView } from '../../../src/lib/event-analytics-client';
 import { recordEventView } from '../../../src/lib/user-behaviour-service';
 import { createClient } from '../../../src/lib/supabase-browser';
 import type { Event } from '../../../src/lib/types/event';
-import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, MessageCircle, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
 
 // Read-only display, reusing the same milestone thresholds the real reminder system
 // already defines (apps/web/app/api/cron/process-pending-notifications/route.ts's
@@ -225,7 +224,6 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
   const tabs = [
     { id: 'details', label: 'Details', icon: Info },
     { id: 'schedule', label: 'Schedule', icon: Clock },
-    { id: 'performers', label: 'Performers', icon: Music },
     { id: 'location', label: 'Location', icon: MapPin }
   ];
 
@@ -283,30 +281,6 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
               })}</p>
               <p>Please arrive 15-30 minutes before the event starts.</p>
             </div>
-          </div>
-        );
-
-      case 'performers':
-        return (
-          <div className="card">
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Organizer</h3>
-            {event.creator ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
-                <div>
-                  <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
-                  <p style={{ color: '#ccc' }}>{event.creator.bio || 'Event organizer'}</p>
-                  {event.creator.location && (
-                    <p style={{ color: '#999' }}>
-                      <MapPin size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                      {event.creator.location}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p style={{ color: '#ccc' }}>Organizer information not available.</p>
-            )}
           </div>
         );
 
@@ -600,8 +574,16 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Organizer</h3>
             {event.creator ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
-                <div style={{ flex: 1 }}>
+                {event.creator.avatar_url ? (
+                  <img
+                    src={event.creator.avatar_url}
+                    alt={event.creator.display_name}
+                    style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                  />
+                ) : (
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333', flexShrink: 0 }}></div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
                   <p style={{ color: '#ccc', marginBottom: '0.5rem' }}>
                     {event.creator.bio || 'Event organizer'}
@@ -613,10 +595,6 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
                     </p>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>
-                      <MessageCircle size={12} />
-                      Contact
-                    </button>
                     <Link href={`/creator/${event.creator.username}`} style={{ textDecoration: 'none' }}>
                       <button className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>
                         <User size={12} />
@@ -634,27 +612,6 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
 
         <Footer />
       </main>
-
-      {/* Floating Quick Actions Card */}
-      <FloatingCard title="Quick Actions">
-        <div className="quick-actions">
-          <Link href="/events/create" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">Create Event</div>
-          </Link>
-          <Link href="/events/dashboard" style={{ textDecoration: 'none' }}>
-            <div className="quick-action">My Events</div>
-          </Link>
-          <div className="quick-action">Upload Music</div>
-          <div className="quick-action">Find Collaborators</div>
-        </div>
-
-        <h3 style={{ margin: '2rem 0 1rem', color: '#EC4899' }}>Similar Events</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>Gospel Choir Competition - Abuja</div>
-          <div>Worship Experience - Lagos</div>
-          <div>Christian Music Festival - London</div>
-        </div>
-      </FloatingCard>
 
       {/* Ticket Purchase Modal */}
       {event && (
