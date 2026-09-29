@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTheme } from '@/src/contexts/ThemeContext';
 
 type ConsentStatus = 'accepted' | 'rejected' | 'customized';
@@ -45,10 +46,33 @@ const safeParse = (value: string | null): ConsentRecord | null => {
 
 export function CookieConsentToast() {
   const { theme } = useTheme();
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [categories, setCategories] = useState<ConsentCategories>(defaultCategories);
   const [showSettingsButton, setShowSettingsButton] = useState(false);
+  const [footerInView, setFooterInView] = useState(false);
+
+  // This button is fixed to the viewport's bottom-right corner on every page, which put
+  // it directly on top of the shared <Footer>'s own content on any page whose footer is
+  // tall enough that scrolling through it keeps a `footer` element under that corner for a
+  // while (not just briefly at the very end of the page) — a padding fix on Footer itself
+  // only helps once you're scrolled all the way to the end, not while scrolling through the
+  // footer's middle. Hiding the button whenever the footer is anywhere in view sidesteps
+  // that regardless of how tall any given page's footer is.
+  useEffect(() => {
+    const footerEl = document.querySelector('footer');
+    if (!footerEl) {
+      setFooterInView(false);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setFooterInView(entry.isIntersecting),
+      { rootMargin: '0px 0px -80px 0px' },
+    );
+    observer.observe(footerEl);
+    return () => observer.disconnect();
+  }, [pathname]);
 
   const isDark = theme === 'dark';
 
@@ -143,7 +167,7 @@ export function CookieConsentToast() {
 
   return (
     <>
-      {showSettingsButton && !visible && (
+      {showSettingsButton && !visible && !footerInView && (
         <button
           type="button"
           onClick={() => {

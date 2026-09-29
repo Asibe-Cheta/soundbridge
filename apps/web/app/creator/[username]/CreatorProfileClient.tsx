@@ -564,7 +564,7 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
           : 'bg-gray-50'
       } text-white`}>
         {/* Main Content */}
-        <div className={`container mx-auto ${isMobile ? 'px-2 py-4' : 'px-4 py-8'}`}>
+        <div className={`container mx-auto ${isMobile ? 'px-3 pt-6 pb-8' : 'px-4 py-8'}`}>
         {fromAtShare && creator.id ? (
           <div className="md:hidden">
             <OpenInAppProfileBanner
@@ -1464,7 +1464,12 @@ export function CreatorProfileClient({ username, initialCreator, fromAtShare }: 
         </div>
       </div>
 
-      <Footer />
+      {/* Footer sits directly after the content container with no spacing of its own
+          (Footer's "section" class only has margin-bottom), so the last profile card was
+          touching the footer's top edge with zero gap. */}
+      <div style={{ marginTop: '2rem' }}>
+        <Footer />
+      </div>
     </div>
     </CustomBranding>
   );

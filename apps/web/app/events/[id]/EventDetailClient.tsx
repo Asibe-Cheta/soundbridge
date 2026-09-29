@@ -578,17 +578,21 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', color: '#EC4899' }}>Event Organizer</h3>
             {event.creator ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                {event.creator.avatar_url ? (
-                  <img
-                    src={event.creator.avatar_url}
-                    alt={event.creator.display_name}
-                    style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                  />
-                ) : (
-                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333', flexShrink: 0 }}></div>
-                )}
+                <Link href={`/creator/${event.creator.username}`} style={{ flexShrink: 0 }}>
+                  {event.creator.avatar_url ? (
+                    <img
+                      src={event.creator.avatar_url}
+                      alt={event.creator.display_name}
+                      style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#333' }}></div>
+                  )}
+                </Link>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
+                  <Link href={`/creator/${event.creator.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{event.creator.display_name}</h4>
+                  </Link>
                   <p style={{ color: '#ccc', marginBottom: '0.5rem' }}>
                     {event.creator.bio || 'Event organizer'}
                   </p>
