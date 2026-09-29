@@ -375,9 +375,13 @@ export function EventDetailClient({ params }: { params: Promise<{ id: string }> 
               // overrides it with the event's real flyer/image (falling back to a plain
               // gradient when the event has none), and gives it a real minimum height so
               // the photo is actually visible once .hero-section drops to `height: auto`
-              // on mobile instead of collapsing to just the text's height.
+              // on mobile instead of collapsing to just the text's height. A dark gradient
+              // is layered on top of the photo itself (not just relying on the shared
+              // .featured-creator::before fade) since event flyers are often busy, bright
+              // designs that already have their own title text baked in — title/date/
+              // buttons need to stay readable against any flyer, not just plain photos.
               backgroundImage: event.image_url
-                ? `url(${event.image_url})`
+                ? `linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.55) 40%, rgba(0, 0, 0, 0.85) 100%), url(${event.image_url})`
                 : 'linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(236, 72, 153, 0.6))',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
