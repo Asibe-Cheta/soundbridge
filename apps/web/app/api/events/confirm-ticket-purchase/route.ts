@@ -166,6 +166,12 @@ export async function POST(request: NextRequest) {
     const platformFeePerTicket = platformFeeAmountMajor / quantity;
     const organizerPerTicket = organizerAmountMajor / quantity;
 
+    // Tier this purchase was for, if any — set by create-ticket-payment-intent's
+    // metadata, not re-derived here, so the ticket record always reflects exactly what
+    // was actually charged.
+    const tierId = paymentIntent.metadata.tierId || null;
+    const usedDiscount = paymentIntent.metadata.usedDiscount === 'true';
+
     // Create ticket records (one per ticket) — store amounts in major units
     const ticketRecords = ticketCodes.map((ticketCode) => ({
       event_id: eventId,
@@ -180,6 +186,7 @@ export async function POST(request: NextRequest) {
       platform_fee_amount: Math.round(platformFeePerTicket * 100) / 100,
       organizer_amount: Math.round(organizerPerTicket * 100) / 100,
       payment_method_type: paymentMethodType,
+      tier_id: tierId,
     }));
 
     const { data: createdTickets, error: insertError } = await supabaseAdmin
@@ -193,6 +200,21 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create ticket records', details: insertError.message },
         { status: 500, headers: corsHeaders }
       );
+    }
+
+    // Bump the tier's sold/discount-used counters now that the ticket record exists —
+    // done via an atomic RPC (row-locked) rather than a plain update, so two buyers
+    // hitting the last ticket or the last discount slot at the same moment can't both
+    // succeed past the real limit.
+    if (tierId) {
+      const { error: tierIncrementError } = await supabaseAdmin.rpc('increment_ticket_tier_sold', {
+        p_tier_id: tierId,
+        p_quantity: quantity,
+        p_used_discount: usedDiscount,
+      });
+      if (tierIncrementError) {
+        console.error('[confirm-ticket-purchase] increment_ticket_tier_sold:', tierIncrementError);
+      }
     }
 
     const platformFeeMinor = Math.round(amountMinor * PLATFORM_FEE_DECIMAL);

@@ -19,6 +19,25 @@ import { createClient } from '../../../src/lib/supabase-browser';
 import type { Event } from '../../../src/lib/types/event';
 import { MapPin, Calendar, Users, Clock, Star, Heart, Share2, MessageCircle, ArrowLeft, CheckCircle, AlertCircle, User, Music, DollarSign, Info, Loader2 } from 'lucide-react';
 
+// Read-only display, reusing the same milestone thresholds the real reminder system
+// already defines (apps/web/app/api/cron/process-pending-notifications/route.ts's
+// buildEventReminderContent: two_weeks/one_week/48_hours/24_hours/event_day) as the
+// source of truth for what counts as a countdown milestone — not new notification
+// infrastructure, since this never sends anything, just reads the event's own date.
+function getEventCountdownLabel(eventDate: string): string | null {
+  const diffMs = new Date(eventDate).getTime() - Date.now();
+  if (diffMs <= 0) return null; // event has already started/passed
+
+  const hours = diffMs / (1000 * 60 * 60);
+  const days = Math.ceil(hours / 24);
+
+  if (hours <= 24) return 'Starts today';
+  if (hours <= 48) return 'Starts tomorrow';
+  if (days <= 7) return `${days} days until this event`;
+  if (days <= 14) return `${Math.ceil(days / 7)} weeks until this event`;
+  return `${days} days until this event`;
+}
+
 export default function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();
   const { data: subscriptionData } = useSubscription();
@@ -318,6 +337,24 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                   <Calendar size={20} />
                   <span>{event.formattedDate}</span>
                 </div>
+                {getEventCountdownLabel(event.event_date) && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.3rem 0.75rem',
+                      borderRadius: '999px',
+                      background: 'rgba(236, 72, 153, 0.15)',
+                      border: '1px solid rgba(236, 72, 153, 0.4)',
+                      color: '#EC4899',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    {getEventCountdownLabel(event.event_date)}
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <MapPin size={20} />
                   <span>{event.location}</span>

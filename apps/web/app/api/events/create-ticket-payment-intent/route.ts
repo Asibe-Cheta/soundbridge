@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { eventId, quantity = 1, currency } = body;
+    const { eventId, quantity = 1, currency, tierId } = body;
 
     // Validate required fields
     if (!eventId) {
@@ -76,6 +76,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If a tier was selected, price comes from that tier (with any active discount
+    // applied) instead of the event's own price_gbp/price_ngn. Events with no tiers at
+    // all are unaffected — tierId is optional and this whole block is skipped for them.
+    let tier: {
+      id: string;
+      price_gbp: number | null;
+      price_ngn: number | null;
+      quantity_available: number | null;
+      quantity_sold: number;
+      discount_percent: number | null;
+      discount_quantity_limit: number | null;
+      discount_quantity_used: number;
+    } | null = null;
+    if (tierId) {
+      const { data: tierRow, error: tierError } = await supabase
+        .from('event_ticket_tiers')
+        .select(
+          'id, event_id, price_gbp, price_ngn, quantity_available, quantity_sold, discount_percent, discount_quantity_limit, discount_quantity_used',
+        )
+        .eq('id', tierId)
+        .single();
+      if (tierError || !tierRow || tierRow.event_id !== eventId) {
+        return NextResponse.json(
+          { error: 'Ticket tier not found for this event' },
+          { status: 404, headers: corsHeaders },
+        );
+      }
+      if (tierRow.quantity_available != null && tierRow.quantity_sold + quantity > tierRow.quantity_available) {
+        return NextResponse.json(
+          { error: 'Not enough tickets remaining at this tier' },
+          { status: 400, headers: corsHeaders },
+        );
+      }
+      tier = tierRow;
+    }
+
     // Determine currency based on event's country or user preference
     // If currency provided in request, use that; otherwise, use event's primary currency
     let validCurrency: string;
@@ -87,15 +123,27 @@ export async function POST(request: NextRequest) {
           { status: 400, headers: corsHeaders }
         );
       }
+    } else if (tier) {
+      validCurrency = tier.price_gbp && tier.price_gbp > 0 ? 'GBP' : 'NGN';
     } else {
       // Default to GBP if event has GBP price, otherwise NGN
       validCurrency = event.price_gbp && event.price_gbp > 0 ? 'GBP' : 'NGN';
     }
 
-    // Get price from event database based on currency
-    const ticketPrice = validCurrency === 'GBP'
-      ? (event.price_gbp || 0)
-      : (event.price_ngn || 0);
+    // Get price from the tier (if selected) or the event, based on currency
+    const standardPrice = tier
+      ? (validCurrency === 'GBP' ? tier.price_gbp : tier.price_ngn) || 0
+      : (validCurrency === 'GBP' ? event.price_gbp : event.price_ngn) || 0;
+
+    const discountActive =
+      !!tier &&
+      tier.discount_percent != null &&
+      tier.discount_quantity_limit != null &&
+      tier.discount_quantity_used < tier.discount_quantity_limit;
+
+    const ticketPrice = discountActive
+      ? Math.round(standardPrice * (1 - tier!.discount_percent! / 100) * 100) / 100
+      : standardPrice;
 
     if (ticketPrice <= 0) {
       return NextResponse.json(
@@ -234,6 +282,7 @@ export async function POST(request: NextRequest) {
         platform_fee_percent: String(PLATFORM_FEE_PERCENT),
         creator_payout_amount: String(organizerAmount),
         reference_id: eventId,
+        ...(tier ? { tierId: tier.id, usedDiscount: String(discountActive) } : {}),
         creator_user_id: (event as { creator_id?: string }).creator_id ?? '',
       },
       description: `${quantity}x ticket(s) for ${event.title}`,
