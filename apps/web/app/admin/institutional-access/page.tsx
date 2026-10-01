@@ -24,6 +24,9 @@ export default function AdminInstitutionalAccessPage() {
   const [logicChurchRegistrations, setLogicChurchRegistrations] = useState<PartnerRegistration[]>([]);
   const [loadingRegistrations, setLoadingRegistrations] = useState(true);
 
+  const [gicRegistrations, setGicRegistrations] = useState<PartnerRegistration[]>([]);
+  const [loadingGicRegistrations, setLoadingGicRegistrations] = useState(true);
+
   const loadAccess = async () => {
     try {
       setLoading(true);
@@ -69,9 +72,38 @@ export default function AdminInstitutionalAccessPage() {
     URL.revokeObjectURL(url);
   };
 
+  const loadGicRegistrations = async () => {
+    try {
+      setLoadingGicRegistrations(true);
+      const response = await fetchWithSupabaseAuth('/api/admin/partner-registrations?partner=gateway_international');
+      const data = await response.json();
+      if (response.ok) setGicRegistrations(data.registrations || []);
+    } catch {
+      // Non-fatal — this section just stays empty on failure.
+    } finally {
+      setLoadingGicRegistrations(false);
+    }
+  };
+
+  const exportGicCsv = async () => {
+    const res = await fetchWithSupabaseAuth('/api/admin/partner-registrations?partner=gateway_international&export=csv');
+    if (!res.ok) {
+      alert('CSV export failed');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gateway-international-registrations.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     loadAccess();
     loadLogicChurchRegistrations();
+    loadGicRegistrations();
   }, []);
 
   return (
@@ -176,6 +208,59 @@ export default function AdminInstitutionalAccessPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-700 text-gray-200">
                   {logicChurchRegistrations.map((registration) => (
+                    <tr key={registration.id}>
+                      <td className="px-4 py-3">{registration.email}</td>
+                      <td className="px-4 py-3">{new Date(registration.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 capitalize">{registration.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-6 rounded-xl border border-gray-700 bg-gray-800 p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Image src="/images/pro-resources/GIC.png" alt="Gateway International Church" width={40} height={40} className="rounded-lg" />
+              <div>
+                <h2 className="text-lg font-semibold text-white">Gateway International Church</h2>
+                <p className="text-xs text-gray-400">
+                  Email registrations from{' '}
+                  <Link href="/join/gatewayinternational" className="text-purple-300 hover:underline">
+                    /join/gatewayinternational
+                  </Link>{' '}
+                  — 1yr Premium + 10% referral link auto-applied on account creation.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={exportGicCsv}
+              disabled={loadingGicRegistrations || gicRegistrations.length === 0}
+              className="flex items-center gap-2 rounded bg-gray-600 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          </div>
+
+          {loadingGicRegistrations ? (
+            <div className="text-sm text-gray-400">Loading registrations...</div>
+          ) : gicRegistrations.length === 0 ? (
+            <div className="text-sm text-gray-400">No Gateway International Church registrations yet.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-gray-700">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-900/60 text-left text-gray-400">
+                  <tr>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Submitted</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700 text-gray-200">
+                  {gicRegistrations.map((registration) => (
                     <tr key={registration.id}>
                       <td className="px-4 py-3">{registration.email}</td>
                       <td className="px-4 py-3">{new Date(registration.created_at).toLocaleDateString()}</td>

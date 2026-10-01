@@ -7,7 +7,16 @@ import { applyPendingPartnerRegistrations } from '@/src/lib/partner-referrals';
  * endpoint. Extend this set (and profiles.institution_badge's CHECK
  * constraint) when onboarding a new partner onto this same flow.
  */
-const VALID_PARTNER_IDS = new Set(['logic_church']);
+const VALID_PARTNER_IDS = new Set(['logic_church', 'gateway_international']);
+
+// The "activated" response message was previously hardcoded to "Logic Church" regardless of
+// which partner actually submitted — harmless while this endpoint only served one partner,
+// but would show the wrong name as soon as a second one was added. Keyed by the same
+// identifier used everywhere else (VALID_PARTNER_IDS, profiles.institution_badge, etc).
+const PARTNER_LABELS: Record<string, string> = {
+  logic_church: 'Logic Church',
+  gateway_international: 'Gateway International Church',
+};
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -104,10 +113,11 @@ export async function POST(request: NextRequest) {
       // grant partway-failed, the row stays 'pending' and a resubmission
       // (or manual admin follow-up) can safely retry it; nothing is lost.
     }
+    const partnerLabel = PARTNER_LABELS[partnerId] || 'partner';
     return NextResponse.json({
       success: true,
       activated: true,
-      message: "You're all set. Your Logic Church benefits are active, and we've emailed you your referral link. Log in to SoundBridge now to see them.",
+      message: `You're all set. Your ${partnerLabel} benefits are active, and we've emailed you your referral link. Log in to SoundBridge now to see them.`,
     });
   }
 

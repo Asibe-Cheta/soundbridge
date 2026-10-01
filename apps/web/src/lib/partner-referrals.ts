@@ -3,8 +3,14 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 export const SOUND_ACADEMY_SOURCE = 'sound_academy';
 export const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
 export const LOGIC_CHURCH_SOURCE = 'logic_church';
+export const GATEWAY_INTERNATIONAL_SOURCE = 'gateway_international';
 
-const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUTE_SOURCE, LOGIC_CHURCH_SOURCE]);
+const INSTITUTIONAL_SOURCES = new Set([
+  SOUND_ACADEMY_SOURCE,
+  ABBEY_ROAD_INSTITUTE_SOURCE,
+  LOGIC_CHURCH_SOURCE,
+  GATEWAY_INTERNATIONAL_SOURCE,
+]);
 
 /**
  * Partners whose members get a personal 10% referral link in addition to the
@@ -12,7 +18,7 @@ const INSTITUTIONAL_SOURCES = new Set([SOUND_ACADEMY_SOURCE, ABBEY_ROAD_INSTITUT
  * which only grant Premium). Drives both applyPendingPartnerRegistrations()
  * below and the welcome-email copy.
  */
-const REFERRAL_LINK_PARTNER_IDS = new Set([LOGIC_CHURCH_SOURCE]);
+const REFERRAL_LINK_PARTNER_IDS = new Set([LOGIC_CHURCH_SOURCE, GATEWAY_INTERNATIONAL_SOURCE]);
 
 function isInstitutionalSource(source: string | null | undefined): source is string {
   return !!source && INSTITUTIONAL_SOURCES.has(source);
@@ -155,7 +161,9 @@ async function sendInstitutionalWelcomeEmail(
       ? 'Abbey Road Institute'
       : institution === LOGIC_CHURCH_SOURCE
         ? 'Logic Church'
-        : 'Sound Academy';
+        : institution === GATEWAY_INTERNATIONAL_SOURCE
+          ? 'Gateway International Church'
+          : 'Sound Academy';
 
   const referralParagraph = referralLink
     ? `<p>You also have your own personal referral link, earning you 10% commission on every subscriber who joins through it: <a href="${referralLink}">${referralLink}</a></p>
