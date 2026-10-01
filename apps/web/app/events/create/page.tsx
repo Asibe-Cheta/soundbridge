@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Globe, Lock, Users, Send, Clock, Save, MapPin, RefreshCw } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Globe, Lock, Users, Send, Clock, Save, MapPin, RefreshCw, X } from 'lucide-react';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useSubscription } from '../../../src/hooks/useSubscription';
 import { eventService } from '../../../src/lib/event-service';
@@ -61,6 +61,22 @@ function CreateEventContent() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
+
+  // Post-entry weather/transport check (WEATHER_IN_EVENTS.MD) — mirrors the mobile app's
+  // CreateEventScreen exactly (same thresholds, same copy shape) so organisers see
+  // consistent guidance either way.
+  type WeatherAltDay = { dateISO: string; weather: { available: boolean; pop?: number } };
+  type EnvPreview = {
+    current: {
+      weather: { available: boolean; pop?: number; condition?: string };
+      road: { available: boolean; incidents: string[] };
+      rail: { available: boolean; messages: string[] };
+    };
+    alternatives: WeatherAltDay[];
+  } | null;
+  const [envPreview, setEnvPreview] = useState<EnvPreview>(null);
+  const [envLoading, setEnvLoading] = useState(false);
+  const [envDismissed, setEnvDismissed] = useState(false);
 
   const paidPriceValue = parseFloat(price.replace(/[£₦$€₹¥R$]/g, ''));
   const isPaidEvent = Number.isFinite(paidPriceValue) && paidPriceValue > 0;
@@ -160,7 +176,101 @@ function CreateEventContent() {
     }
   }, [imageState.imageFile, imageState.uploadedUrl, imageState.isUploading, imageActions]);
 
+  // Post-entry weather/transport check — only once date, time, and a geocoded location are
+  // all present (nothing real to check before that), UK-only per the existing rail coverage
+  // limits. Debounced so it doesn't re-fetch on every keystroke elsewhere in the form, and
+  // any change to these specific fields clears a prior dismissal/result since they describe
+  // a materially different date/place to check.
+  useEffect(() => {
+    setEnvPreview(null);
+    setEnvDismissed(false);
 
+    if (selectedCountry !== 'GB' || !date || !time || latitude === null || longitude === null) {
+      return;
+    }
+
+    const eventDateISO = new Date(`${date}T${time}`).toISOString();
+    let active = true;
+    setEnvLoading(true);
+    const timer = setTimeout(() => {
+      fetch('/api/events/weather-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: latitude, lng: longitude, country: selectedCountry, eventDateISO }),
+      })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('weather-check failed'))))
+        .then((data) => {
+          if (active && data?.available) {
+            setEnvPreview({ current: data.current, alternatives: data.alternatives ?? [] });
+          }
+        })
+        .catch(() => {
+          if (active) setEnvPreview(null);
+        })
+        .finally(() => {
+          if (active) setEnvLoading(false);
+        });
+    }, 800);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      setEnvLoading(false);
+    };
+  }, [date, time, latitude, longitude, selectedCountry]);
+
+  // Builds the compact notice's copy from the fetched preview — returns null when there's
+  // genuinely nothing worth saying (no data at all), matching the "never fabricate" rule.
+  // Same thresholds as mobile's CreateEventScreen: poor if rain chance >= 50%, an
+  // alternative date is only named when it's >= 25 points better AND itself under 30%.
+  const weatherNotice = (() => {
+    if (!envPreview) return null;
+    const { current, alternatives } = envPreview;
+    const { weather, road, rail } = current;
+
+    if (!weather.available && !road.available && !rail.available) return null;
+
+    const rainPct = weather.available && weather.pop != null ? Math.round(weather.pop * 100) : null;
+    const weatherPoor = rainPct != null && rainPct >= 50;
+    const roadPoor = road.available && road.incidents.length > 0;
+    const railPoor = rail.available && rail.messages.length > 0;
+    const poor = weatherPoor || roadPoor || railPoor;
+
+    if (!poor) {
+      const bits: string[] = [];
+      if (weather.available) {
+        bits.push(rainPct != null ? `${rainPct}% chance of rain` : weather.condition || 'clear conditions');
+      }
+      if (rail.available) bits.push('no rail disruptions reported');
+      if (road.available) bits.push('no road disruptions reported');
+      if (bits.length === 0) return null;
+      return { tone: 'good' as const, message: `Looks good for this date — ${bits.join(', ')}.` };
+    }
+
+    const parts: string[] = [];
+    if (weatherPoor) parts.push(`${rainPct}% chance of rain`);
+    if (railPoor) parts.push(`reported rail disruption in this area that day (${rail.messages[0]})`);
+    if (roadPoor) parts.push(`reported road disruption nearby (${road.incidents[0]})`);
+    let message = `Worth knowing: ${parts.join('; ')} — you may want to consider adjusting the date.`;
+
+    if (weatherPoor && rainPct != null) {
+      const availableAlts = alternatives.filter((a) => a.weather.available && a.weather.pop != null);
+      if (availableAlts.length > 0) {
+        const best = availableAlts.reduce((a, b) => (a.weather.pop! < b.weather.pop! ? a : b));
+        const bestPct = Math.round(best.weather.pop! * 100);
+        if (rainPct - bestPct >= 25 && bestPct < 30) {
+          const label = new Date(best.dateISO).toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          });
+          message += ` ${label} shows clearer conditions (${bestPct}% chance of rain), if that's an option.`;
+        }
+      }
+    }
+
+    return { tone: 'warn' as const, message };
+  })();
 
   const handleAddressFieldChange = (fieldName: string, value: string) => {
     setAddressFields(prev => ({
@@ -808,6 +918,47 @@ function CreateEventContent() {
                 </div>
               </div>
             </div>
+
+            {/* Post-entry weather/transport check — non-blocking, dismissible, only once
+                date/time/location are all in and never a directive. */}
+            {!envDismissed && (envLoading || weatherNotice) && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.75rem',
+                  padding: '0.875rem 1rem',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  marginTop: '-0.5rem',
+                }}
+              >
+                {envLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" style={{ color: '#ccc', flexShrink: 0, marginTop: '0.1rem' }} />
+                    <span style={{ color: '#ccc', flex: 1 }}>Checking weather &amp; transport for this date…</span>
+                  </>
+                ) : weatherNotice ? (
+                  <>
+                    {weatherNotice.tone === 'warn' ? (
+                      <AlertCircle size={16} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '0.1rem' }} />
+                    ) : (
+                      <CheckCircle size={16} style={{ color: '#10B981', flexShrink: 0, marginTop: '0.1rem' }} />
+                    )}
+                    <span style={{ color: 'white', flex: 1 }}>{weatherNotice.message}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEnvDismissed(true)}
+                      aria-label="Dismiss"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', flexShrink: 0 }}
+                    >
+                      <X size={16} style={{ color: '#ccc' }} />
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            )}
 
             {/* Pricing */}
             <div className="card">
