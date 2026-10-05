@@ -10,10 +10,16 @@ export type PlatformRevenueTipDetail = {
   currency: string;
   from_user_id: string | null;
   from_name: string;
+  from_username: string | null;
   from_email: string | null;
+  from_avatar_url: string | null;
+  from_bio: string | null;
   to_user_id: string;
   to_name: string;
+  to_username: string | null;
   to_email: string | null;
+  to_avatar_url: string | null;
+  to_bio: string | null;
   message: string | null;
   is_anonymous: boolean;
   stripe_payment_intent_id: string | null;
@@ -23,17 +29,13 @@ type ProfileRow = {
   id: string;
   display_name: string | null;
   username: string | null;
-  email: string | null;
+  avatar_url: string | null;
+  bio: string | null;
 };
 
 function profileLabel(p: ProfileRow | undefined, fallback = 'Unknown'): string {
   if (!p) return fallback;
-  return (
-    (p.display_name ?? '').trim() ||
-    (p.username ?? '').trim() ||
-    (p.email ?? '').trim() ||
-    fallback
-  );
+  return (p.display_name ?? '').trim() || (p.username ?? '').trim() || fallback;
 }
 
 function isUuid(v: string): boolean {
@@ -84,10 +86,15 @@ export async function fetchPlatformRevenueTipDetails(
             message: string | null;
           }[],
         }),
+    // profiles has no `email` column (confirmed directly against the live table —
+    // it only lives on auth.users) — selecting it here made this ENTIRE query error
+    // out silently (the error was never checked), leaving profileMap empty and
+    // every single row falling back to the generic 'Creator'/'Tipper'/'Unknown'
+    // labels regardless of whether the underlying ids resolved correctly.
     creatorIds.length
       ? supabase
           .from('profiles')
-          .select('id, display_name, username, email')
+          .select('id, display_name, username, avatar_url, bio')
           .in('id', creatorIds)
       : Promise.resolve({ data: [] as ProfileRow[] }),
   ]);
@@ -111,12 +118,30 @@ export async function fetchPlatformRevenueTipDetails(
   if (missingProfileIds.length) {
     const { data: extra } = await supabase
       .from('profiles')
-      .select('id, display_name, username, email')
+      .select('id, display_name, username, avatar_url, bio')
       .in('id', missingProfileIds);
     for (const p of (extra ?? []) as ProfileRow[]) {
       profileMap.set(p.id, p);
     }
   }
+
+  // Email lives on auth.users, not profiles — fetched separately (admin API, not a
+  // table) for just the user ids actually involved here, same reasoning as the ticket-
+  // confirmation fix earlier: profiles never had full_name/email, display_name +
+  // supabase.auth.admin are the real source.
+  const allUserIds = new Set<string>(senderIds);
+  for (const id of profileMap.keys()) allUserIds.add(id);
+  const emailMap = new Map<string, string | null>();
+  await Promise.all(
+    [...allUserIds].map(async (id) => {
+      try {
+        const { data } = await supabase.auth.admin.getUserById(id);
+        emailMap.set(id, data?.user?.email ?? null);
+      } catch {
+        emailMap.set(id, null);
+      }
+    }),
+  );
 
   return tipRows.map((row) => {
     const pi = row.stripe_payment_intent_id ?? '';
@@ -129,7 +154,10 @@ export async function fetchPlatformRevenueTipDetails(
 
     let fromUserId: string | null = null;
     let fromName = 'Unknown tipper';
+    let fromUsername: string | null = null;
     let fromEmail: string | null = null;
+    let fromAvatarUrl: string | null = null;
+    let fromBio: string | null = null;
     let message: string | null = tip?.message ?? fan?.message ?? null;
     let isAnonymous = Boolean(tip?.is_anonymous);
 
@@ -139,7 +167,10 @@ export async function fetchPlatformRevenueTipDetails(
       fromUserId = tip.sender_id;
       const sender = profileMap.get(tip.sender_id);
       fromName = profileLabel(sender, 'Tipper');
-      fromEmail = sender?.email ?? null;
+      fromUsername = sender?.username ?? null;
+      fromEmail = emailMap.get(tip.sender_id) ?? null;
+      fromAvatarUrl = sender?.avatar_url ?? null;
+      fromBio = sender?.bio ?? null;
     } else if (fan) {
       fromName = (fan.guest_name ?? '').trim() || fan.guest_email || 'Guest (fan page)';
       fromEmail = fan.guest_email;
@@ -154,10 +185,16 @@ export async function fetchPlatformRevenueTipDetails(
       currency: (row.currency || 'USD').toUpperCase(),
       from_user_id: fromUserId,
       from_name: fromName,
+      from_username: fromUsername,
       from_email: fromEmail,
+      from_avatar_url: fromAvatarUrl,
+      from_bio: fromBio,
       to_user_id: toUserId,
       to_name: profileLabel(toProfile, 'Creator'),
-      to_email: toProfile?.email ?? null,
+      to_username: toProfile?.username ?? null,
+      to_email: isUuid(toUserId) ? emailMap.get(toUserId) ?? null : null,
+      to_avatar_url: toProfile?.avatar_url ?? null,
+      to_bio: toProfile?.bio ?? null,
       message,
       is_anonymous: isAnonymous,
       stripe_payment_intent_id: row.stripe_payment_intent_id,

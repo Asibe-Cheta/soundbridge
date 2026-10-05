@@ -6,6 +6,7 @@ import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import type { PlatformRevenueReport } from '@/src/lib/platform-revenue-admin';
 import { Download, RefreshCw, TrendingUp, DollarSign, PieChart, ArrowRight } from 'lucide-react';
+import { ProfilePreviewModal, type ProfilePreviewData } from '@/src/components/admin/ProfilePreviewModal';
 
 type PeriodKey = '7d' | '30d' | 'month' | 'year' | 'custom';
 
@@ -47,6 +48,7 @@ export default function AdminPlatformRevenuePage() {
   const [error, setError] = useState<string | null>(null);
   const [txPage, setTxPage] = useState(0);
   const [tipsPage, setTipsPage] = useState(0);
+  const [previewProfile, setPreviewProfile] = useState<ProfilePreviewData | null>(null);
   const txPageSize = 25;
   const tipsPageSize = 25;
 
@@ -344,7 +346,25 @@ export default function AdminPlatformRevenuePage() {
                               {formatDate(tip.created_at)}
                             </td>
                             <td className={`px-3 py-2 ${text}`}>
-                              <div className="font-medium">{tip.from_name}</div>
+                              {tip.from_username ? (
+                                <button
+                                  type="button"
+                                  className="font-medium text-left hover:underline"
+                                  onClick={() =>
+                                    setPreviewProfile({
+                                      name: tip.from_name,
+                                      username: tip.from_username,
+                                      avatarUrl: tip.from_avatar_url,
+                                      bio: tip.from_bio,
+                                      email: tip.from_email,
+                                    })
+                                  }
+                                >
+                                  {tip.from_name}
+                                </button>
+                              ) : (
+                                <div className="font-medium">{tip.from_name}</div>
+                              )}
                               {tip.from_email && !tip.is_anonymous && (
                                 <div className={`text-xs ${muted}`}>{tip.from_email}</div>
                               )}
@@ -358,7 +378,25 @@ export default function AdminPlatformRevenuePage() {
                               <ArrowRight className={`h-4 w-4 inline ${muted}`} />
                             </td>
                             <td className={`px-3 py-2 ${text}`}>
-                              <div className="font-medium">{tip.to_name}</div>
+                              {tip.to_username ? (
+                                <button
+                                  type="button"
+                                  className="font-medium text-left hover:underline"
+                                  onClick={() =>
+                                    setPreviewProfile({
+                                      name: tip.to_name,
+                                      username: tip.to_username,
+                                      avatarUrl: tip.to_avatar_url,
+                                      bio: tip.to_bio,
+                                      email: tip.to_email,
+                                    })
+                                  }
+                                >
+                                  {tip.to_name}
+                                </button>
+                              ) : (
+                                <div className="font-medium">{tip.to_name}</div>
+                              )}
                               {tip.to_email && <div className={`text-xs ${muted}`}>{tip.to_email}</div>}
                             </td>
                             <td className={`px-3 py-2 text-right ${text}`}>
@@ -466,6 +504,7 @@ export default function AdminPlatformRevenuePage() {
           )}
         </div>
       </div>
+      <ProfilePreviewModal profile={previewProfile} onClose={() => setPreviewProfile(null)} />
     </ProtectedRoute>
   );
 }
