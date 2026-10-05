@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
-import type { PlatformRevenueReport } from '@/src/lib/platform-revenue-admin';
+import { CHARGE_TYPE_LABELS, type PlatformRevenueReport } from '@/src/lib/platform-revenue-admin';
 import { Download, RefreshCw, TrendingUp, DollarSign, PieChart, ArrowRight } from 'lucide-react';
 import { ProfilePreviewModal, type ProfilePreviewData } from '@/src/components/admin/ProfilePreviewModal';
 
@@ -49,6 +49,7 @@ export default function AdminPlatformRevenuePage() {
   const [txPage, setTxPage] = useState(0);
   const [tipsPage, setTipsPage] = useState(0);
   const [previewProfile, setPreviewProfile] = useState<ProfilePreviewData | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const txPageSize = 25;
   const tipsPageSize = 25;
 
@@ -105,11 +106,19 @@ export default function AdminPlatformRevenuePage() {
     URL.revokeObjectURL(url);
   };
 
-  const txs = report?.transactions ?? [];
+  const allTxs = report?.transactions ?? [];
+  const txs = categoryFilter === 'all' ? allTxs : allTxs.filter((t) => t.category === categoryFilter);
   const txSlice = txs.slice(txPage * txPageSize, (txPage + 1) * txPageSize);
   const txPages = Math.max(1, Math.ceil(txs.length / txPageSize));
 
-  const tips = report?.tips ?? [];
+  // Tips detail only applies to tip-type categories — hidden entirely once the filter
+  // picks a non-tip category (event tickets, gigs, etc.), filtered to just one source
+  // (registered-user tips vs the public tip room) when picking either of those two.
+  const showTipsSection = categoryFilter === 'all' || categoryFilter === 'tip' || categoryFilter === 'tip_room';
+  const allTips = report?.tips ?? [];
+  const tips = categoryFilter === 'tip' || categoryFilter === 'tip_room'
+    ? allTips.filter((t) => t.source === categoryFilter)
+    : allTips;
   const tipsSlice = tips.slice(tipsPage * tipsPageSize, (tipsPage + 1) * tipsPageSize);
   const tipsPages = Math.max(1, Math.ceil(tips.length / tipsPageSize));
 
@@ -148,6 +157,25 @@ export default function AdminPlatformRevenuePage() {
                     </option>
                   ))}
                   <option value="year-picker">Specific year…</option>
+                </select>
+              </div>
+              <div>
+                <label className={`block text-xs mb-1 ${muted}`}>Category</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => {
+                    setCategoryFilter(e.target.value);
+                    setTxPage(0);
+                    setTipsPage(0);
+                  }}
+                  className={`px-3 py-2 rounded-lg border text-sm ${dark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                >
+                  <option value="all">All categories</option>
+                  {(report?.by_charge_type ?? []).map((row) => (
+                    <option key={row.charge_type} value={row.charge_type}>
+                      {row.label} ({row.transaction_count})
+                    </option>
+                  ))}
                 </select>
               </div>
               {useYear && (
@@ -303,12 +331,17 @@ export default function AdminPlatformRevenuePage() {
                 </div>
               </div>
 
+              {showTipsSection && (
               <div className={`mt-8 rounded-lg border overflow-hidden ${card}`}>
                 <div className={`px-4 py-3 border-b flex justify-between items-center ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
                   <div>
                     <h2 className={`font-semibold ${text}`}>Tips detail</h2>
                     <p className={`text-xs ${muted}`}>
-                      Who tipped whom in this period — includes registered users and fan-page guests
+                      {categoryFilter === 'tip'
+                        ? 'Registered-user tips only, this period'
+                        : categoryFilter === 'tip_room'
+                          ? 'Tip Room (fan-page guest) tips only, this period'
+                          : 'Who tipped whom in this period — includes registered users and fan-page guests'}
                     </p>
                   </div>
                   <span className={`text-xs ${muted}`}>
@@ -436,12 +469,16 @@ export default function AdminPlatformRevenuePage() {
                   </div>
                 )}
               </div>
+              )}
 
               <div className={`mt-8 rounded-lg border overflow-hidden ${card}`}>
                 <div className={`px-4 py-3 border-b flex justify-between items-center ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
                   <div>
                     <h2 className={`font-semibold ${text}`}>Transaction detail</h2>
-                    <p className={`text-xs ${muted}`}>Each row = one payment with date and fee breakdown</p>
+                    <p className={`text-xs ${muted}`}>
+                      Each row = one payment with date and fee breakdown
+                      {categoryFilter !== 'all' && ` — filtered to ${CHARGE_TYPE_LABELS[categoryFilter] ?? categoryFilter}`}
+                    </p>
                   </div>
                   <span className={`text-xs ${muted}`}>
                     Page {txPage + 1} of {txPages} ({txs.length} rows)

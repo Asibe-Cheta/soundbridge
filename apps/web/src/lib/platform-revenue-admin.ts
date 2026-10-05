@@ -2,6 +2,7 @@ import type { PlatformRevenueTipDetail } from '@/src/lib/admin-platform-revenue-
 
 export const PLATFORM_REVENUE_CHARGE_TYPES = [
   'tip',
+  'tip_room',
   'gig_payment',
   'event_ticket',
   'audio_sale',
@@ -12,6 +13,12 @@ export type PlatformRevenueChargeType = (typeof PLATFORM_REVENUE_CHARGE_TYPES)[n
 
 export const CHARGE_TYPE_LABELS: Record<string, string> = {
   tip: 'Tips',
+  // Not a real platform_revenue.charge_type value — both 'tip' and 'tip_room' rows are
+  // stored as charge_type 'tip'; this is a synthetic category derived per-row from which
+  // table the payment actually matched (see admin-platform-revenue-tips.ts's `source`),
+  // so the public fan-landing-page "tip room" (no SoundBridge account needed) can be
+  // broken out from registered-user in-app tips in the category breakdown and filter.
+  tip_room: 'Tip Room',
   gig_payment: 'Gig payments',
   event_ticket: 'Event tickets',
   audio_sale: 'Audio sales',
@@ -72,6 +79,9 @@ export type PlatformRevenueReport = {
   transactions: Array<
     PlatformRevenueRow & {
       label: string;
+      /** Real charge_type for 'tip' rows is always 'tip' in the DB — this is the
+       * synthetic 'tip' vs 'tip_room' split (see CHARGE_TYPE_LABELS), used for filtering. */
+      category: string;
       gross_display: number;
       platform_fee_display: number;
       creator_payout_display: number;
@@ -178,6 +188,11 @@ export function buildPlatformRevenueReport(
     });
   }
 
+  // 'tip' vs 'tip_room' isn't stored on platform_revenue itself — both are charge_type
+  // 'tip' there — so the split comes from the richer tip-detail lookup (which table the
+  // payment_intent actually matched), keyed by the shared row id.
+  const tipSourceById = new Map(tips.map((t) => [t.id, t.source]));
+
   let transaction_count = 0;
   let gross_total = 0;
   let platform_fee_total = 0;
@@ -189,23 +204,25 @@ export function buildPlatformRevenueReport(
     const creator = minorToMajor(row.creator_payout_amount);
     const cur = (row.currency || 'USD').toUpperCase();
 
+    const category = row.charge_type === 'tip' ? tipSourceById.get(row.id) ?? 'tip' : row.charge_type;
+
     transaction_count += 1;
     gross_total += gross;
     platform_fee_total += fee;
     creator_payout_total += creator;
 
-    let bucket = byType.get(row.charge_type);
+    let bucket = byType.get(category);
     if (!bucket) {
       bucket = {
-        charge_type: row.charge_type,
-        label: chargeTypeLabel(row.charge_type),
+        charge_type: category,
+        label: chargeTypeLabel(category),
         transaction_count: 0,
         gross_total: 0,
         platform_fee_total: 0,
         creator_payout_total: 0,
         by_currency: {},
       };
-      byType.set(row.charge_type, bucket);
+      byType.set(category, bucket);
     }
     bucket.transaction_count += 1;
     bucket.gross_total += gross;
@@ -226,7 +243,8 @@ export function buildPlatformRevenueReport(
 
     return {
       ...row,
-      label: chargeTypeLabel(row.charge_type),
+      label: chargeTypeLabel(category),
+      category,
       gross_display: gross,
       platform_fee_display: fee,
       creator_payout_display: creator,

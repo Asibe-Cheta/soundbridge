@@ -23,6 +23,9 @@ export type PlatformRevenueTipDetail = {
   message: string | null;
   is_anonymous: boolean;
   stripe_payment_intent_id: string | null;
+  /** 'tip_room' = came through the public fan-landing-page tip room (no SoundBridge
+   * account needed), 'tip' = a registered user tipping through the normal in-app flow. */
+  source: 'tip' | 'tip_room';
 };
 
 type ProfileRow = {
@@ -198,6 +201,7 @@ export async function fetchPlatformRevenueTipDetails(
       message,
       is_anonymous: isAnonymous,
       stripe_payment_intent_id: row.stripe_payment_intent_id,
+      source: tip ? 'tip' : fan ? 'tip_room' : 'tip',
     };
   });
 }
