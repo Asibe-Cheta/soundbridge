@@ -158,17 +158,16 @@ export async function POST(request: NextRequest) {
           ? authUser.app_metadata.providers
           : [];
 
-        if (!authUser.email_confirmed_at) {
-          console.warn('Email not confirmed for user:', authUser.id);
-          return NextResponse.json(
-            {
-              success: false,
-              error: 'Email not confirmed',
-              code: 'EMAIL_UNCONFIRMED',
-            },
-            { status: 401 }
-          );
-        }
+        // Email-confirmation gate removed at Justice's direction (2026-10-06) — Supabase's
+        // "Confirm email" project setting is temporarily off (SendGrid/email service both
+        // need renewal and can't send confirmation emails right now), and this block only
+        // ever ran as a nicer error message AFTER supabaseAnon.auth.signInWithPassword()
+        // above had already failed — Supabase's own project setting is the real gate on
+        // whether that call succeeds, this code never decided pass/fail by itself. Mobile's
+        // AuthScreen.tsx calls this route for login; leaving this in would keep showing
+        // "Email not confirmed" for anyone with email_confirmed_at still NULL from before
+        // the setting was flipped, even once Supabase itself lets their signInWithPassword
+        // through. Restore this block when "Confirm email" is turned back on.
 
         if (!authUser.encrypted_password) {
           const hasOAuthProvider = providers.some((provider: string) => provider !== 'email');
