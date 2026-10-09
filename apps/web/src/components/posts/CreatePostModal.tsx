@@ -225,7 +225,12 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
       if (!data.success) throw new Error(data.error || 'Failed to create post');
       const postId = data.data.id;
 
+      // The post itself (text) is already created at this point — an image upload
+      // failure here shouldn't be treated as the whole submit failing, but it was
+      // previously swallowed entirely (empty catch, no success check): the post would
+      // go out silently missing the photo the user attached, with no feedback at all.
       const imageUrls: string[] = [];
+      let failedImageCount = 0;
       for (const file of imageFiles) {
         const formData = new FormData();
         formData.append('file', file);
@@ -233,8 +238,14 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
         try {
           const up = await fetch('/api/posts/upload-image', { method: 'POST', credentials: 'include', body: formData });
           const upData = await up.json();
-          if (upData.success && upData.data?.file_url) imageUrls.push(upData.data.file_url);
-        } catch (_) {}
+          if (upData.success && upData.data?.file_url) {
+            imageUrls.push(upData.data.file_url);
+          } else {
+            failedImageCount += 1;
+          }
+        } catch (_) {
+          failedImageCount += 1;
+        }
       }
       if (imageUrls.length > 0) {
         await fetch(`/api/posts/${postId}`, {
@@ -263,7 +274,18 @@ export const CreatePostModal = React.memo(function CreatePostModal({ isOpen, onC
       setPostType('update');
       setVisibility('connections');
       onPostCreated?.();
-      onClose();
+      // The post (and any images that did upload) are already live either way — only
+      // difference on failure is leaving the modal open with a visible message instead
+      // of auto-closing as if everything succeeded.
+      if (failedImageCount > 0) {
+        setError(
+          failedImageCount === 1
+            ? "Post published, but 1 photo couldn't be uploaded. You can try adding it again."
+            : `Post published, but ${failedImageCount} photos couldn't be uploaded. You can try adding them again.`
+        );
+      } else {
+        onClose();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create post. Please try again.');
     } finally {
