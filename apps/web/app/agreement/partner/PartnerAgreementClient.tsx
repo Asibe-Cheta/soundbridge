@@ -314,7 +314,16 @@ export function PartnerAgreementClient() {
           this is a binding agreement between you and SoundBridge Live Ltd. It guarantees your 1
           year of Premium access from your sign up date, and your 10% commission for every user
           who joins through your referral link and subscribes, for as long as they remain
-          subscribed.
+          subscribed. Want to read the full terms first?{' '}
+          <a
+            href="/agreement/partner/policies"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-[hsl(var(--primary))] underline underline-offset-2"
+          >
+            Read the full Partner Programme Terms &amp; Policies
+          </a>
+          .
         </p>
       </section>
 
