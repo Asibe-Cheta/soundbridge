@@ -335,7 +335,7 @@ export function PartnerAgreementClient() {
         <label className="block text-sm">
           <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Full name</span>
           <input
-            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm"
+            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm text-[hsl(var(--foreground))]"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="e.g. Dan Edmund"
@@ -349,7 +349,7 @@ export function PartnerAgreementClient() {
           </span>
           <input
             type="email"
-            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm"
+            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm text-[hsl(var(--foreground))]"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
@@ -361,7 +361,7 @@ export function PartnerAgreementClient() {
           <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Phone (optional)</span>
           <input
             type="tel"
-            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm"
+            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm text-[hsl(var(--foreground))]"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             autoComplete="tel"
@@ -373,7 +373,7 @@ export function PartnerAgreementClient() {
             How do you plan to share SoundBridge? (optional)
           </span>
           <textarea
-            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm"
+            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 text-sm text-[hsl(var(--foreground))]"
             rows={3}
             value={context}
             onChange={(e) => setContext(e.target.value)}

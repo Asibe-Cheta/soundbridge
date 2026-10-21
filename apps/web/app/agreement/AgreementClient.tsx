@@ -569,7 +569,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Company</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbCompany}
                 onChange={(e) => setSbCompany(e.target.value)}
               />
@@ -578,7 +578,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Representative</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbRep}
                 onChange={(e) => setSbRep(e.target.value)}
               />
@@ -587,7 +587,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Title</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbTitle}
                 onChange={(e) => setSbTitle(e.target.value)}
               />
@@ -597,7 +597,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <input
                 type="date"
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbDate}
                 onChange={(e) => setSbDate(e.target.value)}
               />
@@ -613,7 +613,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
             <label className="block text-sm sm:col-span-2">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Full legal name</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={creatorName}
                 onChange={(e) => setCreatorName(e.target.value)}
                 placeholder="As on official ID"
@@ -625,7 +625,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
                 Artist / project or company name
               </span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={creatorArtist}
                 onChange={(e) => setCreatorArtist(e.target.value)}
                 placeholder="How you appear on SoundBridge"
@@ -635,7 +635,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Email</span>
               <input
                 type="email"
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={creatorEmail}
                 onChange={(e) => setCreatorEmail(e.target.value)}
                 placeholder="you@example.com"
@@ -646,7 +646,7 @@ export function AgreementClient({ initialDraftId, initialEditToken }: AgreementC
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Date</span>
               <input
                 type="date"
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={creatorDate}
                 onChange={(e) => setCreatorDate(e.target.value)}
               />

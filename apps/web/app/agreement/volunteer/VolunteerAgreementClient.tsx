@@ -156,7 +156,7 @@ export function VolunteerAgreementClient() {
             Type your full name to sign
           </span>
           <input
-            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 font-serif text-base italic"
+            className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2.5 font-serif text-base italic text-[hsl(var(--foreground))]"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Osas Iyamu"

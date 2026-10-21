@@ -545,7 +545,7 @@ export function MbgSonicsPartnershipClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Company</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbCompany}
                 onChange={(e) => setSbCompany(e.target.value)}
               />
@@ -554,7 +554,7 @@ export function MbgSonicsPartnershipClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Representative</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbRep}
                 onChange={(e) => setSbRep(e.target.value)}
               />
@@ -563,7 +563,7 @@ export function MbgSonicsPartnershipClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Title</span>
               <input
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbTitle}
                 onChange={(e) => setSbTitle(e.target.value)}
               />
@@ -573,7 +573,7 @@ export function MbgSonicsPartnershipClient() {
               <input
                 type="date"
                 disabled={!canEditSoundBridge}
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm disabled:opacity-60"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] disabled:opacity-60"
                 value={sbDate}
                 onChange={(e) => setSbDate(e.target.value)}
               />
@@ -589,7 +589,7 @@ export function MbgSonicsPartnershipClient() {
             <label className="block text-sm sm:col-span-2">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Organisation</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={partnerCompany}
                 onChange={(e) => setPartnerCompany(e.target.value)}
               />
@@ -597,7 +597,7 @@ export function MbgSonicsPartnershipClient() {
             <label className="block text-sm sm:col-span-2">
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Representative name</span>
               <input
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={partnerName}
                 onChange={(e) => setPartnerName(e.target.value)}
                 autoComplete="name"
@@ -607,7 +607,7 @@ export function MbgSonicsPartnershipClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Email</span>
               <input
                 type="email"
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={partnerEmail}
                 onChange={(e) => setPartnerEmail(e.target.value)}
                 placeholder="contact@mbgsonics.com"
@@ -618,7 +618,7 @@ export function MbgSonicsPartnershipClient() {
               <span className="mb-1 block text-[hsl(var(--muted-foreground))]">Date</span>
               <input
                 type="date"
-                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))]"
                 value={partnerDate}
                 onChange={(e) => setPartnerDate(e.target.value)}
               />
