@@ -33,6 +33,7 @@ import {
   TrendingUp,
   UserPlus,
   UserX,
+  Vote,
   Wallet,
   X,
 } from 'lucide-react';
@@ -64,6 +65,7 @@ const NAV_ITEMS = [
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/event-promotion', label: 'Events Promotion', icon: BarChart3 },
   { href: '/admin/partners', label: 'Partners', icon: Handshake },
+  { href: '/admin/vote-campaign', label: 'Vote Campaign', icon: Vote },
   { href: '/admin/institutional-access', label: 'Institutional Access', icon: Building2 },
   { href: '/admin/founding-members', label: 'Founding Members', icon: Crown },
 ] as const;
