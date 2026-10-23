@@ -60,19 +60,30 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Handle mobile responsiveness, and measure the sticky site header's
-  // actual rendered height so the fixed sidebar can sit flush below it
-  // without a hardcoded pixel guess.
+  // Handle mobile responsiveness
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      const header = document.querySelector('.header') as HTMLElement | null;
-      if (header) setNavHeight(header.offsetHeight);
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Keep navHeight in sync with the sticky site header's actual rendered
+  // height, so the fixed sidebar sits flush below it with no gap or
+  // overlap — via ResizeObserver rather than a one-time measurement,
+  // since the header's height can change after mount (auth state
+  // resolving, font swap, responsive breakpoints, etc.).
+  useEffect(() => {
+    const header = document.querySelector('.header') as HTMLElement | null;
+    if (!header) return;
+    const update = () => setNavHeight(header.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
   }, []);
 
   // Live status for the Go Live tab (mobile-only broadcasting; web just shows this read-only)
