@@ -145,6 +145,103 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
+  const renderNavItem = (item: (typeof navigation)[number], variant: 'tab' | 'sidebar') => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+    const sharedStyle: React.CSSProperties =
+      variant === 'sidebar'
+        ? {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.625rem 0.75rem',
+            borderRadius: '0.5rem',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            color: isActive ? 'white' : 'var(--text-secondary)',
+            background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
+            boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none',
+            textDecoration: 'none',
+            width: '100%',
+            border: 'none',
+            fontSize: '0.875rem',
+            textAlign: 'left',
+          }
+        : {
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '0.25rem' : '0.5rem',
+            padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
+            borderRadius: '0.5rem',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            color: isActive ? 'white' : 'var(--text-secondary)',
+            background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
+            boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none',
+            textDecoration: 'none',
+          };
+    const iconSize = variant === 'sidebar' ? 18 : isMobile ? 14 : 16;
+
+    const handleEnter = (e: React.MouseEvent<HTMLElement>) => {
+      if (isActive) return;
+      e.currentTarget.style.color = 'var(--text-primary)';
+      e.currentTarget.style.background = 'var(--hover-bg)';
+    };
+    const handleLeave = (e: React.MouseEvent<HTMLElement>) => {
+      if (isActive) return;
+      e.currentTarget.style.color = 'var(--text-secondary)';
+      e.currentTarget.style.background = 'transparent';
+    };
+
+    if (item.href) {
+      return (
+        <Link
+          key={item.id}
+          href={item.href}
+          className={variant === 'tab' ? 'text-xs md:text-sm' : undefined}
+          style={sharedStyle}
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        >
+          <Icon size={iconSize} />
+          {item.label}
+        </Link>
+      );
+    }
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={variant === 'tab' ? 'text-xs md:text-sm' : undefined}
+        onClick={() =>
+          setActiveTab(
+            item.id as
+              | 'overview'
+              | 'content'
+              | 'analytics'
+              | 'followers'
+              | 'subscription'
+              | 'revenue'
+              | 'service-provider'
+              | 'availability'
+              | 'go-live'
+              | 'settings'
+          )
+        }
+        style={sharedStyle}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
+        <Icon size={iconSize} />
+        {item.label}
+      </button>
+    );
+  };
+
   return (
     <ProtectedRoute>
       <div className={`min-h-screen ${
@@ -156,103 +253,73 @@ export default function DashboardPage() {
       }}>
 
         {/* Main Content */}
-        <main style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          padding: isMobile ? '1rem 0.5rem' : '2rem 1rem' 
-        }}>
-          {/* Navigation Tabs — scroll horizontally when tabs exceed width */}
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '100%',
-              marginBottom: isMobile ? '1rem' : '2rem',
-              padding: '0.25rem',
-              background: 'var(--bg-secondary)',
-              borderRadius: '0.75rem',
-              border: '1px solid var(--border-primary)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              overscrollBehaviorX: 'contain',
-            }}
-            className="dashboard-tabs-scroll"
-          >
-            <div
+        <div
+          style={{
+            maxWidth: '1400px',
+            margin: '0 auto',
+            padding: isMobile ? '1rem 0.5rem' : '2rem 1rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: isMobile ? '0' : '2rem',
+          }}
+        >
+          {/* Sidebar navigation — desktop only; mobile keeps the horizontal tab bar below */}
+          {!isMobile && (
+            <aside
               style={{
+                width: '220px',
+                flexShrink: 0,
+                position: 'sticky',
+                top: '1.5rem',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: '0.25rem',
-                flexWrap: 'nowrap',
-                width: 'max-content',
+                padding: '0.75rem',
+                background: 'var(--bg-secondary)',
+                borderRadius: '1rem',
+                border: '1px solid var(--border-primary)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
               }}
             >
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              const sharedStyle: React.CSSProperties = {
-                display: 'flex',
-                alignItems: 'center',
-                gap: isMobile ? '0.25rem' : '0.5rem',
-                padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                fontWeight: '500',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                color: isActive ? 'white' : 'var(--text-secondary)',
-                background: isActive ? 'linear-gradient(135deg, #dc2626 0%, #ec4899 100%)' : 'transparent',
-                boxShadow: isActive ? '0 4px 12px rgba(220, 38, 38, 0.3)' : 'none',
-                textDecoration: 'none',
-              };
+              {navigation.map((item) => renderNavItem(item, 'sidebar'))}
+            </aside>
+          )}
 
-              if (item.href) {
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="text-xs md:text-sm"
-                    style={sharedStyle}
-                    onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
-                    onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
-                  >
-                    <Icon size={isMobile ? 14 : 16} />
-                    {item.label}
-                  </Link>
-                );
-              }
-              return (
-                <button
-                  key={item.id}
-                  className="text-xs md:text-sm"
-                  onClick={() =>
-                    setActiveTab(
-                      item.id as
-                        | 'overview'
-                        | 'content'
-                        | 'analytics'
-                        | 'followers'
-                        | 'subscription'
-                        | 'revenue'
-                        | 'service-provider'
-                        | 'availability'
-                        | 'go-live'
-                        | 'settings'
-                    )
-                  }
-                  style={sharedStyle}
-                  onMouseEnter={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-primary)', e.currentTarget.style.background = 'var(--hover-bg)')}
-                  onMouseLeave={(e) => !isActive && (e.currentTarget.style.color = 'var(--text-secondary)', e.currentTarget.style.background = 'transparent')}
-                >
-                  <Icon size={isMobile ? 14 : 16} />
-                  {item.label}
-                </button>
-              );
-            })}
+          <main style={{ flex: 1, minWidth: 0 }}>
+          {/* Navigation Tabs — mobile only, scroll horizontally when tabs exceed width */}
+          {isMobile && (
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                marginBottom: '1rem',
+                padding: '0.25rem',
+                background: 'var(--bg-secondary)',
+                borderRadius: '0.75rem',
+                border: '1px solid var(--border-primary)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehaviorX: 'contain',
+              }}
+              className="dashboard-tabs-scroll"
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  flexWrap: 'nowrap',
+                  width: 'max-content',
+                }}
+              >
+                {navigation.map((item) => renderNavItem(item, 'tab'))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Error Toast */}
           {error && (
@@ -897,7 +964,8 @@ export default function DashboardPage() {
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>This section is under development</p>
             </div>
           )}
-        </main>
+          </main>
+        </div>
 
       </div>
     </ProtectedRoute>
