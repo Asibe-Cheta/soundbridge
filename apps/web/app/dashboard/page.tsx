@@ -288,8 +288,11 @@ export default function DashboardPage() {
               padding: '1rem 0.75rem',
               background: 'var(--bg-secondary)',
               borderRight: '1px solid var(--border-primary)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
+              // No backdrop-filter here: --bg-secondary is fully opaque so
+              // blur added nothing visually, and Safari has a known bug
+              // where backdrop-filter on a position:fixed element detaches
+              // it from the true viewport while scrolling.
+              transform: 'translateZ(0)',
             }}
           >
             {navigation.map((item) => renderNavItem(item, 'sidebar'))}
