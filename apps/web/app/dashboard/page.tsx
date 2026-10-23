@@ -43,6 +43,7 @@ export default function DashboardPage() {
   >('overview');
   const [liveStatus, setLiveStatus] = useState<{ live: boolean; viewerCount?: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [navHeight, setNavHeight] = useState(72);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
 
@@ -59,10 +60,14 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Handle mobile responsiveness
+  // Handle mobile responsiveness, and measure the sticky site header's
+  // actual rendered height so the fixed sidebar can sit flush below it
+  // without a hardcoded pixel guess.
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
+      const header = document.querySelector('.header') as HTMLElement | null;
+      if (header) setNavHeight(header.offsetHeight);
     };
 
     handleResize();
@@ -252,41 +257,47 @@ export default function DashboardPage() {
         color: 'var(--text-primary)'
       }}>
 
+        {/* Sidebar navigation — desktop only, fixed flush to the viewport's left edge,
+            full height below the sticky site header, regardless of page scroll.
+            Mobile keeps the horizontal tab bar inside the content column below. */}
+        {!isMobile && (
+          <aside
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: navHeight,
+              height: `calc(100vh - ${navHeight}px)`,
+              width: '220px',
+              flexShrink: 0,
+              zIndex: 40,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.25rem',
+              padding: '1rem 0.75rem',
+              background: 'var(--bg-secondary)',
+              borderRight: '1px solid var(--border-primary)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            }}
+          >
+            {navigation.map((item) => renderNavItem(item, 'sidebar'))}
+          </aside>
+        )}
+
         {/* Main Content */}
         <div
           style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            padding: isMobile ? '1rem 0.5rem' : '2rem 1rem',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: isMobile ? '0' : '2rem',
+            marginLeft: isMobile ? 0 : '220px',
           }}
         >
-          {/* Sidebar navigation — desktop only; mobile keeps the horizontal tab bar below */}
-          {!isMobile && (
-            <aside
-              style={{
-                width: '220px',
-                flexShrink: 0,
-                position: 'sticky',
-                top: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem',
-                padding: '0.75rem',
-                background: 'var(--bg-secondary)',
-                borderRadius: '1rem',
-                border: '1px solid var(--border-primary)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-              }}
-            >
-              {navigation.map((item) => renderNavItem(item, 'sidebar'))}
-            </aside>
-          )}
-
-          <main style={{ flex: 1, minWidth: 0 }}>
+          <main
+            style={{
+              maxWidth: '1200px',
+              margin: '0 auto',
+              padding: isMobile ? '1rem 0.5rem' : '2rem 1rem',
+            }}
+          >
           {/* Navigation Tabs — mobile only, scroll horizontally when tabs exceed width */}
           {isMobile && (
             <div
