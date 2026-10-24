@@ -119,7 +119,6 @@ function PricingContent() {
         'Same 85% creator share on sales, tips & tickets',
         'Sell audio downloads',
         'Pro badge on profile',
-        'Custom profile URL',
         'Featured on Discover 1×/month',
         'Advanced analytics',
         'Priority in feed',
@@ -179,7 +178,6 @@ function PricingContent() {
       icon: <PenTool className="h-6 w-6 text-purple-500" />,
       items: [
         { name: 'Profile Badge', free: '✗', premium: 'Pro badge', unlimited: 'Unlimited badge' },
-        { name: 'Custom Profile URL', free: '✗', premium: '✓', unlimited: '✓' },
         { name: 'Featured on Discover', free: '✗', premium: '1x/month', unlimited: '2x/month' },
         { name: 'Feed Priority', free: 'Standard', premium: 'Priority', unlimited: 'Top Priority' },
         { name: 'Remove Branding', free: '✗', premium: '✗', unlimited: 'Coming Soon' }
@@ -201,7 +199,7 @@ function PricingContent() {
       category: 'Monetization',
       icon: <DollarSign className="h-6 w-6 text-yellow-500" />,
       items: [
-        { name: 'Receive Tips', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
+        { name: 'Receive Tips', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (90%)' },
         { name: 'Sell Event Tickets', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
         { name: 'Service Provider', free: '✗', premium: '✓', unlimited: '✓' },
         { name: 'Payment Escrow', free: '✗', premium: '✓', unlimited: '✓' },
@@ -253,7 +251,7 @@ function PricingContent() {
     {
       name: 'Emma Thompson',
       role: 'Event Organizer',
-      content: 'Free plan got me started, but Premium gave me the tools to turn my passion into a business. The advanced analytics and custom URL make all the difference!',
+      content: 'Free plan got me started, but Premium gave me the tools to turn my passion into a business. The advanced analytics and priority support make all the difference!',
       avatar: 'ET',
       plan: 'Premium'
     },

@@ -24,7 +24,7 @@ const COMPARISONS = [
   {
     other: 'Guess what your next career move should be.',
     soundbridge:
-      'Your AI Career Adviser analyses your real data and tells you exactly which cities want you, when to release, and who to collaborate with. Coming soon.',
+      'Bridge, your career advisor, analyses your real data and tells you exactly which cities want you, when to release, and who to collaborate with.',
   },
 ];
 

@@ -140,7 +140,7 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-purple-400 flex-shrink-0" />
-                  <span className="text-sm">7 tracks per month</span>
+                  <span className="text-sm">Unlimited track uploads, up to 2 GB storage</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-purple-400 flex-shrink-0" />
@@ -149,10 +149,6 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-purple-400 flex-shrink-0" />
                   <span className="text-sm">Advanced analytics</span>
-                </li>
-                <li className="flex items-center gap-2 text-white/90">
-                  <Check size={18} className="text-purple-400 flex-shrink-0" />
-                  <span className="text-sm">Custom profile URL</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-purple-400 flex-shrink-0" />
@@ -194,7 +190,7 @@ export function TierSelection({ isOpen, onContinue, onBack }: TierSelectionProps
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-yellow-400 flex-shrink-0" />
-                  <span className="text-sm">UNLIMITED uploads</span>
+                  <span className="text-sm">Unlimited tracks, up to 10 GB storage</span>
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check size={18} className="text-yellow-400 flex-shrink-0" />

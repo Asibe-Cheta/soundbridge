@@ -236,7 +236,6 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
                 PUBLIC_TIER_LIMITS.premium.trackUploads,
                 'Sell audio downloads',
                 'Pro badge on profile',
-                'Custom profile URL',
                 'Featured on Discover 1×/month',
                 'Advanced analytics',
                 'Priority in feed',
