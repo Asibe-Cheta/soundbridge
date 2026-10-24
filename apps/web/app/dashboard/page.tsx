@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const [liveStatus, setLiveStatus] = useState<{ live: boolean; viewerCount?: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [navHeight, setNavHeight] = useState(72);
+  const [scrollY, setScrollY] = useState(0);
   const [creatorTypes, setCreatorTypes] = useState<string[]>([]);
   const [isLoadingCreatorTypes, setIsLoadingCreatorTypes] = useState(true);
 
@@ -84,6 +85,32 @@ export default function DashboardPage() {
     const observer = new ResizeObserver(update);
     observer.observe(header);
     return () => observer.disconnect();
+  }, []);
+
+  // The site header is styled position:sticky, but Safari has a long-
+  // standing bug where any ancestor with overflow-x:hidden (set globally
+  // on <html> in this app) silently breaks sticky positioning — so in
+  // Safari the header actually scrolls away like normal content instead
+  // of staying pinned. The fixed sidebar's top offset tracks scroll
+  // position to match that real (non-sticky) behavior: offset by the
+  // header's height at the top of the page, shrinking to 0 once scrolled
+  // past it — instead of permanently reserving a gap for a header that's
+  // no longer there.
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        setScrollY(window.scrollY);
+        raf = 0;
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   // Live status for the Go Live tab (mobile-only broadcasting; web just shows this read-only)
@@ -258,6 +285,11 @@ export default function DashboardPage() {
     );
   };
 
+  // How much of the header's height is still "above" the current scroll
+  // position — matches the header's real (non-sticky in Safari) on-screen
+  // behavior, shrinking to 0 once scrolled past it.
+  const sidebarTop = Math.max(0, navHeight - scrollY);
+
   return (
     <ProtectedRoute>
       <div className={`min-h-screen ${
@@ -276,8 +308,8 @@ export default function DashboardPage() {
             style={{
               position: 'fixed',
               left: 0,
-              top: navHeight,
-              height: `calc(100vh - ${navHeight}px)`,
+              top: sidebarTop,
+              height: `calc(100vh - ${sidebarTop}px)`,
               width: '220px',
               flexShrink: 0,
               zIndex: 40,
