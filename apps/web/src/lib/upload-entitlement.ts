@@ -7,7 +7,6 @@ import {
 } from '@/src/lib/effective-subscription-tier';
 import { createServiceClient } from '@/src/lib/supabase';
 
-export const PREMIUM_UPLOADS_PER_MONTH = 7;
 export const FREE_LIFETIME_UPLOADS = 3;
 
 export type CheckUploadLimitRow = {
@@ -61,24 +60,6 @@ export async function fetchProfileAndActiveSubscriptionTier(
   };
 }
 
-async function countTracksThisUtcMonth(supabase: SupabaseClient, userId: string): Promise<number> {
-  const monthStart = new Date();
-  monthStart.setUTCDate(1);
-  monthStart.setUTCHours(0, 0, 0, 0);
-  const { count, error } = await supabase
-    .from('audio_tracks')
-    .select('*', { count: 'exact', head: true })
-    .eq('creator_id', userId)
-    .is('deleted_at', null)
-    .gte('created_at', monthStart.toISOString());
-
-  if (error) {
-    console.warn('[upload-entitlement] countTracksThisUtcMonth:', error.message);
-    return PREMIUM_UPLOADS_PER_MONTH;
-  }
-  return count ?? 0;
-}
-
 async function countTracksLifetime(supabase: SupabaseClient, userId: string): Promise<number> {
   const { count, error } = await supabase
     .from('audio_tracks')
@@ -127,7 +108,10 @@ export async function canUserUploadNow(supabase: SupabaseClient, userId: string)
     };
   }
 
-  if (effectiveTier === 'unlimited') {
+  // Premium and Unlimited are both genuinely upload-count-unlimited — the
+  // only real cap on either tier is storage (2GB / 10GB), enforced
+  // separately via the check_storage_limit RPC in the upload route itself.
+  if (effectiveTier === 'unlimited' || effectiveTier === 'premium') {
     return {
       allowed: true,
       effectiveTier,
@@ -140,25 +124,6 @@ export async function canUserUploadNow(supabase: SupabaseClient, userId: string)
           limit_type: 'unlimited',
           reset_date: null,
         } as CheckUploadLimitRow),
-    };
-  }
-
-  if (effectiveTier === 'premium') {
-    if (limitRow?.can_upload) {
-      return { allowed: true, effectiveTier, limitRow };
-    }
-    const used = await countTracksThisUtcMonth(supabase, userId);
-    const allowed = used < PREMIUM_UPLOADS_PER_MONTH;
-    return {
-      allowed,
-      effectiveTier,
-      limitRow: {
-        can_upload: allowed,
-        uploads_used: used,
-        uploads_limit: PREMIUM_UPLOADS_PER_MONTH,
-        limit_type: 'monthly',
-        reset_date: limitRow?.reset_date ?? null,
-      },
     };
   }
 

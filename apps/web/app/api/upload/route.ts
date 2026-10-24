@@ -10,6 +10,7 @@ import {
   canUserUploadNow,
   effectiveTierToValidationTier,
   fetchProfileAndActiveSubscriptionTier,
+  FREE_LIFETIME_UPLOADS,
 } from '@/src/lib/upload-entitlement';
 import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 import { validateContentCategoryDuration } from '@/src/lib/content-category-duration';
@@ -213,10 +214,8 @@ export async function POST(request: NextRequest) {
               error: 'Upload limit exceeded',
               details:
                 effectiveTier === 'free'
-                  ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Premium for more uploads each month.'
-                  : effectiveTier === 'premium'
-                    ? `You have reached your limit of ${limitRow?.uploads_limit ?? 7} uploads this month.`
-                    : 'You have reached your upload limit.',
+                  ? `You have reached your limit of ${limitRow?.uploads_limit ?? FREE_LIFETIME_UPLOADS} lifetime uploads. Upgrade to Premium or Unlimited for unlimited track uploads.`
+                  : 'You have reached your upload limit.',
               limit: limitRow || null,
               upgrade_required: effectiveTier === 'free',
             },

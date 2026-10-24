@@ -85,7 +85,7 @@ function getUploadLimitMessage(
 
   if (!canUpload) {
     if (limitType === 'lifetime') {
-      return `You've reached your limit of ${uploadsLimit} tracks. Upgrade to Premium for 7 tracks/month or Unlimited for unlimited uploads.`;
+      return `You've reached your limit of ${uploadsLimit} tracks. Upgrade to Premium or Unlimited for unlimited track uploads.`;
     } else if (limitType === 'monthly') {
       return `You've uploaded ${uploadsUsed} of ${uploadsLimit} tracks this month. Upgrade to Unlimited for unlimited uploads.`;
     }
