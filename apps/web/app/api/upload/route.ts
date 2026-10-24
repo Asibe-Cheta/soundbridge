@@ -7,10 +7,8 @@ import { validateAudioFile, type AudioMetadata } from '../../../src/lib/audio-mo
 import { createR2PutObjectCommand, buildR2PublicUrl, r2Client } from '@/src/lib/r2-client';
 import { createSafeObjectKey, validateAudioUploadInput } from '@/src/lib/audio-upload-security';
 import {
-  canUserUploadNow,
   effectiveTierToValidationTier,
   fetchProfileAndActiveSubscriptionTier,
-  FREE_LIFETIME_UPLOADS,
 } from '@/src/lib/upload-entitlement';
 import { resolveEffectiveTier } from '@/src/lib/effective-subscription-tier';
 import { validateContentCategoryDuration } from '@/src/lib/content-category-duration';
@@ -206,22 +204,8 @@ export async function POST(request: NextRequest) {
           );
         }
         
-        const { allowed: uploadAllowed, limitRow } = await canUserUploadNow(supabase, user.id);
-
-        if (!uploadAllowed) {
-          return NextResponse.json(
-            {
-              error: 'Upload limit exceeded',
-              details:
-                effectiveTier === 'free'
-                  ? `You have reached your limit of ${limitRow?.uploads_limit ?? FREE_LIFETIME_UPLOADS} lifetime uploads. Upgrade to Premium or Unlimited for unlimited track uploads.`
-                  : 'You have reached your upload limit.',
-              limit: limitRow || null,
-              upgrade_required: effectiveTier === 'free',
-            },
-            { status: 429 },
-          );
-        }
+        // No tier has a hard upload-count cap — storage (checked above) is
+        // the only real limit.
 
         // Perform validation
         const validationRequest: UploadValidationRequest = {

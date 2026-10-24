@@ -7,8 +7,6 @@ import {
 } from '@/src/lib/effective-subscription-tier';
 import { createServiceClient } from '@/src/lib/supabase';
 
-export const FREE_LIFETIME_UPLOADS = 3;
-
 export type CheckUploadLimitRow = {
   can_upload: boolean;
   uploads_used: number;
@@ -60,20 +58,6 @@ export async function fetchProfileAndActiveSubscriptionTier(
   };
 }
 
-async function countTracksLifetime(supabase: SupabaseClient, userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('audio_tracks')
-    .select('*', { count: 'exact', head: true })
-    .eq('creator_id', userId)
-    .is('deleted_at', null);
-
-  if (error) {
-    console.warn('[upload-entitlement] countTracksLifetime:', error.message);
-    return FREE_LIFETIME_UPLOADS;
-  }
-  return count ?? 0;
-}
-
 /**
  * Single gate for “may this user upload?” that honours early-adopter / profile premium grants
  * even when legacy RPCs still read only user_subscriptions.
@@ -108,41 +92,27 @@ export async function canUserUploadNow(supabase: SupabaseClient, userId: string)
     };
   }
 
-  // Premium and Unlimited are both genuinely upload-count-unlimited — the
-  // only real cap on either tier is storage (2GB / 10GB), enforced
-  // separately via the check_storage_limit RPC in the upload route itself.
-  if (effectiveTier === 'unlimited' || effectiveTier === 'premium') {
-    return {
-      allowed: true,
-      effectiveTier,
-      limitRow:
-        limitRow ??
-        ({
-          can_upload: true,
-          uploads_used: 0,
-          uploads_limit: -1,
-          limit_type: 'unlimited',
-          reset_date: null,
-        } as CheckUploadLimitRow),
-    };
-  }
-
-  if (limitRow?.can_upload) {
-    return { allowed: true, effectiveTier, limitRow };
-  }
-
-  const usedLife = await countTracksLifetime(supabase, userId);
-  const allowedFree = usedLife < FREE_LIFETIME_UPLOADS;
+  // No tier has a hard upload-count cap — storage (250MB Free / 2GB Premium /
+  // 10GB Unlimited) is the only real limit, enforced separately via the
+  // check_storage_limit RPC in the upload route itself. A prior version of
+  // this gate hard-capped Free at 3 lifetime uploads and Premium at 7/month;
+  // both were leftover from an older count-based system (confirmed via the
+  // mobile team's git-blame on their equivalent bug: Premium's old cap had
+  // an explicit removal marker when the system went storage-only, Free's
+  // did not — nothing indicated it was meant to survive that migration) and
+  // contradicted the "storage is the only limit" tier copy shown everywhere.
   return {
-    allowed: allowedFree,
+    allowed: true,
     effectiveTier,
-    limitRow: {
-      can_upload: allowedFree,
-      uploads_used: usedLife,
-      uploads_limit: FREE_LIFETIME_UPLOADS,
-      limit_type: 'lifetime',
-      reset_date: null,
-    },
+    limitRow:
+      limitRow ??
+      ({
+        can_upload: true,
+        uploads_used: 0,
+        uploads_limit: -1,
+        limit_type: 'unlimited',
+        reset_date: null,
+      } as CheckUploadLimitRow),
   };
 }
 

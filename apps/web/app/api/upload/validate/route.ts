@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import { uploadValidationService } from '../../../../src/lib/upload-validation';
 import type { UploadValidationRequest } from '../../../../src/lib/types/upload-validation';
 import {
-  canUserUploadNow,
   effectiveTierToValidationTier,
   fetchProfileAndActiveSubscriptionTier,
 } from '@/src/lib/upload-entitlement';
@@ -125,25 +124,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { allowed: uploadAllowed, limitRow } = await canUserUploadNow(supabase, user.id);
+    // No tier has a hard upload-count cap — storage is the only real limit.
 
-    if (!uploadAllowed) {
-      return NextResponse.json(
-        {
-          error: 'Upload limit exceeded',
-          details:
-            effectiveTier === 'free'
-              ? 'You have reached your limit of 3 lifetime uploads. Upgrade to Premium for more uploads each month.'
-              : effectiveTier === 'premium'
-                ? `You have reached your limit of ${limitRow?.uploads_limit ?? 7} uploads this month.`
-                : 'You have reached your upload limit.',
-          limit: limitRow || null,
-          upgrade_required: effectiveTier === 'free',
-        },
-        { status: 429 },
-      );
-    }
-    
     // Create validation request
     const validationRequest: UploadValidationRequest = {
       file,

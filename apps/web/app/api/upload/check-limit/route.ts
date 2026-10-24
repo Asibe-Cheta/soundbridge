@@ -42,13 +42,7 @@ export async function GET(request: NextRequest) {
         limit_type: limitRow.limit_type,
         reset_date: limitRow.reset_date,
         subscription_tier: effectiveTier,
-        message: getUploadLimitMessage(
-          allowed,
-          limitRow.uploads_used,
-          limitRow.uploads_limit,
-          limitRow.limit_type,
-          effectiveTier
-        ),
+        message: getUploadLimitMessage(limitRow.uploads_used, limitRow.uploads_limit, limitRow.limit_type),
       },
       { headers: corsHeaders }
     );
@@ -72,30 +66,12 @@ export async function OPTIONS(request: NextRequest) {
 /**
  * Generate user-friendly message based on upload limit status
  */
-function getUploadLimitMessage(
-  canUpload: boolean,
-  uploadsUsed: number,
-  uploadsLimit: number,
-  limitType: string,
-  tier?: string
-): string {
+function getUploadLimitMessage(uploadsUsed: number, uploadsLimit: number, limitType: string): string {
+  // No tier has a hard upload-count cap any more — storage is the only
+  // real limit, so canUserUploadNow() always resolves can_upload: true and
+  // limit_type: 'unlimited' in the normal case.
   if (limitType === 'unlimited') {
     return 'You have unlimited uploads';
-  }
-
-  if (!canUpload) {
-    if (limitType === 'lifetime') {
-      return `You've reached your limit of ${uploadsLimit} tracks. Upgrade to Premium or Unlimited for unlimited track uploads.`;
-    } else if (limitType === 'monthly') {
-      return `You've uploaded ${uploadsUsed} of ${uploadsLimit} tracks this month. Upgrade to Unlimited for unlimited uploads.`;
-    }
-  }
-
-  if (limitType === 'lifetime') {
-    return `You've uploaded ${uploadsUsed} of ${uploadsLimit} free tracks`;
-  } else if (limitType === 'monthly') {
-    const remaining = uploadsLimit - uploadsUsed;
-    return `You have ${remaining} upload${remaining === 1 ? '' : 's'} remaining this month`;
   }
 
   return `Uploads used: ${uploadsUsed} of ${uploadsLimit}`;
