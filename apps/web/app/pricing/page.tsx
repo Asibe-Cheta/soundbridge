@@ -199,7 +199,7 @@ function PricingContent() {
       category: 'Monetization',
       icon: <DollarSign className="h-6 w-6 text-yellow-500" />,
       items: [
-        { name: 'Receive Tips', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (90%)' },
+        { name: 'Receive Tips', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
         { name: 'Sell Event Tickets', free: '✓ (85%)', premium: '✓ (85%)', unlimited: '✓ (85%)' },
         { name: 'Service Provider', free: '✗', premium: '✓', unlimited: '✓' },
         { name: 'Payment Escrow', free: '✗', premium: '✓', unlimited: '✓' },

@@ -92,10 +92,11 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [tipRewards, setTipRewards] = useState(false);
 
-  // Tier-based feature helpers
+  // Flat 15% platform fee for every tier (MOBILE_PRICING_MODEL_UPDATE.md) —
+  // matches what /api/payments/create-tip actually charges regardless of
+  // userTier, so this preview isn't misleading.
   const getPlatformFee = (amount: number) => {
-    const feePercentage = userTier === 'free' ? 0.10 : userTier === 'pro' ? 0.08 : 0.05;
-    return Math.round(amount * feePercentage * 100) / 100;
+    return Math.round(amount * 0.15 * 100) / 100;
   };
 
   const getCreatorReceives = (amount: number) => {
@@ -401,7 +402,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
               <span className="text-white">${tipData.amount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Platform Fee ({userTier === 'free' ? '10%' : userTier === 'pro' ? '8%' : '5%'}):</span>
+              <span className="text-gray-400">Platform Fee (15%):</span>
               <span className="text-gray-400">-${getPlatformFee(tipData.amount).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm font-medium pt-1 border-t border-gray-600">
@@ -509,7 +510,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
               <span className="text-xs sm:text-sm text-blue-300 font-medium">Unlock Advanced Tip Features</span>
             </div>
             <p className="text-xs text-blue-400 mb-2">
-              Upgrade to Pro for lower platform fees (8% vs 10%), tip analytics, goals, and rewards!
+              Upgrade for tip analytics, goals, and rewards!
             </p>
             <button className="text-xs text-blue-300 hover:text-blue-200 underline">
               Learn More →
@@ -552,7 +553,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
         {/* Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
           <div className="text-xs sm:text-sm text-gray-400 order-2 sm:order-1">
-            Platform fee: {formatCurrency(getPlatformFee(tipData.amount))} ({userTier === 'free' ? '10%' : userTier === 'pro' ? '8%' : '5%'})
+            Platform fee: {formatCurrency(getPlatformFee(tipData.amount))} (15%)
           </div>
           <button
             onClick={handleSendTip}

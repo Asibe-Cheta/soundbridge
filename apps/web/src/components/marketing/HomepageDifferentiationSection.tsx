@@ -14,7 +14,7 @@ const COMPARISONS = [
   {
     other: 'Wait months for streaming royalties worth fractions of a penny.',
     soundbridge:
-      'Your fans tip you directly while your music plays. You keep up to 90% instantly. No threshold.',
+      'Your fans tip you directly while your music plays. You keep 85% instantly. No threshold.',
   },
   {
     other: 'Post your event and pray the algorithm shows it to the right people.',
