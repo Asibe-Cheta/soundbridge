@@ -16,11 +16,15 @@ export default async function PodcastHostAgreementPage({ params }: PageProps) {
   const { token } = await params;
   const supabase = createServiceClient();
 
-  const { data: record } = await supabase
+  const { data: record, error } = await supabase
     .from('podcast_host_agreement_signups')
     .select('label, signed_name, signature_png, signed_at, agreement_version')
     .eq('token', token)
     .maybeSingle();
+
+  if (error) {
+    console.error('[podcast-host-agreement] lookup failed:', error.message);
+  }
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
@@ -34,6 +38,13 @@ export default async function PodcastHostAgreementPage({ params }: PageProps) {
             signaturePng={record.signature_png}
             signedAt={record.signed_at}
           />
+        ) : error ? (
+          <article className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center sm:p-8">
+            <h1 className="text-lg font-semibold">Something went wrong</h1>
+            <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+              We couldn&apos;t load this page right now. Please refresh, or try again in a few minutes.
+            </p>
+          </article>
         ) : (
           <article className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 text-center sm:p-8">
             <h1 className="text-lg font-semibold">This link isn&apos;t valid</h1>
