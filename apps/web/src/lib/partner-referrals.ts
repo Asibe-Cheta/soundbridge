@@ -4,12 +4,18 @@ export const SOUND_ACADEMY_SOURCE = 'sound_academy';
 export const ABBEY_ROAD_INSTITUTE_SOURCE = 'abbey_road_institute';
 export const LOGIC_CHURCH_SOURCE = 'logic_church';
 export const GATEWAY_INTERNATIONAL_SOURCE = 'gateway_international';
+export const ACCESS_CREATIVE_LONDON_SOURCE = 'access_creative_london';
+export const UNIVERSITY_OF_BEDFORDSHIRE_SOURCE = 'university_of_bedfordshire';
+export const PREMIER_GOSPEL_UK_SOURCE = 'premier_gospel_uk';
 
 const INSTITUTIONAL_SOURCES = new Set([
   SOUND_ACADEMY_SOURCE,
   ABBEY_ROAD_INSTITUTE_SOURCE,
   LOGIC_CHURCH_SOURCE,
   GATEWAY_INTERNATIONAL_SOURCE,
+  ACCESS_CREATIVE_LONDON_SOURCE,
+  UNIVERSITY_OF_BEDFORDSHIRE_SOURCE,
+  PREMIER_GOSPEL_UK_SOURCE,
 ]);
 
 /**
@@ -163,7 +169,13 @@ async function sendInstitutionalWelcomeEmail(
         ? 'Logic Church'
         : institution === GATEWAY_INTERNATIONAL_SOURCE
           ? 'Gateway International Church'
-          : 'Sound Academy';
+          : institution === ACCESS_CREATIVE_LONDON_SOURCE
+            ? 'Access Creative London'
+            : institution === UNIVERSITY_OF_BEDFORDSHIRE_SOURCE
+              ? 'University of Bedfordshire'
+              : institution === PREMIER_GOSPEL_UK_SOURCE
+                ? 'Premier Gospel UK'
+                : 'Sound Academy';
 
   const referralParagraph = referralLink
     ? `<p>You also have your own personal referral link, earning you 10% commission on every subscriber who joins through it: <a href="${referralLink}">${referralLink}</a></p>

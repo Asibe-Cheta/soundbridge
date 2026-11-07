@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminAccessDenied, requireAdmin } from '@/src/lib/admin-auth';
 
-const VALID_BADGES = ['abbey_road_institute', 'sound_academy', 'logic_church'] as const;
+const VALID_BADGES = [
+  'abbey_road_institute',
+  'sound_academy',
+  'logic_church',
+  'gateway_international',
+  'access_creative_london',
+  'university_of_bedfordshire',
+  'premier_gospel_uk',
+] as const;
 type InstitutionBadge = (typeof VALID_BADGES)[number];
 
 export async function GET(request: NextRequest) {

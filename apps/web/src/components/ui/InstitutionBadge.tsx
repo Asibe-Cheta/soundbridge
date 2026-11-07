@@ -1,9 +1,19 @@
 import React from 'react';
 import Image from 'next/image';
 
-export type InstitutionBadgeId = 'abbey_road_institute' | 'sound_academy' | 'logic_church' | 'gateway_international';
+export type InstitutionBadgeId =
+  | 'abbey_road_institute'
+  | 'sound_academy'
+  | 'logic_church'
+  | 'gateway_international'
+  | 'access_creative_london'
+  | 'university_of_bedfordshire'
+  | 'premier_gospel_uk';
 
-const BADGE_ASSETS: Record<InstitutionBadgeId, { src: string; label: string }> = {
+// Note: access_creative_london / university_of_bedfordshire / premier_gospel_uk
+// intentionally have no entry here — no badge artwork exists for them yet.
+// InstitutionBadge below safely renders nothing for any id without an asset.
+const BADGE_ASSETS: Partial<Record<InstitutionBadgeId, { src: string; label: string }>> = {
   abbey_road_institute: { src: '/images/badges/abb-badge.png', label: 'Abbey Road Institute' },
   sound_academy: { src: '/images/badges/sa-2.png', label: 'Sound Academy' },
   logic_church: { src: '/images/badges/LG.png', label: 'Logic Church' },
@@ -15,6 +25,9 @@ export const INSTITUTION_BADGE_OPTIONS: { value: InstitutionBadgeId; label: stri
   { value: 'sound_academy', label: 'Sound Academy' },
   { value: 'logic_church', label: 'Logic Church' },
   { value: 'gateway_international', label: 'Gateway International Church' },
+  { value: 'access_creative_london', label: 'Access Creative London' },
+  { value: 'university_of_bedfordshire', label: 'University of Bedfordshire' },
+  { value: 'premier_gospel_uk', label: 'Premier Gospel UK' },
 ];
 
 interface InstitutionBadgeProps {
@@ -24,9 +37,10 @@ interface InstitutionBadgeProps {
 }
 
 export function InstitutionBadge({ institutionBadge, size = 18, className = '' }: InstitutionBadgeProps) {
-  if (!institutionBadge || !(institutionBadge in BADGE_ASSETS)) return null;
+  const asset = institutionBadge ? BADGE_ASSETS[institutionBadge as InstitutionBadgeId] : undefined;
+  if (!asset) return null;
 
-  const { src, label } = BADGE_ASSETS[institutionBadge as InstitutionBadgeId];
+  const { src, label } = asset;
 
   return (
     <Image

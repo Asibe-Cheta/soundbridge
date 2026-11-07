@@ -150,6 +150,114 @@ function InstitutionBadgeAssignment() {
   );
 }
 
+interface SignupsByWeekRow {
+  institution?: string;
+  referralCode?: string;
+  week: string;
+  count: number;
+}
+
+function formatWeekLabel(week: string) {
+  return new Date(`${week}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function SignupsByWeek() {
+  const [byInstitution, setByInstitution] = useState<SignupsByWeekRow[]>([]);
+  const [byPartnerLink, setByPartnerLink] = useState<SignupsByWeekRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const response = await fetchWithSupabaseAuth('/api/admin/partners/signups-by-week');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || 'Failed to load signups');
+        setByInstitution(data.byInstitution || []);
+        setByPartnerLink(data.byPartnerLink || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load signups');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  return (
+    <div className="mb-6 rounded-xl border border-gray-700 bg-gray-800 p-6">
+      <h2 className="mb-1 text-lg font-semibold text-white">Signups by week</h2>
+      <p className="mb-4 text-sm text-gray-400">
+        Institutional partner grants and referral-link signups, grouped by the week they happened.
+      </p>
+
+      {error && <div className="mb-4 text-sm text-red-400">{error}</div>}
+
+      {loading ? (
+        <div className="text-sm text-gray-400">Loading...</div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-gray-300">Per institution</h3>
+            {byInstitution.length === 0 ? (
+              <p className="text-sm text-gray-500">No institutional signups yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-900/60 text-left text-gray-400">
+                    <tr>
+                      <th className="px-3 py-2">Week of</th>
+                      <th className="px-3 py-2">Institution</th>
+                      <th className="px-3 py-2">Signups</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700 text-gray-200">
+                    {byInstitution.map((row) => (
+                      <tr key={`${row.institution}-${row.week}`}>
+                        <td className="px-3 py-2">{formatWeekLabel(row.week)}</td>
+                        <td className="px-3 py-2">{row.institution}</td>
+                        <td className="px-3 py-2">{row.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-gray-300">Per partner link</h3>
+            {byPartnerLink.length === 0 ? (
+              <p className="text-sm text-gray-500">No referral-link signups yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-900/60 text-left text-gray-400">
+                    <tr>
+                      <th className="px-3 py-2">Week of</th>
+                      <th className="px-3 py-2">Referral code</th>
+                      <th className="px-3 py-2">Signups</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700 text-gray-200">
+                    {byPartnerLink.map((row) => (
+                      <tr key={`${row.referralCode}-${row.week}`}>
+                        <td className="px-3 py-2">{formatWeekLabel(row.week)}</td>
+                        <td className="px-3 py-2">{row.referralCode}</td>
+                        <td className="px-3 py-2">{row.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface PartnerApplication {
   id: string;
   full_name: string;
@@ -329,6 +437,8 @@ export default function AdminPartnersPage() {
         </div>
 
         <InstitutionBadgeAssignment />
+
+        <SignupsByWeek />
 
         <PendingPartnerApplications onProvisioned={loadPartners} />
 
