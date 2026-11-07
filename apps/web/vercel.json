@@ -45,6 +45,10 @@
     {
       "path": "/api/cron/outreach-meeting-reminders",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-pending-tips",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

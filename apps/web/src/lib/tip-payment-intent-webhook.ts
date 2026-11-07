@@ -70,7 +70,7 @@ async function resolveTipperDisplayForPush(
 }
 
 /** True if creator was already credited for this Stripe PI (idempotency for webhooks + resends). */
-async function tipWalletAlreadyCredited(
+export async function tipWalletAlreadyCredited(
   supabase: SupabaseClient,
   paymentIntentId: string
 ): Promise<boolean> {
@@ -98,7 +98,7 @@ async function tipWalletAlreadyCredited(
  * create-tip can fail after Stripe charges; metadata still has creatorId, tipperId, amounts.
  * Inserts pending rows so finalize can complete wallet + push.
  */
-async function recoverMissingTipRowsFromMetadata(
+export async function recoverMissingTipRowsFromMetadata(
   paymentIntent: Stripe.PaymentIntent,
   supabase: SupabaseClient
 ): Promise<{
