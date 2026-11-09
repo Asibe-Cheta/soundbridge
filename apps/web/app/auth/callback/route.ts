@@ -167,6 +167,30 @@ export async function GET(request: NextRequest) {
               } else {
                 console.log('OAuth profile created successfully');
               }
+            } else {
+              // handle_new_user (supabase/migrations/20261109150000) already created a
+              // generic stub profile in the same transaction as the auth.users insert,
+              // before this route ever ran — that's what existingProfile being non-null
+              // means now. The trigger has no equivalent to extractOAuthDisplayNameParts()'s
+              // provider-specific parsing, so fill in what it couldn't know, but only if
+              // still unset (first_name IS NULL guard), so this never overwrites anything
+              // the user has since changed themselves.
+              const { displayName, firstName, lastName } = extractOAuthDisplayNameParts(data.user);
+              const { error: enrichError } = await supabase
+                .from('profiles')
+                .update({
+                  display_name: displayName,
+                  first_name: firstName,
+                  last_name: lastName,
+                  avatar_url: data.user.user_metadata?.avatar_url || null,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', data.user.id)
+                .is('first_name', null);
+
+              if (enrichError) {
+                console.error('Error enriching OAuth profile stub:', enrichError);
+              }
             }
 
             await processPartnerAttributionForAuthUser(createServiceClient(), data.user, {
