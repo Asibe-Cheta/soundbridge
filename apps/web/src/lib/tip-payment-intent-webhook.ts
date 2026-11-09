@@ -539,38 +539,10 @@ async function finalizeTipFromSucceededPaymentIntentInner(
   }
 
   const tipData = creatorTipResolved;
-  if (tipData?.id && tipData.status !== 'completed') {
-    await supabase.from('creator_tips').update({ status: 'completed' }).eq('id', tipData.id);
-  }
-
-  let updatedTips = tipsRowResolved;
-  if (tipsRowResolved?.id && tipsRowResolved.status !== 'completed') {
-    const { data: updatedList, error: tipsUpdErr } = await supabase
-      .from('tips')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      })
-      .eq('payment_intent_id', paymentIntentId)
-      .select();
-    if (tipsUpdErr) {
-      console.error('[finalizeTip] tips update:', tipsUpdErr);
-    }
-    const t = updatedList?.[0];
-    if (t) updatedTips = t;
-  }
-
-  if (tipAnalytics?.id && tipAnalytics.status !== 'completed') {
-    await supabase.from('tip_analytics').update({ status: 'completed' }).eq('id', tipAnalytics.id);
-  }
-
-  console.log('[finalizeTip] Crediting wallet + revenue for PI', paymentIntentId);
+  const updatedTips = tipsRowResolved;
 
   const grossMinor = paymentIntent.amount ?? 0;
   const platformFeeMinor = meta.platform_fee_amount ? parseInt(meta.platform_fee_amount, 10) : Math.round(grossMinor * 0.15);
-  const creatorPayoutMinor = meta.creator_payout_amount
-    ? parseInt(meta.creator_payout_amount, 10)
-    : grossMinor - platformFeeMinor;
   const feePct = meta.platform_fee_percent ? parseFloat(meta.platform_fee_percent) : 15;
 
   const creatorId =
@@ -582,27 +554,6 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     return { ok: false, reason: 'missing_ids' };
   }
 
-  try {
-    const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
-    const { error: insertPrErr } = await supabase.rpc('insert_platform_revenue', {
-      p_charge_type: 'tip',
-      p_gross_amount: grossMinor,
-      p_platform_fee_amount: platformFeeMinor,
-      p_platform_fee_percent: feePct,
-      p_creator_payout_amount: creatorPayoutMinor,
-      p_stripe_payment_intent_id: paymentIntentId,
-      p_reference_id: paymentIntentId,
-      p_creator_user_id: creatorId,
-      p_currency: (paymentIntent.currency || 'usd').toUpperCase(),
-      p_payment_method_type: paymentMethodType,
-    });
-    if (insertPrErr) {
-      console.error('[finalizeTip] insert_platform_revenue:', insertPrErr);
-    }
-  } catch (err) {
-    console.error('[finalizeTip] insert_platform_revenue:', err);
-  }
-
   const amount = Number(
     tipAnalytics?.tip_amount ?? updatedTips?.amount ?? tipData?.amount ?? (paymentIntent.amount ? paymentIntent.amount / 100 : 0)
   );
@@ -610,7 +561,7 @@ async function finalizeTipFromSucceededPaymentIntentInner(
     updatedTips?.currency || tipData?.currency || paymentIntent.currency || 'usd'
   ).toUpperCase();
   const platformFee =
-    Number(tipAnalytics?.platform_fee) || Number(meta.platformFee || meta.platform_fee || 0);
+    Number(tipAnalytics?.platform_fee) || Number(meta.platformFee || meta.platform_fee || 0) || platformFeeMinor / 100;
 
   /** Prefer Stripe PI metadata for this charge — tip_analytics rows can be wrong or cumulative. */
   let creatorEarnings = NaN;
@@ -642,31 +593,48 @@ async function finalizeTipFromSucceededPaymentIntentInner(
 
   const tipperDisplay = await resolveTipperDisplayForPush(supabase, senderId, tipperProfile);
 
-  try {
-    const { error: walletError } = await supabase.rpc('add_wallet_transaction', {
-      user_uuid: creatorId,
-      transaction_type: 'tip_received',
-      amount: creatorEarnings,
-      description: `Tip received${tipMessage ? `: ${tipMessage}` : ''}`,
-      reference_id: paymentIntentId,
-      metadata: {
-        tipper_id: senderId,
-        original_amount: amount,
-        creator_earnings: creatorEarnings,
-        platform_fee: platformFee,
-        tip_message: tipMessage,
-        is_anonymous: isAnonymous,
-      },
-      p_currency: currency,
-      p_stripe_payment_intent_id: paymentIntentId,
+  // Atomic: marks tips/creator_tips completed, records platform_revenue, and
+  // credits the wallet in a single Postgres transaction (finalize_tip_transaction).
+  // This replaces three separate, non-transactional steps that previously let
+  // a tip sit "pending" forever even after the wallet was already credited —
+  // see 20261108140000_atomic_tip_finalization.sql for why.
+  console.log('[finalizeTip] Finalizing (atomic) for PI', paymentIntentId);
+  const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
+
+  const { data: txResult, error: txError } = await supabase.rpc('finalize_tip_transaction', {
+    p_payment_intent_id: paymentIntentId,
+    p_creator_id: creatorId,
+    p_tipper_id: senderId,
+    p_amount: amount,
+    p_creator_earnings: creatorEarnings,
+    p_platform_fee: platformFee,
+    p_currency: currency,
+    p_platform_fee_percent: feePct,
+    p_payment_method_type: paymentMethodType,
+    p_tip_message: isAnonymous ? null : tipMessage,
+  });
+
+  if (txError) {
+    console.error('[finalizeTip] finalize_tip_transaction failed:', txError);
+    const { error: logErr } = await supabase.from('tip_finalize_failures').insert({
+      payment_intent_id: paymentIntentId,
+      source: 'finalizeTipFromSucceededPaymentIntent',
+      error_message: txError.message,
+      error_detail: txError as unknown as Record<string, unknown>,
     });
-    if (walletError) {
-      console.error('[finalizeTip] add_wallet_transaction:', walletError);
-      return { ok: false, reason: 'wallet_failed' };
+    if (logErr) {
+      console.error('[finalizeTip] could not even log the failure:', logErr);
     }
-  } catch (e) {
-    console.error('[finalizeTip] wallet:', e);
-    return { ok: false, reason: 'wallet_failed' };
+    return { ok: false, reason: 'finalize_transaction_failed' };
+  }
+
+  if ((txResult as { already_completed?: boolean } | null)?.already_completed) {
+    console.log('[finalizeTip] Already completed (atomic no-op) for PI:', paymentIntentId);
+    return { ok: true };
+  }
+
+  if (tipAnalytics?.id && tipAnalytics.status !== 'completed') {
+    await supabase.from('tip_analytics').update({ status: 'completed' }).eq('id', tipAnalytics.id);
   }
 
   try {

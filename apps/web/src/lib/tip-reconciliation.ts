@@ -5,7 +5,6 @@ import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-inte
 import {
   isTipPaymentIntent,
   recoverMissingTipRowsFromMetadata,
-  tipWalletAlreadyCredited,
 } from '@/src/lib/tip-payment-intent-webhook';
 
 export type ReconcileReason = 'stuck_pending_stripe_succeeded' | 'missing_row_recovered_from_stripe';
@@ -102,64 +101,6 @@ export async function reconcileTipPaymentIntent(
     tipsRow = recovered.tipsRow as typeof tipsRow;
   }
 
-  if (await tipWalletAlreadyCredited(supabase, paymentIntentId)) {
-    // Wallet has the money (user_wallets.balance already reflects it — confirmed
-    // empirically, since wallet_transactions.status and profiles.wallet_balance
-    // are both unreliable indicators here) but the tips/creator_tips rows and
-    // audit log don't reflect it. Sync the rows and log the finding; never call
-    // add_wallet_transaction again here — that would double-pay the creator.
-    const nowIso = new Date().toISOString();
-    const walletCreatorId = String(tipsRow?.recipient_id || creatorTip?.creator_id || meta.creatorId || meta.creator_id || '');
-    const walletCreatorEarnings = Number(meta.creatorEarnings);
-    const walletPlatformFee = Number(meta.platformFee);
-    const walletAmount = Number(
-      tipsRow?.amount ?? creatorTip?.amount ?? (paymentIntent.amount ? paymentIntent.amount / 100 : 0),
-    );
-    const walletCurrency = String(tipsRow?.currency || creatorTip?.currency || paymentIntent.currency || 'usd').toUpperCase();
-
-    if (tipsRow?.id) {
-      await supabase
-        .from('tips')
-        .update({
-          status: 'completed',
-          completed_at: nowIso,
-          reconciled_at: nowIso,
-          reconciled_reason: 'stuck_pending_stripe_succeeded',
-        })
-        .eq('id', tipsRow.id)
-        .eq('status', 'pending');
-    }
-    if (creatorTip?.id) {
-      await supabase
-        .from('creator_tips')
-        .update({
-          status: 'completed',
-          reconciled_at: nowIso,
-          reconciled_reason: 'stuck_pending_stripe_succeeded',
-        })
-        .eq('id', creatorTip.id)
-        .eq('status', 'pending');
-    }
-
-    if (walletCreatorId && Number.isFinite(walletCreatorEarnings) && Number.isFinite(walletPlatformFee)) {
-      const { error: logError } = await supabase.from('tip_reconciliation_log').insert({
-        payment_intent_id: paymentIntentId,
-        reason: 'stuck_pending_stripe_succeeded',
-        amount: walletAmount,
-        currency: walletCurrency,
-        creator_earnings: walletCreatorEarnings,
-        platform_fee: walletPlatformFee,
-        creator_id: walletCreatorId,
-        triggered_by: triggeredBy,
-      });
-      if (logError) {
-        console.error('[tip-reconciliation] audit log insert failed (wallet_already_credited path):', logError);
-      }
-    }
-
-    return { ok: true, skipped: true, reason: 'wallet_already_credited' };
-  }
-
   const creatorId = String(
     tipsRow?.recipient_id || creatorTip?.creator_id || meta.creatorId || meta.creator_id || '',
   );
@@ -181,70 +122,72 @@ export async function reconcileTipPaymentIntent(
   );
   const currency = String(tipsRow?.currency || creatorTip?.currency || paymentIntent.currency || 'usd').toUpperCase();
   const nowIso = new Date().toISOString();
-
-  if (tipsRow?.id) {
-    await supabase
-      .from('tips')
-      .update({
-        status: 'completed',
-        completed_at: nowIso,
-        reconciled_at: nowIso,
-        reconciled_reason: reason,
-      })
-      .eq('id', tipsRow.id);
-  }
-  if (creatorTip?.id) {
-    await supabase
-      .from('creator_tips')
-      .update({ status: 'completed', reconciled_at: nowIso, reconciled_reason: reason })
-      .eq('id', creatorTip.id);
-  }
-
-  try {
-    const grossMinor = paymentIntent.amount ?? 0;
-    const platformFeeMinor = Math.round(platformFee * 100);
-    const creatorPayoutMinor = Math.round(creatorEarnings * 100);
-    const feePct = meta.platform_fee_percent ? parseFloat(String(meta.platform_fee_percent)) : 15;
-    const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
-    await supabase.rpc('insert_platform_revenue', {
-      p_charge_type: 'tip',
-      p_gross_amount: grossMinor,
-      p_platform_fee_amount: platformFeeMinor,
-      p_platform_fee_percent: feePct,
-      p_creator_payout_amount: creatorPayoutMinor,
-      p_stripe_payment_intent_id: paymentIntentId,
-      p_reference_id: paymentIntentId,
-      p_creator_user_id: creatorId,
-      p_currency: currency,
-      p_payment_method_type: paymentMethodType,
-    });
-  } catch (e) {
-    console.error('[tip-reconciliation] insert_platform_revenue:', e);
-  }
-
   const tipMessage = String(tipsRow?.message || creatorTip?.message || meta.tipMessage || '');
+  const feePct = meta.platform_fee_percent ? parseFloat(String(meta.platform_fee_percent)) : 15;
+  const paymentMethodType = stripe ? await getPaymentIntentPaymentMethodType(stripe, paymentIntent) : null;
 
-  const { error: walletError } = await supabase.rpc('add_wallet_transaction', {
-    user_uuid: creatorId,
-    transaction_type: 'tip_received',
-    amount: creatorEarnings,
-    description: `Tip received (reconciled)${tipMessage ? `: ${tipMessage}` : ''}`,
-    reference_id: paymentIntentId,
-    metadata: {
-      tipper_id: senderId,
-      original_amount: amount,
-      creator_earnings: creatorEarnings,
-      platform_fee: platformFee,
-      tip_message: tipMessage,
-      reconciled: true,
-      reconciled_reason: reason,
-    },
+  // Same atomic function the webhooks and confirm-tip use: locks the tip row,
+  // no-ops if already completed, otherwise marks tips/creator_tips completed,
+  // records platform_revenue, and credits the wallet — all in one transaction.
+  // Running this concurrently with a webhook firing for the same PI is safe:
+  // whichever gets the row lock first wins, the other sees 'completed' and
+  // no-ops once it gets the lock.
+  const { data: txResult, error: txError } = await supabase.rpc('finalize_tip_transaction', {
+    p_payment_intent_id: paymentIntentId,
+    p_creator_id: creatorId,
+    p_tipper_id: senderId,
+    p_amount: amount,
+    p_creator_earnings: creatorEarnings,
+    p_platform_fee: platformFee,
     p_currency: currency,
-    p_stripe_payment_intent_id: paymentIntentId,
+    p_platform_fee_percent: feePct,
+    p_payment_method_type: paymentMethodType,
+    p_tip_message: tipMessage || null,
   });
-  if (walletError) {
-    console.error('[tip-reconciliation] add_wallet_transaction:', walletError);
-    return { ok: false, reason: 'wallet_credit_failed' };
+
+  if (txError) {
+    console.error('[tip-reconciliation] finalize_tip_transaction:', txError);
+    await supabase.from('tip_finalize_failures').insert({
+      payment_intent_id: paymentIntentId,
+      source: `tip-reconciliation:${triggeredBy}`,
+      error_message: txError.message,
+      error_detail: txError as unknown as Record<string, unknown>,
+    });
+    return { ok: false, reason: 'finalize_transaction_failed' };
+  }
+
+  const alreadyCompleted = Boolean((txResult as { already_completed?: boolean } | null)?.already_completed);
+
+  // Tag the rows as reconciled (this job's own audit trail — separate from the
+  // atomic function, which doesn't know or care whether a completion came from
+  // a live webhook or a backfill run).
+  await supabase
+    .from('tips')
+    .update({ reconciled_at: nowIso, reconciled_reason: reason })
+    .eq('payment_intent_id', paymentIntentId)
+    .is('reconciled_at', null);
+  await supabase
+    .from('creator_tips')
+    .update({ reconciled_at: nowIso, reconciled_reason: reason })
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .is('reconciled_at', null);
+
+  const { error: logError } = await supabase.from('tip_reconciliation_log').insert({
+    payment_intent_id: paymentIntentId,
+    reason,
+    amount,
+    currency,
+    creator_earnings: creatorEarnings,
+    platform_fee: platformFee,
+    creator_id: creatorId,
+    triggered_by: triggeredBy,
+  });
+  if (logError) {
+    console.error('[tip-reconciliation] audit log insert failed (credit already applied):', logError);
+  }
+
+  if (alreadyCompleted) {
+    return { ok: true, skipped: true, reason: 'wallet_already_credited' };
   }
 
   try {
@@ -263,20 +206,6 @@ export async function reconcileTipPaymentIntent(
     });
   } catch (e) {
     console.error('[tip-reconciliation] record_revenue_transaction:', e);
-  }
-
-  const { error: logError } = await supabase.from('tip_reconciliation_log').insert({
-    payment_intent_id: paymentIntentId,
-    reason,
-    amount,
-    currency,
-    creator_earnings: creatorEarnings,
-    platform_fee: platformFee,
-    creator_id: creatorId,
-    triggered_by: triggeredBy,
-  });
-  if (logError) {
-    console.error('[tip-reconciliation] audit log insert failed (credit already applied):', logError);
   }
 
   return { ok: true, skipped: false, reason, amount, currency, creatorEarnings, platformFee, creatorId };
