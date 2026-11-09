@@ -7,7 +7,7 @@ import {
   paymentIntentCustomerOptions,
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
-import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT, getMinimumTipAmount } from '@/src/lib/platform-fees';
 import { createServerClient } from '@/src/lib/supabase';
 import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
 
@@ -150,10 +150,15 @@ export async function POST(request: NextRequest) {
     if (tipAmount > 10_000) {
       return NextResponse.json({ error: 'Tip amount is too large' }, { status: 400, headers: corsHeaders });
     }
-    const minAmount = STRIPE_MIN_AMOUNTS[tipCurrencyLower] ?? STRIPE_MIN_AMOUNTS.gbp ?? 0.3;
+    const minAmount = Math.max(
+      STRIPE_MIN_AMOUNTS[tipCurrencyLower] ?? STRIPE_MIN_AMOUNTS.gbp ?? 0.3,
+      getMinimumTipAmount(tipCurrencyLower),
+    );
     if (tipAmount < minAmount) {
       return NextResponse.json(
-        { error: `Minimum tip amount is ${minAmount} ${tipCurrency}` },
+        // No Gift Bundle mention here — this is the guest/unauthenticated tip
+        // flow, and Gift Bundle requires a SoundBridge account.
+        { error: 'Minimum tip is $5 (£4, €4.50).' },
         { status: 400, headers: corsHeaders }
       );
     }

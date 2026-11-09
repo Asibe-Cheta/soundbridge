@@ -42,6 +42,11 @@ function buildPaymentUrl(paymentIntentId: string, clientSecret: string, creatorI
 }
 
 const SUGGESTED_AMOUNTS = [5, 10, 25, 50, 100];
+// Matches MINIMUM_TIP_AMOUNTS.usd in src/lib/platform-fees.ts — card tips
+// below this lose money after Stripe's fixed per-transaction fee. Gift
+// Bundle tips are exempt (no per-tip Stripe charge) but this modal is
+// card-only, so there's no exempt path to offer here.
+const MINIMUM_CARD_TIP_USD = 5;
 
 type PaymentMethod = 'card' | 'apple_pay' | 'google_pay';
 
@@ -385,7 +390,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
             <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             <input
               type="number"
-              min="1"
+              min={MINIMUM_CARD_TIP_USD}
               max="1000"
               step="1"
               value={tipData.amount}
@@ -557,7 +562,7 @@ export function TipCreator({ creatorId, creatorName, onTipSent, userTier = 'free
           </div>
           <button
             onClick={handleSendTip}
-            disabled={sending || tipData.amount <= 0}
+            disabled={sending || tipData.amount < MINIMUM_CARD_TIP_USD}
             className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 order-1 sm:order-2 text-sm sm:text-base"
           >
             {sending ? (

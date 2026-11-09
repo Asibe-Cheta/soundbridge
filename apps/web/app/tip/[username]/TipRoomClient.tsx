@@ -14,7 +14,9 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { TipRoomOwnerPanel } from '@/src/components/creator/TipRoomOwnerPanel';
 import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 
-const PRESETS = [1, 5, 10] as const;
+// Matches MINIMUM_TIP_AMOUNTS.gbp in src/lib/platform-fees.ts.
+const MINIMUM_TIP_GBP = 4;
+const PRESETS = [5, 10, 20] as const;
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
 
 export type TipRoomClientProps = {
@@ -95,7 +97,7 @@ export function TipRoomClient({
   avatarUrl,
   joinCommunityUrl,
 }: TipRoomClientProps) {
-  const [tipAmount, setTipAmount] = useState(1);
+  const [tipAmount, setTipAmount] = useState(5);
   const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bootingPi, setBootingPi] = useState(false);
@@ -252,10 +254,10 @@ export function TipRoomClient({
                 <input
                   id="tip-amount"
                   type="number"
-                  min={0.3}
+                  min={MINIMUM_TIP_GBP}
                   step={0.5}
                   value={tipAmount}
-                  onChange={(e) => setTipAmount(Number(e.target.value) || 1)}
+                  onChange={(e) => setTipAmount(Number(e.target.value) || MINIMUM_TIP_GBP)}
                   className="w-full rounded-xl border border-white/10 bg-black/30 py-3 pl-9 pr-4 text-center text-xl font-semibold outline-none ring-rose-500/30 focus:ring-2"
                 />
               </div>
@@ -300,7 +302,7 @@ export function TipRoomClient({
             {provider === 'card' ? (
               <button
                 type="button"
-                disabled={bootingPi}
+                disabled={bootingPi || tipAmount < MINIMUM_TIP_GBP}
                 onClick={() => void startPayment()}
                 className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3.5 text-lg font-semibold shadow-lg shadow-rose-900/30 disabled:opacity-50"
               >

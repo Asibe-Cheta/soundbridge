@@ -58,6 +58,14 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+// Matches MINIMUM_TIP_AMOUNTS in src/lib/platform-fees.ts.
+const MINIMUM_TIP_AMOUNTS: Record<string, number> = {
+  usd: 5,
+  gbp: 4,
+  eur: 4.5,
+  ngn: 7500,
+};
+
 function currencySymbol(c: string): string {
   const x = c.toUpperCase();
   if (x === 'GBP') return '£';
@@ -162,7 +170,11 @@ export function FanLandingClient({
   const [celebrate, setCelebrate] = useState(false);
   const [email, setEmail] = useState('');
   const [guestName, setGuestName] = useState('');
-  const [tipAmount, setTipAmount] = useState(1);
+  // Matches MINIMUM_TIP_AMOUNTS in src/lib/platform-fees.ts — mirrored here since
+  // this is a client component and tipCurrency is already the server-resolved
+  // charge currency (post Stripe-support fallback), not something to re-derive.
+  const minTip = MINIMUM_TIP_AMOUNTS[tipCurrency.toLowerCase()] ?? MINIMUM_TIP_AMOUNTS.usd;
+  const [tipAmount, setTipAmount] = useState(minTip);
   const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bootingPi, setBootingPi] = useState(false);
@@ -173,7 +185,7 @@ export function FanLandingClient({
   const [stripeJs, setStripeJs] = useState<Stripe | null>(null);
 
   const sym = useMemo(() => currencySymbol(tipCurrency), [tipCurrency]);
-  const defaultTipLabel = `${sym}1`;
+  const defaultTipLabel = `${sym}${minTip}`;
 
   useEffect(() => {
     trackFanLanding(creatorId, 'page_viewed');
@@ -623,10 +635,10 @@ export function FanLandingClient({
                   <label className="text-xs font-medium text-gray-400">Amount ({tipCurrency})</label>
                   <input
                     type="number"
-                    min={0.5}
+                    min={minTip}
                     step={0.5}
                     value={tipAmount}
-                    onChange={(e) => setTipAmount(Number(e.target.value) || 1)}
+                    onChange={(e) => setTipAmount(Number(e.target.value) || minTip)}
                     className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm outline-none ring-rose-500/30 focus:ring-2"
                   />
                 </div>
@@ -652,7 +664,7 @@ export function FanLandingClient({
                 {provider === 'card' ? (
                   <button
                     type="button"
-                    disabled={bootingPi}
+                    disabled={bootingPi || tipAmount < minTip}
                     onClick={() => void preparePaymentIntent()}
                     className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3 font-semibold disabled:opacity-50"
                   >

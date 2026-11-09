@@ -10,7 +10,7 @@ import {
   paymentIntentCustomerOptions,
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
-import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
+import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT, getMinimumTipAmount } from '@/src/lib/platform-fees';
 import { isTippableCreator } from '@/src/lib/tippable-creator';
 import { createServiceClient } from '@/src/lib/supabase';
 import { handleGiftBundleTip } from '@/src/lib/gift-bundle-tip';
@@ -285,10 +285,16 @@ export async function POST(request: NextRequest) {
     const tipCurrency = tipCurrencyLower.toUpperCase();
 
     const tipAmount = Number(amount);
-    const minAmount = STRIPE_MIN_AMOUNTS[tipCurrencyLower] ?? STRIPE_MIN_AMOUNTS.usd ?? 0.5;
+    // Math.max against the Stripe technical minimum so the business floor can
+    // never undercut it. Gift Bundle tips never reach this line — that branch
+    // returns at the top of this handler, before Stripe is even resolved.
+    const minAmount = Math.max(
+      STRIPE_MIN_AMOUNTS[tipCurrencyLower] ?? STRIPE_MIN_AMOUNTS.usd ?? 0.5,
+      getMinimumTipAmount(tipCurrencyLower),
+    );
     if (tipAmount < minAmount) {
       return NextResponse.json(
-        { error: `Minimum tip amount is ${minAmount} ${tipCurrency}` },
+        { error: 'Minimum card tip is $5 (£4, €4.50). For smaller tips, top up a Gift Bundle.' },
         { status: 400, headers: corsHeaders }
       );
     }
