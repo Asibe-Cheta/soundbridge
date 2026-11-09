@@ -56,3 +56,13 @@ export const MINIMUM_TIP_AMOUNTS: Record<string, number> = {
 export function getMinimumTipAmount(currencyLower: string): number {
   return MINIMUM_TIP_AMOUNTS[currencyLower] ?? MINIMUM_TIP_AMOUNTS.usd;
 }
+
+/**
+ * Minimum Gift Bundle top-up (create-gift-bundle-credit/route.ts) — a
+ * separate constant from MINIMUM_TIP_AMOUNTS even though both are currently
+ * $5, since a top-up and a tip are different transactions that could
+ * reasonably diverge later. The Gift Bundle top-up flow (GiftBundleModal.tsx,
+ * mobile-only — there's no web UI for this) always sends currency: 'USD', so
+ * no per-currency table yet.
+ */
+export const MINIMUM_GIFT_BUNDLE_TOPUP_USD = 5;

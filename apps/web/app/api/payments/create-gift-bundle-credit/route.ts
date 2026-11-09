@@ -13,6 +13,7 @@ import {
   paymentIntentCustomerOptions,
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
+import { MINIMUM_GIFT_BUNDLE_TOPUP_USD } from '@/src/lib/platform-fees';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
     const currency = (body.currency || 'USD').toUpperCase();
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: 'A valid amount is required' }, { status: 400, headers: corsHeaders });
+    }
+    if (currency === 'USD' && amount < MINIMUM_GIFT_BUNDLE_TOPUP_USD) {
+      return NextResponse.json(
+        { error: `Minimum Gift Bundle top-up is $${MINIMUM_GIFT_BUNDLE_TOPUP_USD}.` },
+        { status: 400, headers: corsHeaders },
+      );
     }
 
     if (!stripe) {
