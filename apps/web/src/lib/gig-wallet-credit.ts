@@ -24,6 +24,16 @@ export interface CreditGigPaymentOptions {
   stripePaymentIntentId?: string | null;
   metadata?: Record<string, unknown>;
   descriptionPrefix?: string;
+  /** Only confirm-delivery currently has this breakdown available; the other
+   * 3 call sites (complete, admin/release-escrow, cron/auto-release) omit it,
+   * which preserves their current behavior exactly — none of them have ever
+   * recorded platform_revenue for a gig. Not expanding that scope here. */
+  platformRevenue?: {
+    grossAmountMinor: number;
+    platformFeeMinor: number;
+    platformFeePercent?: number;
+    paymentMethodType?: string | null;
+  };
 }
 
 export interface CreditGigPaymentResult {
@@ -104,49 +114,49 @@ export async function creditGigPaymentToWallet(
 
   const creditedCurrency = 'USD';
 
-  let wallet: { id: string; balance: number } | null = await service
-    .from('user_wallets')
-    .select('id, balance')
-    .eq('user_id', creatorId)
-    .eq('currency', creditedCurrency)
-    .maybeSingle()
-    .then((r) => r.data as { id: string; balance: number } | null);
+  // finalize_gig_payment (20261110120000_atomic_gig_payment_finalization.sql)
+  // locks the opportunity_projects row, marks it completed, credits the
+  // wallet via add_wallet_transaction (atomic balance update + its own
+  // idempotency check — not reimplemented here), and optionally records
+  // platform_revenue, all in one transaction. Replaces this function's old
+  // hand-rolled SELECT-then-INSERT-then-UPDATE, which had no row lock, no
+  // atomic increment, and — notably — never even checked whether the insert
+  // or update succeeded.
+  const { data, error } = await service.rpc('finalize_gig_payment', {
+    p_project_id: projectId,
+    p_creator_id: creatorId,
+    p_credited_amount: creditedAmount,
+    p_credited_currency: creditedCurrency,
+    p_stripe_payment_intent_id: options.stripePaymentIntentId ?? null,
+    p_title: title,
+    p_description_prefix: prefix,
+    p_metadata: meta,
+    p_gross_amount_minor: options.platformRevenue?.grossAmountMinor ?? null,
+    p_platform_fee_minor: options.platformRevenue?.platformFeeMinor ?? null,
+    p_platform_fee_percent: options.platformRevenue?.platformFeePercent ?? 15,
+    p_payment_method_type: options.platformRevenue?.paymentMethodType ?? null,
+  });
 
-  if (!wallet?.id) {
-    const { data: created } = await service
-      .from('user_wallets')
-      .insert({ user_id: creatorId, currency: creditedCurrency })
-      .select('id')
-      .single();
-    if (created?.id) wallet = { id: (created as { id: string }).id, balance: 0 };
-  }
-
-  let newBalance = creditedAmount;
-  if (wallet?.id) {
-    newBalance = Number(wallet.balance ?? 0) + creditedAmount;
-    await service.from('wallet_transactions').insert({
-      wallet_id: wallet.id,
-      user_id: creatorId,
-      transaction_type: 'gig_payment',
-      amount: creditedAmount,
-      currency: creditedCurrency,
-      description: `${prefix} — "${title}"`,
-      reference_type: 'opportunity_project',
-      reference_id: projectId,
-      status: 'completed',
-      metadata: meta,
-      ...(options.stripePaymentIntentId && { stripe_payment_intent_id: options.stripePaymentIntentId }),
+  if (error) {
+    await service.from('gig_finalize_failures').insert({
+      project_id: projectId,
+      source: 'creditGigPaymentToWallet',
+      error_message: error.message,
+      error_detail: error as unknown as Record<string, unknown>,
     });
-    await service
-      .from('user_wallets')
-      .update({ balance: newBalance, updated_at: new Date().toISOString() })
-      .eq('id', wallet.id);
+    throw new Error(`finalize_gig_payment failed for project ${projectId}: ${error.message}`);
   }
+
+  const result = data as {
+    already_completed: boolean;
+    wallet_transaction_id: string | null;
+    new_balance: number | null;
+  };
 
   return {
     creditedAmount,
     creditedCurrency,
-    walletId: wallet?.id ?? null,
-    newBalance,
+    walletId: null,
+    newBalance: Number(result.new_balance ?? creditedAmount),
   };
 }

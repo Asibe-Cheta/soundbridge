@@ -71,6 +71,17 @@ export async function POST(
       currency: project.currency,
     });
 
+    // Platform fee tracking for P&L (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md)
+    const grossPence = Math.round(Number(project.agreed_amount) * 100);
+    const platformFeePence = Math.round(Number(project.platform_fee_amount ?? 0) * 100) || Math.round(grossPence * (Number(project.platform_fee_percent) || 15) / 100);
+
+    // finalize_gig_payment (20261110120000_atomic_gig_payment_finalization.sql)
+    // now does status-update + wallet-credit + platform_revenue as one atomic
+    // transaction, replacing the 3 separate non-transactional steps this
+    // route used to do here (the old comment below this block even claimed
+    // "atomic: capture → credit → completed" while doing exactly the
+    // opposite — confirmed as the root cause of a real double-credit path
+    // during this session's Urgent Gigs investigation).
     const creditResult = await creditGigPaymentToWallet(serviceSupabase, {
       id,
       creator_user_id: project.creator_user_id,
@@ -82,6 +93,11 @@ export async function POST(
       stripePaymentIntentId: paymentIntentId,
       metadata: { project_id: id },
       descriptionPrefix: 'Gig payment',
+      platformRevenue: {
+        grossAmountMinor: grossPence,
+        platformFeeMinor: platformFeePence,
+        platformFeePercent: Number(project.platform_fee_percent) || 15,
+      },
     });
 
     // Update creator_revenue so Earnings tab reflects the gig
@@ -108,38 +124,8 @@ export async function POST(
       });
     }
 
-    // Only mark project completed after wallet was credited (atomic: capture → credit → completed)
-    await supabase
-      .from('opportunity_projects')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    // Platform fee tracking for P&L (WEB_TEAM_PLATFORM_FEE_TRACKING_REQUIRED.md)
-    const grossPence = Math.round(Number(project.agreed_amount) * 100);
-    const platformFeePence = Math.round(Number(project.platform_fee_amount ?? 0) * 100) || Math.round(grossPence * (Number(project.platform_fee_percent) || 15) / 100);
-    const creatorPayoutPence = Math.round(effectivePayout * 100);
-    try {
-      const { error: insertPrErr } = await serviceSupabase.rpc('insert_platform_revenue', {
-        p_charge_type: 'gig_payment',
-        p_gross_amount: grossPence,
-        p_platform_fee_amount: platformFeePence,
-        p_platform_fee_percent: project.platform_fee_percent ?? 15,
-        p_creator_payout_amount: creatorPayoutPence,
-        p_stripe_payment_intent_id: paymentIntentId,
-        p_reference_id: id,
-        p_creator_user_id: project.creator_user_id,
-        p_currency: (project.currency || 'GBP').toUpperCase(),
-      });
-      if (insertPrErr) {
-        console.error('[confirm-delivery] insert_platform_revenue:', insertPrErr);
-      }
-    } catch (err) {
-      console.error('[confirm-delivery] insert_platform_revenue:', err);
-    }
+    // Status update and platform_revenue already happened atomically inside
+    // finalize_gig_payment, called above via creditGigPaymentToWallet.
 
     // Non-critical: push, emails, notifications — log but don't fail the response
     try {
