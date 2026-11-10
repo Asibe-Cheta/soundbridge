@@ -141,7 +141,7 @@ export async function POST(
       stripeReceiptUrl,
     }).catch(() => {});
 
-    const amountDisplay = currency === 'GBP' ? `£${releasedAmount.toFixed(2)}` : currency === 'EUR' ? `€${releasedAmount.toFixed(2)}` : `${currency} ${releasedAmount.toFixed(2)}`;
+    const amountDisplay = creditResult.creditedCurrency === 'GBP' ? `£${creditResult.creditedAmount.toFixed(2)}` : creditResult.creditedCurrency === 'EUR' ? `€${creditResult.creditedAmount.toFixed(2)}` : `${creditResult.creditedCurrency} ${creditResult.creditedAmount.toFixed(2)}`;
     await service.from('notifications').insert([
       {
         user_id: project.creator_user_id,
@@ -182,7 +182,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      data: { released_amount: releasedAmount, currency: project.currency || 'GBP' },
+      data: { released_amount: creditResult.creditedAmount, currency: creditResult.creditedCurrency },
     }, { headers: CORS });
   } catch (e) {
     console.error('POST /api/gigs/[id]/complete:', e);
