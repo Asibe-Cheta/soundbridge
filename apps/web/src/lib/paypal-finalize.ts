@@ -180,8 +180,7 @@ async function finalizeFanLandingStyleTip(
   return { ok: true };
 }
 
-/** Mirrors finalizeRequestRoomFromSucceededPaymentIntent in request-room-payment-intent-webhook.ts.
- *  Note: the Stripe path doesn't call insert_platform_revenue for this flow either — mirrored as-is. */
+/** Mirrors finalizeRequestRoomFromSucceededPaymentIntent in request-room-payment-intent-webhook.ts. */
 async function finalizeRequestRoomTip(
   supabase: SupabaseClient,
   charge: PayPalPendingCharge,
@@ -274,6 +273,24 @@ async function finalizeRequestRoomTip(
   if (walletErr) {
     console.error('[paypal finalize][request_room] wallet credit error:', walletErr);
     return { ok: false, reason: 'wallet_credit_failed' };
+  }
+
+  try {
+    const { error: revenueErr } = await supabase.rpc('insert_platform_revenue', {
+      p_charge_type: 'request_room',
+      p_gross_amount: Math.round(charge.amount * 100),
+      p_platform_fee_amount: Math.round(charge.platform_fee * 100),
+      p_platform_fee_percent: PLATFORM_FEE_PERCENT,
+      p_creator_payout_amount: Math.round(charge.creator_earnings * 100),
+      p_stripe_payment_intent_id: captureId,
+      p_reference_id: captureId,
+      p_creator_user_id: charge.creator_id,
+      p_currency: charge.currency.toUpperCase(),
+      p_payment_method_type: 'paypal',
+    });
+    if (revenueErr) console.error('[paypal finalize][request_room] insert_platform_revenue:', revenueErr);
+  } catch (err) {
+    console.error('[paypal finalize][request_room] insert_platform_revenue:', err);
   }
 
   return { ok: true };

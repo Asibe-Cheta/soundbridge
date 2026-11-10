@@ -133,6 +133,24 @@ export async function finalizeRequestRoomFromSucceededPaymentIntent(
       return { ok: false, reason: 'wallet_credit_failed' };
     }
 
+    try {
+      const { error: revenueErr } = await supabase.rpc('insert_platform_revenue', {
+        p_charge_type: 'request_room',
+        p_gross_amount: Math.round(amountMajor * 100),
+        p_platform_fee_amount: Math.round(platformFee * 100),
+        p_platform_fee_percent: PLATFORM_FEE_PERCENT,
+        p_creator_payout_amount: Math.round(creatorEarnings * 100),
+        p_stripe_payment_intent_id: paymentIntentId,
+        p_reference_id: paymentIntentId,
+        p_creator_user_id: creatorId,
+        p_currency: currency,
+        p_payment_method_type: paymentMethodType,
+      });
+      if (revenueErr) console.error('[request-room webhook] insert_platform_revenue:', revenueErr);
+    } catch (err) {
+      console.error('[request-room webhook] insert_platform_revenue:', err);
+    }
+
     return { ok: true };
   } catch (error) {
     console.error('[request-room webhook] unexpected error:', error);
