@@ -111,6 +111,14 @@ export default function AdminPayoutsPage() {
   };
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult | null>(null);
   const [fincraApiLog, setFincraApiLog] = useState<FincraApiExchange | null>(null);
+  const [revealedBankDetails, setRevealedBankDetails] = useState<Record<string, {
+    account_holder_name: string | null;
+    bank_name: string | null;
+    account_number: string;
+    routing_number: string;
+    bank_currency: string | null;
+  }>>({});
+  const [revealBusyId, setRevealBusyId] = useState<string | null>(null);
   const cardClass = dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClass = dark ? 'text-white' : 'text-gray-900';
   const mutedClass = dark ? 'text-gray-400' : 'text-gray-500';
@@ -243,6 +251,25 @@ export default function AdminPayoutsPage() {
       setError(e instanceof Error ? e.message : 'Failed to mark as manually paid');
     } finally {
       setActionBusy(null);
+    }
+  };
+
+  const revealBankDetails = async (payoutRequestId: string) => {
+    const ok = window.confirm(
+      'View this creator’s full bank details?\n\nThis is logged (who viewed it and when) — only do this when you’re about to send a manual payment.'
+    );
+    if (!ok) return;
+    setRevealBusyId(payoutRequestId);
+    setError(null);
+    try {
+      const res = await fetchWithSupabaseAuth(`/api/admin/payouts/${payoutRequestId}/bank-details`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Failed to load bank details');
+      setRevealedBankDetails((prev) => ({ ...prev, [payoutRequestId]: json }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load bank details');
+    } finally {
+      setRevealBusyId(null);
     }
   };
 
@@ -741,6 +768,22 @@ export default function AdminPayoutsPage() {
                       <div className={`${mutedClass} text-xs`}>
                         {p.bank_account_masked ? `${p.bank_account_masked} (${p.bank_currency || ''})` : p.bank_currency || ''}
                       </div>
+                      {revealedBankDetails[p.id] ? (
+                        <div className={`mt-1.5 text-xs rounded border p-2 ${dark ? 'border-amber-700/50 bg-amber-900/20 text-amber-200' : 'border-amber-300 bg-amber-50 text-amber-900'}`}>
+                          <div>{revealedBankDetails[p.id].account_holder_name}</div>
+                          <div className="font-mono">{revealedBankDetails[p.id].account_number}</div>
+                          <div className="font-mono">{revealedBankDetails[p.id].routing_number}</div>
+                        </div>
+                      ) : (
+                        <button
+                          disabled={revealBusyId === p.id}
+                          onClick={() => revealBankDetails(p.id)}
+                          className={`mt-1 text-xs underline ${mutedClass} hover:text-amber-400 disabled:opacity-60`}
+                          title="View full bank details — logged"
+                        >
+                          {revealBusyId === p.id ? 'Loading…' : 'View full details'}
+                        </button>
+                      )}
                     </td>
                     <td className="p-3">
                       <span className="inline-block px-2 py-0.5 rounded text-xs bg-gray-700/50 text-gray-200">
