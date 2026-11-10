@@ -17,6 +17,13 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+/**
+ * Full bank details are restricted to this one account, not every admin —
+ * requireAdmin alone would let any is_admin/admin-role profile through.
+ * Justice's own account (asibe_cheta).
+ */
+const SOLE_BANK_DETAILS_VIEWER_ID = 'bd8a455d-a54d-45c5-968d-e4cf5e8d928e';
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
@@ -42,6 +49,9 @@ export async function GET(
   const admin = await requireAdmin(request);
   if (!admin.ok) {
     return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
+  }
+  if (admin.userId !== SOLE_BANK_DETAILS_VIEWER_ID) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: CORS });
   }
 
   const { id: payoutRequestId } = await params;
