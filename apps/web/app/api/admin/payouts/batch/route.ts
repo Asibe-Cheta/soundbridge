@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const creatorIds = [...new Set(pending.map((r: any) => r.creator_id).filter(Boolean))];
     const { data: bankAccounts, error: bankError } = await supabase
       .from('creator_bank_accounts')
-      .select('id, user_id, currency, bank_name, account_holder_name, account_number_encrypted, routing_number_encrypted')
+      .select('id, user_id, currency, bank_name, account_holder_name, account_number_encrypted, routing_number_encrypted, account_last4')
       .eq('is_verified', true)
       .in('user_id', creatorIds);
 
@@ -168,6 +168,10 @@ export async function POST(request: NextRequest) {
             fincra_customer_reference: reference,
             rejection_reason: null,
             updated_at: new Date().toISOString(),
+            beneficiary_name: accountHolderName,
+            bank_name_snapshot: bank.bank_name ?? null,
+            account_last4_snapshot: bank.account_last4 ?? null,
+            bank_currency_snapshot: currency,
           })
           .eq('id', requestId);
 

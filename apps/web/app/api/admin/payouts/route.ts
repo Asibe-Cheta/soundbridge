@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
 
       let bankQuery = supabase
         .from('creator_bank_accounts')
-        .select('id, currency, account_holder_name, account_number_encrypted, routing_number_encrypted, bank_name')
+        .select('id, currency, account_holder_name, account_number_encrypted, routing_number_encrypted, bank_name, account_last4')
         .eq('user_id', pr.creator_id)
         .eq('is_verified', true);
       if (pr.bank_account_id) {
@@ -304,6 +304,10 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
             stripe_transfer_id: payout.id,
             fincra_customer_reference: customerReference || payout.customerReference,
+            beneficiary_name: accountHolderName,
+            bank_name_snapshot: bank.bank_name ?? null,
+            account_last4_snapshot: bank.account_last4 ?? null,
+            bank_currency_snapshot: targetCurrency,
           })
           .eq('id', payout_request_id);
 
