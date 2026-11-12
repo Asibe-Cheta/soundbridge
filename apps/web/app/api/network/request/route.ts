@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       user.id,
       requesterProfile?.username ?? null,
       {
-        pushTitle: `${requesterProfile?.username ? `@${requesterProfile.username}` : requesterName} wants to connect`,
+        pushTitle: `${requesterProfile?.display_name || (requesterProfile?.username ? `@${requesterProfile.username}` : 'Someone')} wants to connect`,
         pushBody: 'Tap to accept or decline',
       }
     ).catch((err) => {

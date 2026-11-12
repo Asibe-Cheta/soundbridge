@@ -239,7 +239,7 @@ export async function POST(
       }
 
       const userName = userProfile?.display_name || userProfile?.username || 'Someone';
-      const atLabel = userProfile?.username ? `@${userProfile.username}` : userName;
+      const atLabel = userProfile?.display_name || (userProfile?.username ? `@${userProfile.username}` : 'Someone');
       const reactionEmoji: Record<string, string> = {
         support: '👍',
         love: '❤️',

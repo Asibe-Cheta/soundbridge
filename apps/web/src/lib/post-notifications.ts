@@ -263,7 +263,8 @@ export async function notifyNewFollower(
   followerUsername: string | null,
   opts?: { pushTitle?: string; pushBody?: string }
 ) {
-  const atLabel = followerUsername ? `@${followerUsername}` : followerDisplayName;
+  // followerDisplayName is already display_name-first with a username/'Someone' fallback (see caller)
+  const atLabel = followerDisplayName;
   return createPostNotification({
     userId: followedUserId,
     type: 'new_follower',

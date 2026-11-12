@@ -89,7 +89,7 @@ export async function POST(
         .eq('id', user.id)
         .single();
       const displayName = followerProfile?.display_name || followerProfile?.username || 'Someone';
-      const atLabel = followerProfile?.username ? `@${followerProfile.username}` : displayName;
+      const atLabel = followerProfile?.display_name || (followerProfile?.username ? `@${followerProfile.username}` : 'Someone');
       await notifyNewFollower(
         targetUserId,
         user.id,

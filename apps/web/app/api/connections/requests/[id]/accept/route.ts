@@ -79,7 +79,7 @@ export async function POST(
       user.id,
       accepterProfile?.username ?? null,
       {
-        pushTitle: `${accepterProfile?.username ? `@${accepterProfile.username}` : accepterName} accepted your connection`,
+        pushTitle: `${accepterProfile?.display_name || (accepterProfile?.username ? `@${accepterProfile.username}` : 'Someone')} accepted your connection`,
         pushBody: "You're now connected",
       }
     ).catch(() => {});

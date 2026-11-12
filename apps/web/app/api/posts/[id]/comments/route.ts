@@ -185,7 +185,7 @@ export async function POST(
       .single();
 
     const userName = profile?.display_name || profile?.username || 'Someone';
-    const atLabel = profile?.username ? `@${profile.username}` : userName;
+    const atLabel = profile?.display_name || (profile?.username ? `@${profile.username}` : 'Someone');
     const preview =
       content.trim().length > 100 ? `${content.trim().slice(0, 99)}…` : content.trim();
 
