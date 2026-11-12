@@ -196,7 +196,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
               <DoorClosed size={16} style={{ color: '#fca5a5' }} />
-              Available for bookings
+              Booking coming soon
             </span>
           </div>
 

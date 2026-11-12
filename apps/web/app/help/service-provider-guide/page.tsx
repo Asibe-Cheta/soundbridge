@@ -1138,7 +1138,7 @@ export default function ServiceProviderGuidePage() {
                       Set Your Availability
                     </h3>
                     <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                      Use the availability calendar to show when you're available for bookings. This helps clients know when they can book you and reduces back-and-forth messaging.
+                      Use the availability calendar to show when you're available. This helps clients know when to reach out and reduces back-and-forth messaging.
                     </p>
                   </div>
                   <div className={`p-6 rounded-lg border ${

@@ -53,7 +53,7 @@ export default function ServiceProviderQuickStartPage() {
     {
       number: 5,
       title: 'Set Your Availability',
-      description: 'Let clients know when you\'re available for bookings',
+      description: 'Let clients know when you\'re available',
       icon: Calendar,
       link: '/help/service-provider-guide'
     },
