@@ -83,7 +83,7 @@ export default function BlogPage() {
             Start your SoundBridge journey
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Download SoundBridge on iOS — connect professionally, promote events for free, and keep 90% of your revenue.
+            Download SoundBridge on iOS — connect professionally, promote events for free, and keep 85% of your revenue.
           </p>
           <div className="flex justify-center">
             <AppStoreBadgeLink size="md" className="justify-center" />

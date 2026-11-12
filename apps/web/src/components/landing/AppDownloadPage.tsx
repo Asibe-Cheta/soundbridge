@@ -204,7 +204,7 @@ export default function AppDownloadPage() {
               },
               {
                 icon: Wallet,
-                title: 'Keep 90–95% of earnings',
+                title: 'Keep 85% of earnings',
                 body: 'Fair economics on sales, tips, and tickets so more stays with you.',
               },
               {

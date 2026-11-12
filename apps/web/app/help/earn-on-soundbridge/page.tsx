@@ -30,7 +30,7 @@ const howSoundBridgeWorksItems: { q: string; a: string }[] = [
   {
     q: 'Can I earn from my music without having thousands of streams?',
     a:
-      'Yes. When a listener feels something while playing your music on SoundBridge they can tip you directly. You keep up to 90% of every tip instantly. There is no stream threshold to reach, no eligibility requirement, and no waiting period. Your first listener can be your first payment.',
+      'Yes. When a listener feels something while playing your music on SoundBridge they can tip you directly. You keep 85% of every tip instantly. There is no stream threshold to reach, no eligibility requirement, and no waiting period. Your first listener can be your first payment.',
   },
   {
     q: 'What is the Live Interest feature?',

@@ -35,7 +35,7 @@ const CREATOR_TYPE_COPY: Record<
   },
   service_provider: {
     label: 'Service Provider',
-    description: 'Offer creative services (mixing, lessons, media) and manage bookings.',
+    description: 'Offer creative services (mixing, lessons, media) and get discovered.',
     accent: 'text-orange-400',
     helper: 'Enabling this role unlocks the Service Provider dashboard for offerings, portfolio, and availability.',
   },

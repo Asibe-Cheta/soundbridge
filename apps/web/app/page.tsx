@@ -6,24 +6,23 @@ import { getSiteUrl } from '@/src/lib/site-url';
 const site = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: 'SoundBridge - Professional Network for Audio Creators | LinkedIn for Musicians',
+  title: 'SoundBridge | Creator Networking That Pays',
   description:
-    'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 90% of your revenue. Get the iOS app.',
+    'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 85% of your revenue. Get the iOS app.',
   keywords: [
     'audio creators platform',
     'musician networking',
     'podcast collaboration',
     'music events promotion',
-    'professional network musicians',
-    'LinkedIn for musicians'
+    'professional network musicians'
   ],
   alternates: {
     canonical: '/'
   },
   openGraph: {
-    title: 'SoundBridge - Professional Network for Audio Creators | LinkedIn for Musicians',
+    title: 'SoundBridge | Creator Networking That Pays',
     description:
-      'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 90% of your revenue.',
+      'Connect with musicians, podcasters, and producers. Promote events for free, find collaborators, and keep 85% of your revenue.',
     url: site,
     type: 'website'
   },
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SoundBridge - Professional Network for Audio Creators',
     description:
-      'Promote events for free, find collaborators, and keep 90% of your revenue. Download the app on iOS.'
+      'Promote events for free, find collaborators, and keep 85% of your revenue. Download the app on iOS.'
   }
 };
 

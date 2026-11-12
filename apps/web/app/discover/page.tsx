@@ -474,7 +474,7 @@ export default function DiscoverPage() {
       venues: {
         icon: <Home size={48} className="mx-auto mb-4 opacity-50" />,
         title: "No Venues Listed",
-        description: "Showcase your venue and start receiving booking inquiries.",
+        description: "Showcase your services and get discovered.",
         action: "List a Venue",
         actionLink: "/dashboard?section=service-provider"
       },

@@ -201,22 +201,21 @@ export default async function VenuePage({ params }: VenuePageProps) {
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <Link
-              href="/events/create"
+            <span
               style={{
                 padding: '0.8rem 1.5rem',
                 borderRadius: '0.9rem',
-                background: 'linear-gradient(135deg, #2563eb, #9333ea)',
-                color: 'white',
+                background: 'rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.5)',
                 fontWeight: 600,
-                textDecoration: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.6rem',
+                cursor: 'not-allowed',
               }}
             >
-              <Calendar size={16} /> Request booking
-            </Link>
+              <Calendar size={16} /> Request booking (coming soon)
+            </span>
             <Link
               href="/discover?tab=venues"
               style={{

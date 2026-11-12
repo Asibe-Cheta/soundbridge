@@ -171,7 +171,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             Start your SoundBridge journey
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Download SoundBridge on iOS — connect professionally, promote events for free, and keep 90% of your revenue.
+            Download SoundBridge on iOS — connect professionally, promote events for free, and keep 85% of your revenue.
           </p>
           <AppStoreBadgeLink size="md" />
         </div>

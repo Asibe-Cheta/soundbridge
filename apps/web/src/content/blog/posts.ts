@@ -84,7 +84,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'SoundBridge is LinkedIn for audio creators. It replaces chaotic DMs with professional networking tools, and it gives you a clear path to discovery and collaboration.'
+          'SoundBridge is creator networking that pays. It replaces chaotic DMs with professional networking tools, and it gives you a clear path to discovery and collaboration.'
       },
       {
         type: 'ul',
@@ -400,7 +400,7 @@ export const blogPosts: BlogPost[] = [
       {
         type: 'p',
         text:
-          'SoundBridge\'s innovation isn\'t inventing new technology. It\'s connecting existing technologies in a novel configuration: government economic APIs (first music platform to integrate for artist recommendations), ML prediction models (applied to music career geography), and location-based services (combined with economic data for career optimization). Four revenue streams: free event promotion, intelligent matching, professional networking (LinkedIn for audio creators), and direct fan monetization (85% artist retention, 15% platform fee). When artists earn more, SoundBridge earns more.'
+          'SoundBridge\'s innovation isn\'t inventing new technology. It\'s connecting existing technologies in a novel configuration: government economic APIs (first music platform to integrate for artist recommendations), ML prediction models (applied to music career geography), and location-based services (combined with economic data for career optimization). Four revenue streams: free event promotion, intelligent matching, professional networking (creator networking that pays), and direct fan monetization (85% artist retention, 15% platform fee). When artists earn more, SoundBridge earns more.'
       },
       { type: 'h2', text: 'Real-World Impact: Early Beta Results' },
       {

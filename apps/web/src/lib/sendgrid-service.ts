@@ -500,7 +500,7 @@ export class SendGridService {
             <h2>${data.contentTitle}</h2>
             <p>Buyer: @${data.buyerUsername}</p>
             <p style="font-size: 24px; font-weight: bold; color: #10b981;">You earned: ${currencySymbol}${data.amountEarned.toFixed(2)}</p>
-            <p style="font-size: 12px; color: #666;">(90% of sale price)</p>
+            <p style="font-size: 12px; color: #666;">(85% of sale price)</p>
           </div>
           
           <p>The earnings have been added to your digital wallet.</p>

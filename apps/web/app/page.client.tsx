@@ -541,7 +541,7 @@ export default function HomePageClient({ userCountRounded = 0 }: HomePageClientP
           applicationCategory: 'MusicApplication',
           operatingSystem: 'Web, iOS, Android',
           description:
-            'Professional networking platform for audio creators. Connect with musicians, podcasters, and producers. Promote events for free and keep 90% of your revenue.',
+            'Professional networking platform for audio creators. Connect with musicians, podcasters, and producers. Promote events for free and keep 85% of your revenue.',
           offers: {
             '@type': 'Offer',
             price: '0',
@@ -569,10 +569,10 @@ export default function HomePageClient({ userCountRounded = 0 }: HomePageClientP
             iOS app live · Android app now live
           </div>
           <h1 className={`text-4xl lg:text-6xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            LinkedIn for Audio Creators
+            Creator Networking that pays
           </h1>
           <p className={`text-lg lg:text-xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Where musicians, podcasters, and producers connect professionally, promote events for free, and keep 90%
+            Where musicians, podcasters, and producers connect professionally, promote events for free, and keep 85%
             of what they earn.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">

@@ -107,7 +107,7 @@ export class PlainTextEmailService {
   <div style="white-space: pre-wrap;">${html}</div>
   <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
   <p style="font-size: 12px; color: #666;">
-    SoundBridge - The LinkedIn for Music Creators<br>
+    SoundBridge. Creator Networking that pays.<br>
     <a href="mailto:contact@soundbridge.live">contact@soundbridge.live</a>
   </p>
 </body>

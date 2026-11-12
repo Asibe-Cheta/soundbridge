@@ -276,9 +276,9 @@ const RevenueTracker: React.FC<RevenueTrackerProps> = ({ className = '' }) => {
                   Revenue Sharing
                 </h4>
                 <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {subscription.tier === 'pro' 
+                  {subscription.tier === 'pro'
                     ? 'Keep 85% of your earnings (15% platform fee)'
-                    : 'Keep 90% of your earnings with Pro features'
+                    : 'Keep 85% of your earnings (15% platform fee)'
                   }
                 </p>
               </div>
