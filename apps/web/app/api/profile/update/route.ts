@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 
 export async function POST(request: NextRequest) {
   try {
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
     // First, check if profile exists
     const { data: existingProfile, error: checkError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, location')
       .eq('id', userId as any)
       .maybeSingle() as { data: any; error: any };
 
@@ -137,6 +138,14 @@ export async function POST(request: NextRequest) {
         { success: false, error: `Failed to check profile: ${checkError.message}` },
         { status: 500 }
       );
+    }
+
+    // Geocode on change only; on no change, empty input, or any geocoding
+    // failure this only carries { location }, leaving city/lat/lng/country
+    // untouched. Never blocks the save.
+    const locationUpdate = await resolveLocationUpdate(userId, existingProfile?.location, location);
+    if (locationUpdate) {
+      Object.assign(updateData, locationUpdate);
     }
 
     let updatedProfile;

@@ -12,6 +12,7 @@
     "lint": "next lint",
     "setup-env": "node scripts/setup-env.js",
     "type-check": "tsc --noEmit",
+    "test": "node --import tsx --test src/lib/__tests__/*.test.ts",
     "migrate-files": "node scripts/migrate-to-r2.js",
     "push:broadcast-missing-avatar": "node --env-file=.env.local scripts/broadcast-push-missing-avatar.mjs",
     "push:broadcast-missing-avatar:dry": "DRY_RUN=1 node --env-file=.env.local scripts/broadcast-push-missing-avatar.mjs"
@@ -108,6 +109,7 @@
     "@types/react-window": "^1.8.8",
     "@types/speakeasy": "^2.0.10",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5"
+    "eslint-config-next": "15.3.5",
+    "tsx": "^4.19.2"
   }
 }

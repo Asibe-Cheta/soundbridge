@@ -9,6 +9,7 @@ import {
   processPartnerAttributionForAuthUser,
 } from '@/src/lib/partner-referrals';
 import { COMMUNITY_ENTRY_CREATOR_ID_COOKIE } from '@/src/lib/community-entry';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 
 /**
  * Runs once, right after a client-side supabase.auth.verifyOtp({ type: 'signup' })
@@ -70,15 +71,16 @@ export async function POST() {
         const referralCode =
           referralCodeCookie || getReferralCodeFromMetadata(user.user_metadata as Record<string, unknown>);
 
+        const signupLocationUpdate = await resolveLocationUpdate(user.id, undefined, 'london');
         const { error: profileError } = await supabase.from('profiles').insert({
           id: user.id,
           username: `user${user.id.substring(0, 8)}`,
           display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
           role: 'listener',
-          location: 'london',
           country: 'UK',
           bio: '',
           ...(referralCode ? { referred_by_code: referralCode } : {}),
+          ...signupLocationUpdate,
           onboarding_completed: false,
           onboarding_step: 'role_selection',
           selected_role: 'listener',

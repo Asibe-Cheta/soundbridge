@@ -4,6 +4,7 @@ import { CREATOR_TYPES, isValidCreatorType } from '@/src/constants/creatorTypes'
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { ensureServiceProviderCreatorTypeSynced } from '@/src/lib/sync-service-provider-creator-type';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 
 interface CreatorTypesPayload {
   creatorTypes: string[];
@@ -310,6 +311,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const defaultUsername = `user${userId.substring(0, 8)}`;
           displayName = user.email?.split('@')[0] || 'New User';
           
+          const creatorTypesLocationUpdate = await resolveLocationUpdate(userId, undefined, 'london');
           const { error: createProfileError } = await serviceClient
             .from('profiles')
             .insert({
@@ -317,9 +319,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               username: defaultUsername,
               display_name: displayName,
               role: 'listener',
-              location: 'london',
               country: 'UK',
               bio: '',
+              ...creatorTypesLocationUpdate,
               onboarding_completed: false,
               onboarding_step: 'role_selection',
               selected_role: 'listener',

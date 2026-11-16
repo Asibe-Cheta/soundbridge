@@ -86,7 +86,14 @@ function OAuthCallbackContent() {
                   last_name: lastName,
                   avatar_url: data.user.user_metadata?.avatar_url || null,
                   role: 'listener', // Default role, can be changed in onboarding
+                  // Static London centre, not a live geocode call: this runs in the
+                  // browser and must never hold a server-only geocoding key. Values
+                  // match the 'london' default used by every other profile-creation
+                  // path (see src/lib/geocoding.ts).
                   location: 'london',
+                  city: 'London',
+                  latitude: 51.5072,
+                  longitude: -0.1276,
                   country: 'UK',
                   bio: '',
                   onboarding_completed: false,

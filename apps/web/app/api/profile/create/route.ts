@@ -4,6 +4,7 @@ import {
   getReferralCodeFromMetadata,
   processPartnerAttributionForAuthUser,
 } from '@/src/lib/partner-referrals';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 
 function normalizeReferralCode(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
         getReferralCodeFromMetadata(authUser?.user?.user_metadata as Record<string, unknown>);
 
       // Fallback: Create profile with minimal data from request body
+      const fallbackLocation = location || 'london';
+      const fallbackLocationUpdate = await resolveLocationUpdate(userId, undefined, fallbackLocation);
+
       const profileData = {
         id: userId,
         username: username || `user${Math.random().toString(36).substring(2, 8)}`,
@@ -64,7 +68,6 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Mapping role '${userRole}' to 'listener'`);
         return 'listener';
       })(),
-        location: location || 'london',
         country: country || null,
         country_code: null, // Will be set by frontend if country is provided
         bio: bio || '',
@@ -76,7 +79,8 @@ export async function POST(request: NextRequest) {
         first_action_completed: false,
         onboarding_skipped: false,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        ...fallbackLocationUpdate,
       };
 
       console.log('Creating profile with fallback data:', profileData);
@@ -138,6 +142,9 @@ export async function POST(request: NextRequest) {
       normalizeReferralCode(referred_by_code) ||
       getReferralCodeFromMetadata(authUser.user.user_metadata as Record<string, unknown>);
 
+    const mainLocation = location || authUser.user.user_metadata?.location || 'london';
+    const mainLocationUpdate = await resolveLocationUpdate(userId, undefined, mainLocation);
+
     const profileData = {
       id: userId,
       username: username || `${firstName}${lastName}${Math.random().toString(36).substring(2, 6)}`.toLowerCase().replace(/[^a-z0-9]/g, ''),
@@ -152,7 +159,6 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Mapping role '${userRole}' to 'listener'`);
         return 'listener';
       })(),
-      location: location || authUser.user.user_metadata?.location || 'london',
       country: country || null,
       country_code: null, // Will be set by frontend if country is provided
       bio: bio || '',
@@ -164,7 +170,8 @@ export async function POST(request: NextRequest) {
       first_action_completed: false,
       onboarding_skipped: false,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      ...mainLocationUpdate,
     };
 
     console.log('Creating profile with data:', profileData);

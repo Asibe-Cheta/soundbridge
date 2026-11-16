@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
 import { createServiceClient } from '@/src/lib/supabase';
 import { resolveProfileRole } from '@/src/lib/onboarding-role';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 import {
   applyCommunityEntryAttribution,
   COMMUNITY_ENTRY_CREATOR_ID_COOKIE,
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Checking if profile exists for user:', user.id);
     const { data: existingProfile, error: selectError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, location')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -130,6 +131,14 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Failed to check profile', details: selectError.message },
         { status: 500, headers: corsHeaders }
       );
+    }
+
+    // Geocode on change only; on no change, empty input, or any geocoding
+    // failure this only carries { location }, leaving city/lat/lng/country
+    // (and the body.country set above) untouched. Never blocks the save.
+    const locationUpdate = await resolveLocationUpdate(user.id, existingProfile?.location, updateData.location);
+    if (locationUpdate) {
+      Object.assign(updateData, locationUpdate);
     }
 
     let updatedProfile;

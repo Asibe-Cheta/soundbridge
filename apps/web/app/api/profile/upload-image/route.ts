@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiClientWithCookies } from '@/src/lib/supabase-api';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 
 export async function POST(request: Request) {
   try {
@@ -270,6 +271,17 @@ export async function PUT(request: Request) {
     const body = await request.json();
     console.log('📝 Profile update data:', body);
 
+    const { data: existingProfile } = await (supabase
+      .from('profiles') as any)
+      .select('location')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // Geocode on change only; on no change, empty input, or any geocoding
+    // failure this only carries { location }, leaving city/lat/lng/country
+    // untouched. Never blocks the save.
+    const locationUpdate = await resolveLocationUpdate(user.id, existingProfile?.location, body.location);
+
     // Update the profile
     const { data: profileData, error: updateError } = await (supabase
       .from('profiles') as any)
@@ -277,7 +289,7 @@ export async function PUT(request: Request) {
         display_name: body.display_name,
         username: body.username,
         bio: body.bio,
-        location: body.location,
+        ...locationUpdate,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id)

@@ -7,6 +7,7 @@ import {
 } from '@/src/lib/oauth-duplicate-guard';
 import { extractOAuthDisplayNameParts } from '@/src/lib/oauth-user-display-name';
 import { createServiceClient } from '@/src/lib/supabase';
+import { resolveLocationUpdate } from '@/src/lib/geocoding';
 import {
   PARTNER_REFERRAL_COOKIE,
   PARTNER_SOURCE_COOKIE,
@@ -138,6 +139,7 @@ export async function GET(request: NextRequest) {
                 getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
 
               // Create profile with OAuth user data
+              const oauthLocationUpdate = await resolveLocationUpdate(data.user.id, undefined, 'london');
               const { error: profileError } = await supabase
                 .from('profiles')
                 .insert({
@@ -148,10 +150,10 @@ export async function GET(request: NextRequest) {
                   last_name: lastName,
                   avatar_url: data.user.user_metadata?.avatar_url || null,
                   role: 'listener', // Default role, can be changed in onboarding
-                  location: 'london',
                   country: 'UK',
                   bio: '',
                   ...(oauthReferralCode ? { referred_by_code: oauthReferralCode } : {}),
+                  ...oauthLocationUpdate,
                   onboarding_completed: false,
                   onboarding_step: 'role_selection',
                   selected_role: 'listener',
