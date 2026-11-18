@@ -131,6 +131,34 @@ Sentry.init({
       return null;
     }
 
+    // Instagram's own injected script (dispatchToBridge, sendPostMessage,
+    // logLoginFieldDetected, mutationObserverCallback) runs in an isolated
+    // "app:///app" script context, never where our bundle is served from.
+    // Only drop when every frame is in that foreign context, so a real error
+    // of ours that merely surfaces while Instagram's script is also on the
+    // stack is never swallowed.
+    const injectedScriptFrames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+    if (
+      injectedScriptFrames.length > 0 &&
+      injectedScriptFrames.every((frame) => (frame.filename ?? '').startsWith('app:///app'))
+    ) {
+      return null;
+    }
+
+    // Same injected-script failure, but without a usable stack (some
+    // WebViews strip it): only drop it when BOTH the user agent identifies
+    // an Instagram/Facebook in-app browser AND the message matches the
+    // specific InvalidAccessError text it throws. Neither signal alone is
+    // enough, since plenty of real users and real errors come through that
+    // same in-app browser.
+    const userAgent = String(event.request?.headers?.['User-Agent'] ?? '');
+    const isInstagramOrFacebookInAppBrowser = /Instagram|FBAN|FBAV|FB_IAB/i.test(userAgent);
+    const isInvalidAccessErrorMessage =
+      typeof message === 'string' && message.includes('The object does not support the operation or argument');
+    if (isInstagramOrFacebookInAppBrowser && isInvalidAccessErrorMessage) {
+      return null;
+    }
+
     // Session Replay + Stripe cross-origin iframe (SecurityError in replay SDK, not SoundBridge)
     const exceptionType = event.exception?.values?.[0]?.type ?? '';
     const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
