@@ -308,7 +308,7 @@ async function geocode(text) {
   return outcome;
 }
 
-async function updateProfile(id, fields) {
+async function updateProfileOnce(id, fields) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
     method: 'PATCH',
     headers: {
@@ -320,6 +320,28 @@ async function updateProfile(id, fields) {
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Update failed for ${id}: ${res.status} ${await res.text()}`);
+}
+
+function isNetworkError(err) {
+  return (
+    err instanceof TypeError ||
+    err?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+    err?.cause?.name === 'ConnectTimeoutError' ||
+    /fetch failed/i.test(err?.message || '')
+  );
+}
+
+async function updateProfile(id, fields) {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await updateProfileOnce(id, fields);
+      return;
+    } catch (err) {
+      if (!isNetworkError(err) || attempt === maxAttempts) throw err;
+      await sleep(500 * 2 ** (attempt - 1)); // 500ms, 1s
+    }
+  }
 }
 
 async function processRow(row) {
@@ -445,13 +467,22 @@ async function main() {
 
   const outcomeCounts = {};
   const countryCounts = {};
+  const erroredRows = [];
   let processed = 0;
   for (const row of rowsToProcess) {
-    const { outcome } = await processRow(row);
-    const key = outcome.ok ? 'geocoded' : `failed: ${outcome.reason}`;
-    outcomeCounts[key] = (outcomeCounts[key] || 0) + 1;
-    const resolvedCountry = outcome.ok ? outcome.country : outcome.attemptedCountry;
-    if (resolvedCountry) countryCounts[resolvedCountry] = (countryCounts[resolvedCountry] || 0) + 1;
+    try {
+      const { outcome } = await processRow(row);
+      const key = outcome.ok ? 'geocoded' : `failed: ${outcome.reason}`;
+      outcomeCounts[key] = (outcomeCounts[key] || 0) + 1;
+      const resolvedCountry = outcome.ok ? outcome.country : outcome.attemptedCountry;
+      if (resolvedCountry) countryCounts[resolvedCountry] = (countryCounts[resolvedCountry] || 0) + 1;
+    } catch (err) {
+      // One row's unexpected failure (after updateProfile's own retries are
+      // exhausted) is logged and skipped, not fatal to the whole run.
+      outcomeCounts['errored'] = (outcomeCounts['errored'] || 0) + 1;
+      erroredRows.push(row.id);
+      console.error(`  row ${row.id} errored, skipping: ${err.message}`);
+    }
 
     processed++;
     if (processed % 50 === 0 || processed === rowsToProcess.length) {
@@ -465,6 +496,11 @@ async function main() {
 
   console.log('\nFinal counts by resolved country:');
   for (const [country, count] of Object.entries(countryCounts)) console.log(`  ${country}: ${count}`);
+
+  if (erroredRows.length > 0) {
+    console.log(`\nRow ids that errored and were skipped (${erroredRows.length}), safe to retry on a later run:`);
+    for (const id of erroredRows) console.log(`  ${id}`);
+  }
 }
 
 main().catch((err) => {
