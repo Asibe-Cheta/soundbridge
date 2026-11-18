@@ -50,9 +50,11 @@ export async function POST(request: NextRequest) {
         normalizeReferralCode(referred_by_code) ||
         getReferralCodeFromMetadata(authUser?.user?.user_metadata as Record<string, unknown>);
 
-      // Fallback: Create profile with minimal data from request body
-      const fallbackLocation = location || 'london';
-      const fallbackLocationUpdate = await resolveLocationUpdate(userId, undefined, fallbackLocation);
+      // Fallback: Create profile with minimal data from request body. No
+      // location default: only geocode a real typed value, otherwise leave
+      // location/city/latitude/longitude/country null and location_source
+      // 'default', same as the handle_new_user signup trigger.
+      const fallbackLocationUpdate = await resolveLocationUpdate(userId, undefined, location);
 
       const profileData = {
         id: userId,
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
         onboarding_skipped: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        ...fallbackLocationUpdate,
+        ...(fallbackLocationUpdate || { location_source: 'default' }),
       };
 
       console.log('Creating profile with fallback data:', profileData);
@@ -142,7 +144,10 @@ export async function POST(request: NextRequest) {
       normalizeReferralCode(referred_by_code) ||
       getReferralCodeFromMetadata(authUser.user.user_metadata as Record<string, unknown>);
 
-    const mainLocation = location || authUser.user.user_metadata?.location || 'london';
+    // No location default here either: only geocode a real typed value or one
+    // carried in OAuth user metadata, otherwise leave it null with
+    // location_source 'default'.
+    const mainLocation = location || authUser.user.user_metadata?.location;
     const mainLocationUpdate = await resolveLocationUpdate(userId, undefined, mainLocation);
 
     const profileData = {
@@ -171,7 +176,7 @@ export async function POST(request: NextRequest) {
       onboarding_skipped: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      ...mainLocationUpdate,
+      ...(mainLocationUpdate || { location_source: 'default' }),
     };
 
     console.log('Creating profile with data:', profileData);

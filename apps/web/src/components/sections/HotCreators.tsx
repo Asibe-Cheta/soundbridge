@@ -71,7 +71,7 @@ export function HotCreators() {
               {creator.name}
             </div>
             <div className="text-white/60 text-sm mb-4 line-clamp-1">
-              {creator.genre} • {creator.location}
+              {[creator.genre, creator.location].filter(Boolean).join(' • ')}
             </div>
             
             <div className="stats flex gap-4 text-xs text-white/60">

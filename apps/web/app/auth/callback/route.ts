@@ -7,7 +7,6 @@ import {
 } from '@/src/lib/oauth-duplicate-guard';
 import { extractOAuthDisplayNameParts } from '@/src/lib/oauth-user-display-name';
 import { createServiceClient } from '@/src/lib/supabase';
-import { resolveLocationUpdate } from '@/src/lib/geocoding';
 import {
   PARTNER_REFERRAL_COOKIE,
   PARTNER_SOURCE_COOKIE,
@@ -138,8 +137,11 @@ export async function GET(request: NextRequest) {
                 referralCodeCookie ||
                 getReferralCodeFromMetadata(data.user.user_metadata as Record<string, unknown>);
 
-              // Create profile with OAuth user data
-              const oauthLocationUpdate = await resolveLocationUpdate(data.user.id, undefined, 'london');
+              // Create profile with OAuth user data. No location default:
+              // handle_new_user (the DB trigger) already stamped
+              // location_source 'default' and left location/city/lat/lng/
+              // country null; this fallback only runs when that trigger
+              // somehow didn't fire first, so it matches the same behavior.
               const { error: profileError } = await supabase
                 .from('profiles')
                 .insert({
@@ -150,10 +152,9 @@ export async function GET(request: NextRequest) {
                   last_name: lastName,
                   avatar_url: data.user.user_metadata?.avatar_url || null,
                   role: 'listener', // Default role, can be changed in onboarding
-                  country: 'UK',
                   bio: '',
                   ...(oauthReferralCode ? { referred_by_code: oauthReferralCode } : {}),
-                  ...oauthLocationUpdate,
+                  location_source: 'default',
                   onboarding_completed: false,
                   onboarding_step: 'role_selection',
                   selected_role: 'listener',

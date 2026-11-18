@@ -168,7 +168,7 @@ describe('resolveLocationUpdate', () => {
     assert.equal(called, false);
   });
 
-  test('location changed and geocode succeeds merges city/lat/lng/country', async () => {
+  test('location changed and geocode succeeds merges city/lat/lng/country and stamps location_source geocoded', async () => {
     mockFetch(geocodeResult({ locality: 'Lagos', country: 'Nigeria', lat: 6.5244, lng: 3.3792 }));
     const result = await resolveLocationUpdate('profile-1', 'London', 'Lagos');
     assert.deepEqual(result, {
@@ -177,16 +177,17 @@ describe('resolveLocationUpdate', () => {
       latitude: 6.5244,
       longitude: 3.3792,
       country: 'Nigeria',
+      location_source: 'geocoded',
     });
   });
 
-  test('location changed but geocode fails keeps only the typed text', async () => {
+  test('location changed but geocode fails keeps only the typed text and stamps location_source user', async () => {
     mockFetch({ status: 'ZERO_RESULTS', results: [] });
     const result = await resolveLocationUpdate('profile-1', 'London', 'asdkjaslkdjaslkd');
-    assert.deepEqual(result, { location: 'asdkjaslkdjaslkd' });
+    assert.deepEqual(result, { location: 'asdkjaslkdjaslkd', location_source: 'user' });
   });
 
-  test('location cleared to empty skips geocoding', async () => {
+  test('location cleared to empty skips geocoding and clears location_source', async () => {
     let called = false;
     global.fetch = (async () => {
       called = true;
@@ -194,7 +195,7 @@ describe('resolveLocationUpdate', () => {
     }) as typeof fetch;
 
     const result = await resolveLocationUpdate('profile-1', 'London', '');
-    assert.deepEqual(result, { location: '' });
+    assert.deepEqual(result, { location: '', location_source: null });
     assert.equal(called, false);
   });
 

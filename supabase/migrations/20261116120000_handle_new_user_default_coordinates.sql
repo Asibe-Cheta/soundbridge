@@ -1,25 +1,23 @@
--- Adds static London-centre coordinates to the stub profile row that
--- handle_new_user() (20261109150000) creates for every new auth.users row.
+-- Revises handle_new_user() (20261109150000) to stop fabricating a location
+-- for every new signup.
 --
--- This trigger is the actual, DB-guaranteed write path for profiles.location
--- on nearly every signup: it fires in the same transaction as the auth.users
--- insert and wins the race before post-signup-confirm/route.ts or
--- auth/callback/route.ts's own fallback inserts ever run (their inserts now
--- simply find the row already there, via ON CONFLICT DO NOTHING). Those two
--- app-level fallbacks, and the client-side oauth-callback/page.tsx path, have
--- separately been given the same static values in application code this
--- session, since this is the dominant path, this migration is what actually
--- matters for leaving almost no new signup without coordinates.
+-- The first version of this migration (committed in e1f8c0f6, never run)
+-- added a hardcoded London-centre city/latitude/longitude to the stub profile
+-- row. A pre-run review (see conversation) found that was not an improvement:
+-- it converts "no location, no match" (today's actual state for every
+-- default) into a confident false match for the event-notification system
+-- (find_nearby_users_for_event matches on exact city text or a coordinate
+-- radius), which is worse for a real non-London user than matching nothing.
 --
--- A live geocoding call cannot run inside a SQL trigger, and would be pointless
--- here anyway: the typed text is always the literal 'london' default, never
--- user input, so the result would be identical every time. Hardcoding London's
--- centre (51.5072, -0.1276) is exact and avoids any network dependency inside
--- a transaction that also creates the auth.users row.
+-- This version instead leaves location, city, latitude, longitude and
+-- country all NULL, and stamps location_source = 'default' so this stub
+-- state is always distinguishable from a real user-provided or geocoded
+-- value. The country was previously hardcoded to 'UK' alongside 'london';
+-- that's the same fabricated-default problem (a UK flag with no UK evidence)
+-- so it is dropped too, not kept.
 --
--- country stays 'UK' exactly as the existing trigger already set it; this
--- migration only adds the three new columns, so it does not touch that
--- pre-existing UK vs "United Kingdom" naming question.
+-- Depends on profiles.location_source existing
+-- (20261116110000_add_profiles_location_source.sql must run first).
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -28,7 +26,8 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.profiles (
-    id, username, display_name, role, location, city, latitude, longitude, country, bio,
+    id, username, display_name, role, location, country, bio,
+    location_source,
     onboarding_completed, onboarding_step, selected_role,
     profile_completed, first_action_completed, onboarding_skipped,
     created_at, updated_at
@@ -38,12 +37,10 @@ BEGIN
     'user' || substring(NEW.id::text, 1, 8),
     COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1), 'New User'),
     'listener',
-    'london',
-    'London',
-    51.5072,
-    -0.1276,
-    'UK',
+    NULL,
+    NULL,
     '',
+    'default',
     false,
     'role_selection',
     'listener',
@@ -59,4 +56,4 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.handle_new_user IS
-  'Creates a minimal stub profiles row (including a London-centre default city/latitude/longitude) for every new auth.users row, in the same transaction. ON CONFLICT DO NOTHING so it is always safe to re-run and never fights with the app-level insert fallback in post-signup-confirm/route.ts or auth/callback/route.ts.';
+  'Creates a minimal stub profiles row for every new auth.users row, in the same transaction, with location/city/latitude/longitude/country left NULL and location_source = ''default'' rather than a fabricated location. ON CONFLICT DO NOTHING so it is always safe to re-run and never fights with the app-level insert fallback in post-signup-confirm/route.ts or auth/callback/route.ts.';

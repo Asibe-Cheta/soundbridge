@@ -188,6 +188,7 @@ export interface LocationUpdateFields {
   latitude?: number;
   longitude?: number;
   country?: string;
+  location_source?: 'user' | 'geocoded' | null;
 }
 
 /**
@@ -203,6 +204,14 @@ export interface LocationUpdateFields {
  * On failure, logs one server-side line with profileId + a reason code only
  * (never the typed location text or any other profile data), so failure
  * frequency is visible without logging anything sensitive.
+ *
+ * Also stamps location_source so every row's location can be traced back to
+ * its provenance: 'geocoded' when the typed text resolved to a real place,
+ * 'user' when it's real typed text that failed to geocode, null when cleared
+ * back to empty (no location means no source), and left untouched when
+ * nothing actually changed. Callers creating a brand-new profile with no
+ * location at all (newLocation undefined) get null back here and must stamp
+ * location_source: 'default' themselves, matching the signup trigger.
  */
 export async function resolveLocationUpdate(
   profileId: string,
@@ -214,8 +223,12 @@ export async function resolveLocationUpdate(
   const trimmedNew = (newLocation ?? '').trim();
   const trimmedPrev = (previousLocation ?? '').trim();
 
-  if (trimmedNew === trimmedPrev || !trimmedNew) {
+  if (trimmedNew === trimmedPrev) {
     return { location: newLocation ?? null };
+  }
+
+  if (!trimmedNew) {
+    return { location: newLocation ?? null, location_source: null };
   }
 
   const fields: LocationUpdateFields = { location: newLocation ?? null };
@@ -225,7 +238,9 @@ export async function resolveLocationUpdate(
     fields.latitude = outcome.result.latitude;
     fields.longitude = outcome.result.longitude;
     fields.country = outcome.result.country;
+    fields.location_source = 'geocoded';
   } else {
+    fields.location_source = 'user';
     console.warn(`[geocode] skipped for profile ${profileId}, reason: ${outcome.reason}`);
   }
 
