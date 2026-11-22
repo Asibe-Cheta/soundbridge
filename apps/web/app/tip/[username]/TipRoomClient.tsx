@@ -13,9 +13,8 @@ import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { TipRoomOwnerPanel } from '@/src/components/creator/TipRoomOwnerPanel';
 import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
+import { TIP_ROOM_MIN_GBP, TIP_ROOM_MAX_GBP, validateTipRoomAmount } from '@/src/lib/tip-room-amount';
 
-// Matches MINIMUM_TIP_AMOUNTS.gbp in src/lib/platform-fees.ts.
-const MINIMUM_TIP_GBP = 4;
 const PRESETS = [5, 10, 20] as const;
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
 
@@ -97,7 +96,8 @@ export function TipRoomClient({
   avatarUrl,
   joinCommunityUrl,
 }: TipRoomClientProps) {
-  const [tipAmount, setTipAmount] = useState(5);
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(5);
+  const [otherAmountInput, setOtherAmountInput] = useState('');
   const [provider, setProvider] = useState<'card' | 'paypal'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bootingPi, setBootingPi] = useState(false);
@@ -118,11 +118,27 @@ export function TipRoomClient({
     void stripePromise.then(setStripeJs);
   }, []);
 
-  const amountLabel = useMemo(() => `£${tipAmount.toFixed(tipAmount % 1 === 0 ? 0 : 2)}`, [tipAmount]);
+  const amountValidation = useMemo(() => {
+    if (otherAmountInput.trim() !== '') return validateTipRoomAmount(otherAmountInput);
+    if (selectedPreset != null) return validateTipRoomAmount(selectedPreset);
+    return { ok: false as const, error: 'Choose an amount.' };
+  }, [otherAmountInput, selectedPreset]);
+
+  const tipAmount = amountValidation.ok ? amountValidation.amount : 0;
+  const amountLabel = useMemo(() => `£${tipAmount.toFixed(2)}`, [tipAmount]);
+
+  const selectPreset = (p: number) => {
+    setSelectedPreset(p);
+    setOtherAmountInput('');
+  };
 
   const startPayment = async () => {
     setError(null);
     setPayFieldError(null);
+    if (!amountValidation.ok) {
+      setError(amountValidation.error);
+      return;
+    }
     if (!stripeJs) {
       setError('Payments are not configured.');
       return;
@@ -244,40 +260,51 @@ export function TipRoomClient({
         {!clientSecret ? (
           <div className="mt-6 space-y-4">
             <div>
-              <label htmlFor="tip-amount" className="sr-only">
-                Tip amount
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Quick amount
+              </p>
+              <div className="flex justify-center gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => selectPreset(p)}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                      selectedPreset === p && otherAmountInput.trim() === ''
+                        ? 'bg-rose-600 text-white'
+                        : 'border border-white/15 bg-white/5 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    £{p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="tip-other-amount" className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                Other amount
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-400">
                   £
                 </span>
                 <input
-                  id="tip-amount"
-                  type="number"
-                  min={MINIMUM_TIP_GBP}
-                  step={0.5}
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(Number(e.target.value) || MINIMUM_TIP_GBP)}
+                  id="tip-other-amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={`${TIP_ROOM_MIN_GBP} - ${TIP_ROOM_MAX_GBP}`}
+                  value={otherAmountInput}
+                  onChange={(e) => {
+                    setOtherAmountInput(e.target.value);
+                    setSelectedPreset(null);
+                  }}
                   className="w-full rounded-xl border border-white/10 bg-black/30 py-3 pl-9 pr-4 text-center text-xl font-semibold outline-none ring-rose-500/30 focus:ring-2"
                 />
               </div>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setTipAmount(p)}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    tipAmount === p
-                      ? 'bg-rose-600 text-white'
-                      : 'border border-white/15 bg-white/5 text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  £{p}
-                </button>
-              ))}
+              {otherAmountInput.trim() !== '' && !amountValidation.ok ? (
+                <p className="mt-1.5 text-xs text-red-400">{amountValidation.error}</p>
+              ) : null}
             </div>
 
             <div className="flex justify-center gap-2">
@@ -302,7 +329,7 @@ export function TipRoomClient({
             {provider === 'card' ? (
               <button
                 type="button"
-                disabled={bootingPi || tipAmount < MINIMUM_TIP_GBP}
+                disabled={bootingPi || !amountValidation.ok}
                 onClick={() => void startPayment()}
                 className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 py-3.5 text-lg font-semibold shadow-lg shadow-rose-900/30 disabled:opacity-50"
               >
@@ -315,7 +342,7 @@ export function TipRoomClient({
                   `Pay ${amountLabel}`
                 )}
               </button>
-            ) : (
+            ) : amountValidation.ok ? (
               <PayPalCheckoutButton
                 createOrderEndpoint="/api/payments/tip-room-tip"
                 createOrderPayload={{ creatorId, amount: tipAmount }}
@@ -323,6 +350,8 @@ export function TipRoomClient({
                 onCaptured={() => void onPaymentSuccess()}
                 onError={setError}
               />
+            ) : (
+              <p className="text-sm text-gray-500">Enter a valid amount to continue.</p>
             )}
           </div>
         ) : stripeJs ? (

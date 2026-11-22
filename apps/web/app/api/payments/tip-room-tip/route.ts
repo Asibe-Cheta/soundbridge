@@ -7,12 +7,12 @@ import {
   paymentIntentCustomerOptions,
   type StripePayerProfile,
 } from '@/src/lib/stripe-payment-sheet-customer';
-import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT, getMinimumTipAmount } from '@/src/lib/platform-fees';
+import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 import { createServerClient } from '@/src/lib/supabase';
 import { createPayPalPendingCharge } from '@/src/lib/paypal-pending-charge';
+import { validateTipRoomAmount } from '@/src/lib/tip-room-amount';
 
 const TIP_ROOM_CURRENCY = 'gbp';
-const STRIPE_MIN_GBP = 0.3;
 
 function stripeAmountInMinorUnits(amountMajor: number): number {
   return Math.round(amountMajor * 100);
@@ -73,20 +73,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404, headers: corsHeaders });
     }
 
-    const rawAmount = body.amount != null ? Number(body.amount) : 1;
-    const tipAmount = Number.isFinite(rawAmount) && rawAmount > 0 ? rawAmount : 1;
-    if (tipAmount > 10_000) {
-      return NextResponse.json({ error: 'Tip amount is too large' }, { status: 400, headers: corsHeaders });
-    }
-    const minAmount = Math.max(STRIPE_MIN_GBP, getMinimumTipAmount(TIP_ROOM_CURRENCY));
-    if (tipAmount < minAmount) {
+    // Never trust the client: re-validate numeric, 2-decimal-max, and the
+    // £4-£500 range server-side regardless of what the "Other amount" field sent.
+    const amountValidation = validateTipRoomAmount(body.amount);
+    if (!amountValidation.ok) {
       return NextResponse.json(
         // No Gift Bundle mention here — this is the guest/unauthenticated tip
         // flow, and Gift Bundle requires a SoundBridge account.
-        { error: 'Minimum tip is £4.' },
+        { error: amountValidation.error },
         { status: 400, headers: corsHeaders },
       );
     }
+    const tipAmount = amountValidation.amount;
 
     const platformFee = Math.round(tipAmount * PLATFORM_FEE_DECIMAL * 100) / 100;
     const creatorEarnings = Math.round((tipAmount - platformFee) * 100) / 100;
