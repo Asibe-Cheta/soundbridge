@@ -618,9 +618,16 @@ function Q6Question({
       onBack={onBack}
       onNext={() => value && onNext(value)}
       subtitle={
-        <div className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          SoundBridge is an app for music creators and fans. It tells you in real time about concerts
-          and events you&apos;ve chosen to follow, anywhere in the world, and nothing random.
+        <div className="mb-5 rounded-xl border border-accent-pink/30 bg-accent-pink/10 p-4 text-base font-medium leading-relaxed text-foreground">
+          SoundBridge is a discovery and networking platform for audio creators and the people who
+          support them: musicians, podcasters, sound engineers, and the photographers and
+          videographers who work alongside them. Creators get free uploads, free targeted event
+          promotion, and an AI career advisor that reads their profile, real industry data, and how
+          people behave on the platform, then tells them exactly what to do next: where their
+          audience is, when to host events, and what to focus on. It also helps them find gigs and
+          collaborators nearby. Fans get notified only about concerts and events in their area,
+          reminded on the day, build real relationships with the artists they follow for free, and
+          are rewarded for supporting them.
         </div>
       }
     >
