@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Never trust the client: re-validate numeric, 2-decimal-max, and the
     // £4-£500 range server-side regardless of what the "Other amount" field sent.
     const amountValidation = validateTipRoomAmount(body.amount);
-    if (!amountValidation.ok) {
+    if (amountValidation.ok === false) {
       return NextResponse.json(
         // No Gift Bundle mention here — this is the guest/unauthenticated tip
         // flow, and Gift Bundle requires a SoundBridge account.

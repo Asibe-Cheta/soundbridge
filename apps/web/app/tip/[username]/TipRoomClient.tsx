@@ -135,7 +135,7 @@ export function TipRoomClient({
   const startPayment = async () => {
     setError(null);
     setPayFieldError(null);
-    if (!amountValidation.ok) {
+    if (amountValidation.ok === false) {
       setError(amountValidation.error);
       return;
     }
@@ -302,7 +302,7 @@ export function TipRoomClient({
                   className="w-full rounded-xl border border-white/10 bg-black/30 py-3 pl-9 pr-4 text-center text-xl font-semibold outline-none ring-rose-500/30 focus:ring-2"
                 />
               </div>
-              {otherAmountInput.trim() !== '' && !amountValidation.ok ? (
+              {otherAmountInput.trim() !== '' && amountValidation.ok === false ? (
                 <p className="mt-1.5 text-xs text-red-400">{amountValidation.error}</p>
               ) : null}
             </div>
