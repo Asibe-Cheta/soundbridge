@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -42,16 +43,14 @@ async function verifyAppleReceipt(receiptData: string, isProduction: boolean = t
 // Google Play Store receipt verification
 async function verifyGoogleReceipt(packageName: string, productId: string, purchaseToken: string) {
   try {
-    // Check if Google service account is configured
+    // Fail closed: a Google purchase can never be granted a subscription
+    // without real server-side verification. This used to fabricate a fake
+    // 30-day valid result when unconfigured -- that meant any Android user
+    // could self-grant a paid tier with zero real purchase, independent of
+    // any RLS/table permission, for as long as this env var happened to be
+    // unset in the deployed environment.
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
-      console.warn('Google service account not configured, skipping server-side verification');
-      // For now, we'll trust the client-side verification
-      // In production, you should implement server-side verification
-      return {
-        startTimeMillis: Date.now().toString(),
-        expiryTimeMillis: (Date.now() + 30 * 24 * 60 * 60 * 1000).toString(), // 30 days from now
-        paymentState: 1 // Assume valid for now
-      };
+      throw new Error('Google service account not configured -- cannot verify Google Play purchases');
     }
 
     const { GoogleAuth } = require('google-auth-library');
@@ -138,6 +137,11 @@ export async function POST(request: NextRequest) {
 
     console.log('🍎 IAP VERIFICATION: User authenticated:', user.id);
 
+    // Writes to user_subscriptions go through the service role from here on
+    // (RLS blocks direct authenticated-role writes) -- `supabase` above is
+    // kept only for the auth check.
+    const service = createServiceClient();
+
     // Parse request body
     const { platform, receiptData, productId, transactionId, packageName, purchaseToken } = await request.json();
 
@@ -151,7 +155,7 @@ export async function POST(request: NextRequest) {
     console.log('🍎 IAP VERIFICATION: Platform:', platform, 'Product:', productId);
 
     // Log receipt verification attempt
-    await supabase
+    await service
       .from('iap_receipt_logs')
       .insert({
         user_id: user.id,
@@ -218,7 +222,7 @@ export async function POST(request: NextRequest) {
 
       if (!subscriptionData || !subscriptionData.isActive) {
         // Log failed verification
-        await supabase
+        await service
           .from('iap_receipt_logs')
           .update({
             verification_status: 'invalid',
@@ -267,7 +271,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date()
       };
 
-      const { data: existingSubscription } = await supabase
+      const { data: existingSubscription } = await service
         .from('user_subscriptions')
         .select('id')
         .eq('user_id', user.id)
@@ -276,7 +280,7 @@ export async function POST(request: NextRequest) {
       let subscriptionResult;
       if (existingSubscription) {
         // Update existing subscription
-        subscriptionResult = await supabase
+        subscriptionResult = await service
           .from('user_subscriptions')
           .update(subscriptionUpdate)
           .eq('user_id', user.id)
@@ -284,7 +288,7 @@ export async function POST(request: NextRequest) {
           .single();
       } else {
         // Create new subscription
-        subscriptionResult = await supabase
+        subscriptionResult = await service
           .from('user_subscriptions')
           .insert(subscriptionUpdate)
           .select()
@@ -300,7 +304,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Log successful verification
-      await supabase
+      await service
         .from('iap_receipt_logs')
         .update({
           verification_status: 'valid',
@@ -311,7 +315,7 @@ export async function POST(request: NextRequest) {
         .eq('transaction_id', transactionId);
 
       // Get updated user profile
-      const { data: profile } = await supabase
+      const { data: profile } = await service
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -338,7 +342,7 @@ export async function POST(request: NextRequest) {
       console.error('🍎 IAP VERIFICATION ERROR:', verificationError);
       
       // Log failed verification
-      await supabase
+      await service
         .from('iap_receipt_logs')
         .update({
           verification_status: 'invalid',
