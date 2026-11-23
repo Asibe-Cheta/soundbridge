@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 
 export async function POST(request: NextRequest) {
   const corsHeaders = {
@@ -9,6 +11,10 @@ export async function POST(request: NextRequest) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
   };
+
+  if (arePayoutsPaused()) {
+    return payoutsPausedResponse(corsHeaders);
+  }
 
   try {
     let supabase;
@@ -112,8 +118,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // wallet_transactions and user_wallets writes run with the service role
+    // from here on -- both tables now block direct authenticated-role writes
+    // (see supabase/migrations for the RLS lockdown), so this route is the
+    // only place that may still debit a user's own wallet, and it must do
+    // so with elevated privileges rather than relying on broad row-owner RLS.
+    const service = createServiceClient();
+
     // Create withdrawal transaction
-    const { data: transaction, error: transactionError } = await supabase
+    const { data: transaction, error: transactionError } = await service
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
@@ -139,9 +152,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Update wallet balance
-    const { error: updateError } = await supabase
+    const { error: updateError } = await service
       .from('user_wallets')
-      .update({ 
+      .update({
         balance: wallet.balance - amount,
         updated_at: new Date().toISOString()
       })

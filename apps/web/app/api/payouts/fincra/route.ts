@@ -13,6 +13,7 @@ import {
   assertFincraDestinationMinimum,
   resolveFincraPayoutAmount,
 } from '@/src/lib/payouts/fincra-payout-amount';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,10 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (arePayoutsPaused()) {
+      return payoutsPausedResponse(corsHeaders);
+    }
+
     const auth = await getSupabaseRouteClient(request, true);
     const { user, supabase, error: authError } = auth;
     if (authError || !user) {

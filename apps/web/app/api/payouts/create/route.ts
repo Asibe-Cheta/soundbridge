@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { stripe } from '@/src/lib/stripe';
 import { performCreatorFincraWalletPayout } from '@/src/lib/payouts/creator-fincra-wallet-payout';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,6 +18,10 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (arePayoutsPaused()) {
+      return payoutsPausedResponse(corsHeaders);
+    }
+
     let supabase;
     let user;
     let authError;

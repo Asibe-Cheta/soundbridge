@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { requireFreshMfa } from '@/src/lib/admin-mfa';
 import { completePayoutRequestBalanceDeduction } from '@/src/lib/payouts/complete-payout-request-balance';
 import { sendPayoutReceiptEmail } from '@/src/lib/payouts/send-payout-receipt-email';
 import { SendGridService } from '@/src/lib/sendgrid-service';
@@ -31,6 +32,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = admin.serviceClient;
+    const mfa = await requireFreshMfa(supabase, admin.userId);
+    if (mfa.ok === false) {
+      return NextResponse.json({ success: false, error: mfa.error }, { status: mfa.status, headers: corsHeaders });
+    }
     const body = await request.json().catch(() => ({}));
     const payoutRequestId = body?.payout_request_id;
 

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/src/lib/admin-auth';
 import { decryptSecret } from '@/src/lib/encryption';
+import { requireFreshMfa } from '@/src/lib/admin-mfa';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,11 +48,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = await requireAdmin(request);
-  if (!admin.ok) {
+  if (admin.ok === false) {
     return NextResponse.json({ error: admin.error }, { status: admin.status, headers: CORS });
   }
   if (admin.userId !== SOLE_BANK_DETAILS_VIEWER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: CORS });
+  }
+  const mfa = await requireFreshMfa(admin.serviceClient, admin.userId);
+  if (mfa.ok === false) {
+    return NextResponse.json({ error: mfa.error }, { status: mfa.status, headers: CORS });
   }
 
   const { id: payoutRequestId } = await params;

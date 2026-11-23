@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -18,7 +19,11 @@ export async function POST(request: NextRequest) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
   };
 
-  try {
+  if (arePayoutsPaused()) {
+    return payoutsPausedResponse(corsHeaders);
+  }
+
+try {
     let supabase;
     let user;
     let authError;

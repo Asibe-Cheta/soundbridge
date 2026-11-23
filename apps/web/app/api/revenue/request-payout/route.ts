@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { createServiceClient } from '@/src/lib/supabase';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 
 export async function POST(request: NextRequest) {
   const corsHeaders = {
@@ -9,6 +11,10 @@ export async function POST(request: NextRequest) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-authorization, x-auth-token, x-supabase-token',
   };
+
+  if (arePayoutsPaused()) {
+    return payoutsPausedResponse(corsHeaders);
+  }
 
   try {
     let supabase;
@@ -107,8 +113,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Service role: wallet_transactions no longer accepts direct
+    // authenticated-role inserts (see the RLS lockdown migration).
+    const service = createServiceClient();
+
     // Create withdrawal request
-    const { data: withdrawal, error: withdrawalError } = await supabase
+    const { data: withdrawal, error: withdrawalError } = await service
       .from('wallet_transactions')
       .insert({
         user_id: user.id,

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
+import { requireFreshMfa } from '@/src/lib/admin-mfa';
 import { decryptSecret } from '@/src/lib/encryption';
 import { createFincraTransfer, isFincraCurrency } from '@/src/lib/fincra';
 import type { FincraApiExchange } from '@/src/lib/fincra-api-exchange';
 import { getMinPayoutForCurrency } from '@/src/lib/payout-minimum';
 import { checkCreatorPayoutFraud, notifyAdminPayoutBlocked } from '@/src/lib/payout-fraud-guard';
+import { arePayoutsPaused, payoutsPausedResponse } from '@/src/lib/payouts/payouts-paused';
 import {
   assertFincraDestinationMinimum,
   resolveFincraPayoutAmount,
@@ -42,6 +44,14 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = admin.serviceClient;
+    const mfa = await requireFreshMfa(supabase, admin.userId);
+    if (mfa.ok === false) {
+      return NextResponse.json({ error: mfa.error }, { status: mfa.status, headers: CORS });
+    }
+
+    if (arePayoutsPaused()) {
+      return payoutsPausedResponse(CORS);
+    }
 
     const { max = 1000 } = (await request.json().catch(() => ({}))) as { max?: number };
 
