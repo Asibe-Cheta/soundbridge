@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/src/lib/api-auth';
+import { createServiceClient } from '@/src/lib/supabase';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import {
   isUpgrade,
@@ -14,7 +15,10 @@ import {
   getPlanFeatures,
   type SubscriptionTier,
 } from '@/src/lib/subscription-plan-email';
-import { hasManualPermanentSubscriptionGrant } from '@/src/lib/revenuecat-entitlements';
+import {
+  hasManualPermanentSubscriptionGrant,
+  resolveRevenueCatSubscriptionTier,
+} from '@/src/lib/revenuecat-entitlements';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +37,11 @@ function normalizeTier(value: unknown): SubscriptionTier {
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, user, error: authError } = await getSupabaseRouteClient(request, true);
+    // Auth only -- the user's own client is never used to read or write
+    // subscription data below. RevenueCat's API is the only source of
+    // truth for what tier this call may set; any `tier` in the request
+    // body is ignored entirely (kept only for logging context).
+    const { user, error: authError } = await getSupabaseRouteClient(request, true);
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -42,13 +50,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const tier = normalizeTier(body.tier ?? body.subscription_tier);
+    if (body?.tier || body?.subscription_tier) {
+      console.warn(
+        '[sync-revenuecat] Ignoring client-reported tier, verifying against RevenueCat instead:',
+        user.id,
+      );
+    }
     const activeSubscriptions: string[] = Array.isArray(body.activeSubscriptions)
       ? body.activeSubscriptions
       : [];
 
+    const service = createServiceClient();
+
     // Current tier from profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await service
       .from('profiles')
       .select('subscription_tier, subscription_status, subscription_period_end, subscription_renewal_date, updated_at')
       .eq('id', user.id)
@@ -64,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     const previousTier = normalizeTier(profile?.subscription_tier ?? 'free');
 
-    if (await hasManualPermanentSubscriptionGrant(supabase, user.id)) {
+    if (await hasManualPermanentSubscriptionGrant(service, user.id)) {
       console.log('[sync-revenuecat] Skipping overwrite for manual permanent subscription grant:', user.id);
       return NextResponse.json(
         { success: true, tier: previousTier, skipped: 'manual_permanent_grant' },
@@ -72,11 +87,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update profile
-    const { error: updateError } = await supabase
+    const resolved = await resolveRevenueCatSubscriptionTier(user.id);
+    if (!resolved) {
+      // RevenueCat unreachable/misconfigured -- never guess. Leave the
+      // existing tier untouched rather than risk a wrong upgrade or a
+      // wrongful downgrade off a transient API failure.
+      console.error('[sync-revenuecat] Could not verify tier with RevenueCat, leaving profile unchanged:', user.id);
+      return NextResponse.json(
+        { success: false, tier: previousTier, error: 'Could not verify subscription with RevenueCat' },
+        { status: 502, headers: CORS_HEADERS }
+      );
+    }
+    const tier = resolved.tier;
+
+    // Update profile -- service role, the verified tier only.
+    const { error: updateError } = await service
       .from('profiles')
       .update({
         subscription_tier: tier,
+        subscription_status: tier === 'free' ? 'expired' : 'active',
+        subscription_period_end: resolved.periodEnd,
+        subscription_renewal_date: resolved.periodEnd,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);

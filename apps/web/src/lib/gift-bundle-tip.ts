@@ -15,6 +15,7 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { PLATFORM_FEE_DECIMAL, PLATFORM_FEE_PERCENT } from '@/src/lib/platform-fees';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { sendTipThankYouDm } from '@/src/lib/tip-thank-you-dm';
+import { recordLiveSessionTipIfApplicable } from '@/src/lib/live-session-tip-stats';
 
 export async function handleGiftBundleTip(params: {
   service: SupabaseClient;
@@ -25,9 +26,10 @@ export async function handleGiftBundleTip(params: {
   isAnonymous?: boolean;
   trackId?: string | null;
   liveStreamId?: string | null;
+  sessionId?: string | null;
   corsHeaders: Record<string, string>;
 }) {
-  const { service, user, creatorId, amount, message, isAnonymous, trackId, liveStreamId, corsHeaders } = params;
+  const { service, user, creatorId, amount, message, isAnonymous, trackId, liveStreamId, sessionId, corsHeaders } = params;
 
   const tipAmount = Number(amount);
   if (!(tipAmount > 0)) {
@@ -191,6 +193,20 @@ export async function handleGiftBundleTip(params: {
   } catch (e) {
     console.error('[gift-bundle-tip] thank-you DM failed:', e);
   }
+
+  // No webhook for this path (it's synchronous), so record the live-session
+  // stat row here, with the same server-computed amounts used above.
+  await recordLiveSessionTipIfApplicable(service, {
+    sessionId: sessionId ?? null,
+    creatorId,
+    tipperId: user.id,
+    amount: tipAmount,
+    currency: 'USD',
+    platformFee,
+    creatorEarnings,
+    message: isAnonymous ? null : message ?? null,
+    paymentIntentId: tipId,
+  });
 
   return NextResponse.json(
     {

@@ -159,6 +159,105 @@ export async function shouldSkipRevenueCatDowngradeToFree(
   return new Date(String(endRaw)).getTime() > Date.now();
 }
 
+const PREMIUM_LOOKUP_KEYS = new Set(['premium_features', 'premium', 'pro']);
+const UNLIMITED_LOOKUP_KEYS = new Set(['unlimited_features', 'unlimited']);
+
+export type ResolvedRevenueCatSubscription = {
+  tier: 'free' | 'premium' | 'unlimited';
+  /** ISO timestamp, or null for 'free' / a lifetime entitlement with no expiry. */
+  periodEnd: string | null;
+};
+
+/**
+ * Pure: picks the highest active tier (unlimited > premium > free) and the
+ * latest expiry among the items that back it, from already-fetched RevenueCat
+ * data. Split out from resolveRevenueCatSubscriptionTier so the actual
+ * decision logic is unit-testable without mocking fetch.
+ */
+export function resolveTierFromEntitlements(
+  lookupKeyByEntitlementId: Map<string, string>,
+  activeItems: { entitlement_id?: string; expires_at?: number | null }[],
+): ResolvedRevenueCatSubscription {
+  let bestTier: 'free' | 'premium' | 'unlimited' = 'free';
+  let bestExpiresAt: number | null = null;
+
+  for (const item of activeItems) {
+    if (!item.entitlement_id || !activeItemStillValid(item.expires_at)) continue;
+    const lookupKey = lookupKeyByEntitlementId.get(item.entitlement_id);
+    if (!lookupKey) continue;
+
+    let itemTier: 'premium' | 'unlimited' | null = null;
+    if (UNLIMITED_LOOKUP_KEYS.has(lookupKey)) itemTier = 'unlimited';
+    else if (PREMIUM_LOOKUP_KEYS.has(lookupKey)) itemTier = 'premium';
+    if (!itemTier) continue;
+
+    if (itemTier === 'unlimited') bestTier = 'unlimited';
+    else if (itemTier === 'premium' && bestTier !== 'unlimited') bestTier = 'premium';
+
+    if (item.expires_at != null) {
+      bestExpiresAt = bestExpiresAt == null ? item.expires_at : Math.max(bestExpiresAt, item.expires_at);
+    }
+  }
+
+  return {
+    tier: bestTier,
+    periodEnd: bestTier !== 'free' && bestExpiresAt != null ? new Date(bestExpiresAt).toISOString() : null,
+  };
+}
+
+async function fetchEntitlementLookupMap(secret: string, projectId: string): Promise<Map<string, string> | null> {
+  const res = await rcV2Get(secret, `/projects/${encodeURIComponent(projectId)}/entitlements?limit=50`);
+  if (!res.ok) return null;
+  const data = (await res.json()) as { items?: { id: string; lookup_key: string }[] };
+  const map = new Map<string, string>();
+  for (const e of data.items ?? []) map.set(e.id, e.lookup_key);
+  return map;
+}
+
+/**
+ * The server's only source of truth for a user's subscription tier --
+ * never trust a tier reported by the client. Returns null when the API
+ * couldn't be reached/configured (caller must then leave the existing
+ * tier untouched, never guess free or paid).
+ */
+export async function resolveRevenueCatSubscriptionTier(
+  appUserId: string,
+): Promise<ResolvedRevenueCatSubscription | null> {
+  const secret = getRevenueCatSecretKey();
+  if (!secret) return null;
+
+  const projectId = await resolveProjectId(secret);
+  if (!projectId) {
+    console.warn('[revenuecat-entitlements] Could not resolve project id');
+    return null;
+  }
+
+  const lookupMap = await fetchEntitlementLookupMap(secret, projectId);
+  if (!lookupMap) {
+    console.warn('[revenuecat-entitlements] Could not resolve entitlement lookup map');
+    return null;
+  }
+
+  const url = `/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(
+    appUserId,
+  )}/active_entitlements?limit=20`;
+  try {
+    const res = await rcV2Get(secret, url);
+    if (res.status === 404) return { tier: 'free', periodEnd: null };
+    if (!res.ok) {
+      console.warn('[revenuecat-entitlements] active_entitlements failed:', res.status, appUserId);
+      return null;
+    }
+    const data = (await res.json()) as {
+      items?: { entitlement_id?: string; expires_at?: number | null }[];
+    };
+    return resolveTierFromEntitlements(lookupMap, data.items ?? []);
+  } catch (e) {
+    console.warn('[revenuecat-entitlements] resolveRevenueCatSubscriptionTier error:', appUserId, e);
+    return null;
+  }
+}
+
 export async function hasManualPermanentSubscriptionGrant(
   supabase: SupabaseClient,
   userId: string

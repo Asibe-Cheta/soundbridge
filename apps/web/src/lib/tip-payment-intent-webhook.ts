@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendExpoPushIfAllowed } from '@/src/lib/notification-push-preferences';
 import { sendTipThankYouDm } from '@/src/lib/tip-thank-you-dm';
 import { recordTipRoomTipStat } from '@/src/lib/tip-room-stats';
+import { recordLiveSessionTipIfApplicable } from '@/src/lib/live-session-tip-stats';
 import { stripe } from '@/src/lib/stripe';
 import { getPaymentIntentPaymentMethodType } from '@/src/lib/stripe-payment-intent-metadata';
 
@@ -717,6 +718,23 @@ async function finalizeTipFromSucceededPaymentIntentInner(
       console.error('[finalizeTip] sync_track_quality_from_tip:', e);
     }
   }
+
+  // Live Sessions is a separate feature/id space from Live Streams (which
+  // is what live_stream_id on tips/creator_tips refers to) -- the Live
+  // Tipping modal sends sessionId specifically for this.
+  const sessionId =
+    typeof meta.sessionId === 'string' && meta.sessionId.trim() ? meta.sessionId.trim() : null;
+  await recordLiveSessionTipIfApplicable(supabase, {
+    sessionId,
+    creatorId,
+    tipperId: senderId,
+    amount,
+    currency,
+    platformFee,
+    creatorEarnings,
+    message: isAnonymous ? null : tipMessage,
+    paymentIntentId,
+  });
 
   console.log('✅ [finalizeTip] Tip finalized for PI', paymentIntentId);
   return { ok: true };

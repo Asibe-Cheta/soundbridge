@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
       paymentMethod?: string;
       trackId?: string;
       liveStreamId?: string;
+      sessionId?: string;
     };
     try {
       body = raw ? (JSON.parse(raw) as typeof body) : {};
@@ -182,11 +183,14 @@ export async function POST(request: NextRequest) {
       paymentMethod = 'card',
       trackId: trackIdRaw,
       liveStreamId: liveStreamIdRaw,
+      sessionId: sessionIdRaw,
     } = body;
 
     const trackId = typeof trackIdRaw === 'string' && trackIdRaw.trim() ? trackIdRaw.trim() : null;
     const liveStreamIdCandidate =
       typeof liveStreamIdRaw === 'string' && liveStreamIdRaw.trim() ? liveStreamIdRaw.trim() : null;
+    const sessionIdCandidate =
+      typeof sessionIdRaw === 'string' && sessionIdRaw.trim() ? sessionIdRaw.trim() : null;
     
     // Validate required fields
     if (!creatorId || !amount || amount <= 0) {
@@ -253,6 +257,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Live Sessions is a separate feature from Live Streams (different
+    // table, different id space) -- a tip sent from the Live Tipping modal
+    // during a live session passes sessionId here, not liveStreamId.
+    let sessionId: string | null = null;
+    if (sessionIdCandidate) {
+      const { data: sessionRow } = await supabase
+        .from('live_sessions')
+        .select('id, creator_id, status')
+        .eq('id', sessionIdCandidate)
+        .maybeSingle();
+      if (sessionRow && sessionRow.creator_id === creatorId && sessionRow.status === 'live') {
+        sessionId = sessionRow.id;
+      }
+    }
+
     // Gift Bundle path: no Stripe involved at all — debit the prepaid balance and
     // complete the tip synchronously. Skips every Stripe-specific step below
     // (currency support, minimum charge amount, PaymentIntent creation).
@@ -266,6 +285,7 @@ export async function POST(request: NextRequest) {
         isAnonymous,
         trackId,
         liveStreamId,
+        sessionId,
         corsHeaders,
       });
     }
@@ -372,6 +392,7 @@ export async function POST(request: NextRequest) {
         creator_user_id: creatorId,
         ...(trackId ? { trackId } : {}),
         ...(liveStreamId ? { liveStreamId } : {}),
+        ...(sessionId ? { sessionId } : {}),
       },
       description: `Tip to creator ${creatorId}`,
     };
@@ -419,8 +440,10 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    // Record in the tips table for mobile flow compatibility
-    const { data: tipsRow, error: tipsError } = await supabase
+    // Record in the tips table for mobile flow compatibility.
+    // Service role: tips' INSERT policy no longer lets a user set
+    // amount/status/recipient_id directly (RLS lockdown).
+    const { data: tipsRow, error: tipsError } = await service
       .from('tips')
       .insert({
         sender_id: user.id,
@@ -439,8 +462,10 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    // Also record in the original creator_tips table for backward compatibility
-    const { error: legacyTipError } = await supabase
+    // Also record in the original creator_tips table for backward compatibility.
+    // Service role: creator_tips' INSERT policy no longer lets a user set
+    // amount/status/platform_fee/creator_earnings directly (RLS lockdown).
+    const { error: legacyTipError } = await service
       .from('creator_tips')
       .insert({
         creator_id: creatorId,
