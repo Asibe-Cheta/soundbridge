@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
+  ClipboardList,
   Cookie,
   Copyright,
   CreditCard,
@@ -68,6 +69,7 @@ const NAV_ITEMS = [
   { href: '/admin/vote-campaign', label: 'Vote Campaign', icon: Vote },
   { href: '/admin/institutional-access', label: 'Institutional Access', icon: Building2 },
   { href: '/admin/founding-members', label: 'Founding Members', icon: Crown },
+  { href: '/admin/surveys/notifications', label: 'Surveys', icon: ClipboardList },
 ] as const;
 
 const STORAGE_KEY = 'admin-sidebar-collapsed';
