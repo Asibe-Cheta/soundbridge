@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { z } from 'zod';
 
 // Validation schema for admin actions
@@ -14,31 +12,15 @@ const AdminActionSchema = z.object({
   assignTo: z.string().uuid().optional()
 });
 
-// Middleware to check admin permissions
-// TODO: Add proper authentication check. For now, using service client like overview API.
-// The frontend should already be protecting admin routes.
-async function checkAdminPermissions(request: NextRequest) {
-  // Temporarily skip auth check and use service client (like overview API)
-  // This allows the feature to work while we fix the cookie-based auth issue
-  return { user: null, profile: null };
-}
-
 export async function GET(request: NextRequest) {
   try {
-    console.log('📋 Review Queue API called');
-    
-    // TODO: Re-enable auth check once cookie-based auth is fixed
-    // For now, using service client directly (like overview API)
-    // const authResult = await checkAdminPermissions(request);
-    // if ('error' in authResult) {
-    //   return NextResponse.json({
-    //     success: false,
-    //     error: authResult.error
-    //   }, { status: authResult.status });
-    // }
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
 
-    console.log('✅ Using service client (auth check temporarily disabled)');
-    const supabase = createServiceClient();
+    console.log('📋 Review Queue API called');
+    const supabase = adminCheck.serviceClient;
 
     const { searchParams } = new URL(request.url);
     const queueType = searchParams.get('type');
@@ -192,19 +174,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📋 Admin action API called');
-    
-    // TODO: Re-enable auth check once cookie-based auth is fixed
-    // For now, using service client directly (like GET endpoint)
-    // const authResult = await checkAdminPermissions(request);
-    // if ('error' in authResult) {
-    //   return NextResponse.json({
-    //     success: false,
-    //     error: authResult.error
-    //   }, { status: authResult.status });
-    // }
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
 
-    const supabase = createServiceClient();
+    console.log('📋 Admin action API called');
+    const supabase = adminCheck.serviceClient;
     const body = await request.json();
     
     console.log('📋 Action request:', { action: body.action, queueId: body.queueId });

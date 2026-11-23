@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     console.log('👥 Admin Users API called');
-    
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -12,8 +17,8 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role') || '';
     const status = searchParams.get('status') || '';
     const referral = searchParams.get('referral')?.trim().toLowerCase() || '';
-    
-    const supabase = createServiceClient();
+
+    const supabase = adminCheck.serviceClient;
 
     // Build query
     let query = supabase
@@ -146,12 +151,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     console.log('👤 Admin User Action API called');
-    
+
     const body = await request.json();
     const { action, userId, data } = body;
 
-    const supabase = createServiceClient();
+    const supabase = adminCheck.serviceClient;
 
     switch (action) {
       case 'ban_user':

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     console.log('⚙️ Admin Settings API called');
-    
-    const supabase = createServiceClient();
+
+    const supabase = adminCheck.serviceClient;
 
     // Get system settings
     const { data: settings, error: settingsError } = await supabase
@@ -90,12 +95,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     console.log('⚙️ Admin Settings Update API called');
-    
+
     const body = await request.json();
     const { settings } = body;
 
-    const supabase = createServiceClient();
+    const supabase = adminCheck.serviceClient;
 
     // Update or create settings
     const { data: updatedSettings, error: updateError } = await supabase

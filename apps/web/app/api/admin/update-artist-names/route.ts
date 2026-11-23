@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
-    
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
+    const supabase = adminCheck.serviceClient;
+
     console.log('🔧 Updating artist names for existing tracks...');
     
     // First, get all tracks that have NULL artist_name, empty artist_name, or "Unknown Artist"

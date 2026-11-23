@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/src/lib/supabase';
+import { requireAdmin, isAdminAccessDenied } from '@/src/lib/admin-auth';
 import { SendGridService } from '@/src/lib/sendgrid-service';
 import { PlainTextEmailService } from '@/src/lib/plain-text-email-service';
 
@@ -8,10 +8,15 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const { userId } = await params;
     console.log('👤 Admin User Detail API called for user:', userId);
-    
-    const supabase = createServiceClient();
+
+    const supabase = adminCheck.serviceClient;
 
     // Get detailed user information from profiles
     const { data: user, error: userError } = await supabase
@@ -133,13 +138,18 @@ export async function POST(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const adminCheck = await requireAdmin(request);
+    if (isAdminAccessDenied(adminCheck)) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
+
     const { userId } = await params;
     console.log('👤 Admin User Action API called for user:', userId);
-    
+
     const body = await request.json();
     const { action, reason, data } = body;
 
-    const supabase = createServiceClient();
+    const supabase = adminCheck.serviceClient;
 
     let result;
     let message;
