@@ -3,6 +3,7 @@ const nextConfig = {
   serverExternalPackages: ['ffmpeg-static'],
   outputFileTracingIncludes: {
     '/api/posts/trim-audio': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/admin/agreements': ['./content/agreements/*.md'],
   },
   env: {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
