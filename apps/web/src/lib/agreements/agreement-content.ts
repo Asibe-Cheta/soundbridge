@@ -1,28 +1,32 @@
-import { readFile } from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
+import { TALK2DAN_AGREEMENT_TEXT } from './templates/talk2dan';
 
 export class AgreementTemplateNotFoundError extends Error {}
 
 /**
- * Reads content/agreements/<templateKey>.md at creation time and returns
- * its exact text (trimmed) plus a SHA-256 hash of that same text. Nothing
- * downstream ever re-reads the file for an existing agreement -- the
- * returned text is snapshotted onto the agreement row, so editing the .md
- * file later never changes an agreement that already exists.
+ * Templates live as plain TS string constants, not files read at runtime.
+ * A dynamically-built fs path (content/agreements/<key>.md) isn't visible
+ * to Vercel's build-time file tracer, so it silently goes missing from the
+ * deployed serverless function -- a plain import is bundled like any other
+ * code and can't have that failure mode. Editing wording still means no
+ * logic changes, just editing the string in templates/<key>.ts.
+ */
+const TEMPLATES: Record<string, string> = {
+  talk2dan: TALK2DAN_AGREEMENT_TEXT,
+};
+
+/**
+ * Returns the exact template text (trimmed) plus a SHA-256 hash of that
+ * same text. Nothing downstream ever re-reads this for an existing
+ * agreement -- the returned text is snapshotted onto the agreement row, so
+ * editing the template constant later never changes an agreement that
+ * already exists.
  */
 export async function loadAgreementTemplate(
   templateKey: string,
 ): Promise<{ text: string; documentHash: string }> {
-  if (!/^[a-z0-9-]+$/.test(templateKey)) {
-    throw new AgreementTemplateNotFoundError(`Invalid template key: ${templateKey}`);
-  }
-
-  const filePath = path.join(process.cwd(), 'content', 'agreements', `${templateKey}.md`);
-  let raw: string;
-  try {
-    raw = await readFile(filePath, 'utf8');
-  } catch {
+  const raw = TEMPLATES[templateKey];
+  if (!raw) {
     throw new AgreementTemplateNotFoundError(`No template found for: ${templateKey}`);
   }
 

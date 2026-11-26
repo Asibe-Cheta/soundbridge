@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     // Disable TypeScript checking entirely for deployment
     ignoreBuildErrors: true,
   },
-  outputFileTracingIncludes: {
-    '/api/admin/agreements': ['./content/agreements/*.md'],
-  },
   eslint: {
     // Disable ESLint entirely to allow build
     ignoreDuringBuilds: true,

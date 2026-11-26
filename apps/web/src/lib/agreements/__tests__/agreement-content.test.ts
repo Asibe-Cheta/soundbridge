@@ -17,7 +17,7 @@ test('paragraphsFromSnapshot splits on blank lines and trims', () => {
   assert.deepEqual(paragraphsFromSnapshot(text), ['First paragraph.', 'Second paragraph.']);
 });
 
-test('loadAgreementTemplate rejects a template key with invalid characters', async () => {
+test('loadAgreementTemplate rejects an unknown key', async () => {
   await assert.rejects(() => loadAgreementTemplate('../../etc/passwd'), AgreementTemplateNotFoundError);
 });
 
@@ -25,7 +25,7 @@ test('loadAgreementTemplate rejects a missing template', async () => {
   await assert.rejects(() => loadAgreementTemplate('no-such-template'), AgreementTemplateNotFoundError);
 });
 
-test('loadAgreementTemplate loads talk2dan.md and hashes the trimmed text', async () => {
+test('loadAgreementTemplate loads the talk2dan template and hashes the trimmed text', async () => {
   const { text, documentHash } = await loadAgreementTemplate('talk2dan');
   assert.ok(text.includes('Parties'));
   assert.equal(documentHash, hashAgreementText(text));

@@ -1,4 +1,4 @@
-1. Parties: This agreement is between SoundBridge Live Ltd (UK company number 16854928) ("SoundBridge") and Talk 2 Dan, a creative community based in London ("Talk 2 Dan"), represented by the signer named at the foot of this agreement. The signer confirms they are authorised to enter into this agreement for Talk 2 Dan.
+export const TALK2DAN_AGREEMENT_TEXT = `1. Parties: This agreement is between SoundBridge Live Ltd (UK company number 16854928) ("SoundBridge") and Talk 2 Dan, a creative community based in London ("Talk 2 Dan"), represented by the signer named at the foot of this agreement. The signer confirms they are authorised to enter into this agreement for Talk 2 Dan.
 
 2. Referral and tracking: SoundBridge provides Talk 2 Dan with a unique referral link. Sign-ups made through that link are attributed to Talk 2 Dan.
 
@@ -14,4 +14,4 @@
 
 8. Term and ending: Either party may end this arrangement by written notice. Commission earned before ending remains payable.
 
-9. Conduct: Talk 2 Dan will represent SoundBridge accurately and will not make guarantees about earnings or features.
+9. Conduct: Talk 2 Dan will represent SoundBridge accurately and will not make guarantees about earnings or features.`;
