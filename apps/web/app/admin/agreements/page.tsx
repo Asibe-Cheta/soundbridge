@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { fetchWithSupabaseAuth } from '@/src/lib/fetch-with-supabase-auth';
@@ -58,6 +58,8 @@ export default function AdminAgreementsPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [newLink, setNewLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const newLinkInputRef = useRef<HTMLInputElement>(null);
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgreementDetail | null>(null);
@@ -97,6 +99,7 @@ export default function AdminAgreementsPage() {
     setCreating(true);
     setCreateError(null);
     setNewLink(null);
+    setLinkCopied(false);
     try {
       const res = await fetchWithSupabaseAuth('/api/admin/agreements', {
         method: 'POST',
@@ -113,6 +116,34 @@ export default function AdminAgreementsPage() {
       setCreating(false);
     }
   };
+
+  const handleCopyLink = useCallback(async () => {
+    if (!newLink) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(newLink);
+        setLinkCopied(true);
+        window.setTimeout(() => setLinkCopied(false), 2500);
+        return;
+      }
+      throw new Error('Clipboard API unavailable');
+    } catch {
+      // Clipboard API blocked (e.g. Safari Private Browsing) -- fall back to
+      // select + execCommand, which still works inside a direct click handler.
+      const input = newLinkInputRef.current;
+      if (input) {
+        input.focus();
+        input.select();
+        try {
+          const ok = document.execCommand('copy');
+          setLinkCopied(ok);
+          if (ok) window.setTimeout(() => setLinkCopied(false), 2500);
+        } catch {
+          // Selected for the user to copy manually with Cmd/Ctrl+C.
+        }
+      }
+    }
+  }, [newLink]);
 
   const openDetail = async (id: string) => {
     setDetailId(id);
@@ -203,15 +234,24 @@ export default function AdminAgreementsPage() {
                 Copy this link now -- it will not be shown again
               </p>
               <div className="flex items-center gap-2">
-                <input readOnly className={`${inputClass} flex-1`} value={newLink} onFocus={(e) => e.currentTarget.select()} />
+                <input
+                  ref={newLinkInputRef}
+                  readOnly
+                  className={`${inputClass} flex-1`}
+                  value={newLink}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
                 <button
                   type="button"
-                  onClick={() => navigator.clipboard.writeText(newLink)}
+                  onClick={handleCopyLink}
                   className={`text-sm font-medium px-3 py-2 rounded-lg border ${borderColor} ${headingText}`}
                 >
-                  Copy
+                  {linkCopied ? 'Copied' : 'Copy'}
                 </button>
               </div>
+              {linkCopied && (
+                <p className="mt-2 text-xs text-emerald-500">Copied to clipboard.</p>
+              )}
             </div>
           )}
         </div>
