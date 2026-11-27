@@ -1,7 +1,8 @@
 /**
  * Vercel Cron: refresh fx_rates_daily
- * Reporting-only currency rates (e.g. tip_room_tips.amount_usd_cents).
- * Never used for anything that charges money.
+ * Reporting/display-only currency rates (e.g. tip_room_tips.amount_usd_cents,
+ * Tip Room's approximate local-amount display). Never used for anything
+ * that charges money.
  *
  * GET /api/cron/refresh-fx-rates
  * Authorization: Bearer {CRON_SECRET}
@@ -11,9 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/src/lib/supabase';
 import { upsertFxRateToUsd } from '@/src/lib/fx-rates';
 
-// Tip Room only charges in GBP today. Add a currency here if that changes.
-const RATES_TO_REFRESH = ['gbp'];
 const EXCHANGE_RATE_API_URL = 'https://api.exchangerate-api.com/v4/latest/USD';
+const CURRENCY_CODE_RE = /^[A-Z]{3}$/;
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,12 +41,17 @@ export async function GET(request: NextRequest) {
     const updated: string[] = [];
     const skipped: string[] = [];
 
-    for (const currency of RATES_TO_REFRESH) {
+    // Store every currency the API already returns in this one call -- no
+    // extra requests, no per-currency allowlist to maintain, and it's what
+    // lets the approximate-local-amount display work for any country.
+    for (const [code, usdPerUnit] of Object.entries(rates)) {
+      if (!CURRENCY_CODE_RE.test(code)) {
+        continue;
+      }
+      const currency = code.toLowerCase();
       // exchangerate-api's rates are "1 USD = X <currency>"; we store the
       // inverse, "1 <currency> = Y USD", to match how amount_usd_cents is computed.
-      const usdPerUnit = rates[currency.toUpperCase()];
       if (!usdPerUnit || !Number.isFinite(usdPerUnit) || usdPerUnit <= 0) {
-        console.warn(`[cron refresh-fx-rates] no usable rate for ${currency}`);
         skipped.push(currency);
         continue;
       }
@@ -60,7 +65,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, asOfDate, updated, skipped });
+    return NextResponse.json({
+      success: true,
+      asOfDate,
+      updatedCount: updated.length,
+      skippedCount: skipped.length,
+      skipped,
+    });
   } catch (error) {
     console.error('[cron refresh-fx-rates]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

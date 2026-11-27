@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { createServerClient } from '@/src/lib/supabase';
 import { getSiteUrl } from '@/src/lib/site-url';
+import { currencyForCountry } from '@/src/constants/country-currency';
 import { TipRoomClient } from './TipRoomClient';
 
 interface PageProps {
@@ -70,6 +72,15 @@ export default async function TipRoomPage({ params }: PageProps) {
 
   const joinCommunityUrl = `/${encodeURIComponent(canonicalUsername)}/home`;
 
+  // Display-only -- resolved server-side from Vercel's geo header, which is
+  // more reliable than browser locale. Null when the header is absent
+  // (local dev, some proxies) or the country is unrecognized; the client
+  // then falls back to browser locale, then shows nothing extra. Never read
+  // by the charge/validation path.
+  const headerList = await headers();
+  const visitorCountry = headerList.get('x-vercel-ip-country');
+  const visitorCurrency = currencyForCountry(visitorCountry);
+
   return (
     <TipRoomClient
       creatorId={creatorId}
@@ -77,6 +88,7 @@ export default async function TipRoomPage({ params }: PageProps) {
       displayName={displayName}
       avatarUrl={avatarUrl}
       joinCommunityUrl={joinCommunityUrl}
+      visitorCurrency={visitorCurrency}
     />
   );
 }

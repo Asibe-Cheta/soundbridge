@@ -14,6 +14,8 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { TipRoomOwnerPanel } from '@/src/components/creator/TipRoomOwnerPanel';
 import { PayPalCheckoutButton } from '@/src/components/payments/PayPalCheckoutButton';
 import { TIP_ROOM_MIN_GBP, TIP_ROOM_MAX_GBP, validateTipRoomAmount } from '@/src/lib/tip-room-amount';
+import { currencyForCountry } from '@/src/constants/country-currency';
+import { formatApproxLocalAmount } from '@/src/lib/tip-room-local-currency';
 
 const PRESETS = [5, 10, 20] as const;
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? getStripeJsPromise() : null;
@@ -24,7 +26,16 @@ export type TipRoomClientProps = {
   displayName: string;
   avatarUrl: string | null;
   joinCommunityUrl: string;
+  /** Display-only approximate currency, resolved server-side. Null if unknown or GBP. */
+  visitorCurrency?: string | null;
 };
+
+/** Browser-locale fallback when the server couldn't resolve a geo header (e.g. local dev). */
+function localeFallbackCurrency(): string | null {
+  if (typeof navigator === 'undefined') return null;
+  const region = navigator.language?.split('-')[1];
+  return currencyForCountry(region);
+}
 
 function TipRoomPaymentForm({
   onDone,
@@ -95,6 +106,7 @@ export function TipRoomClient({
   displayName,
   avatarUrl,
   joinCommunityUrl,
+  visitorCurrency = null,
 }: TipRoomClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | null>(5);
   const [otherAmountInput, setOtherAmountInput] = useState('');
@@ -107,6 +119,7 @@ export function TipRoomClient({
   const [showCommunityPrompt, setShowCommunityPrompt] = useState(false);
   const [checkingPrompt, setCheckingPrompt] = useState(false);
   const [stripeJs, setStripeJs] = useState<Stripe | null>(null);
+  const [localRate, setLocalRate] = useState<{ currency: string; factor: number } | null>(null);
   const { user } = useAuth();
   const isOwner = user?.id === creatorId;
 
@@ -118,6 +131,31 @@ export function TipRoomClient({
     void stripePromise.then(setStripeJs);
   }, []);
 
+  useEffect(() => {
+    const currency = visitorCurrency ?? localeFallbackCurrency();
+    if (!currency || currency === 'GBP') {
+      setLocalRate(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/payments/tip-room-local-rate?currency=${encodeURIComponent(currency)}`);
+        const data = await res.json().catch(() => ({ available: false }));
+        if (!cancelled && data?.available && Number.isFinite(data.factor)) {
+          // currency is the one we requested above -- the response never
+          // echoes it back, it only confirms {available, factor}.
+          setLocalRate({ currency, factor: data.factor });
+        }
+      } catch {
+        // Approximate amount is cosmetic -- silently show nothing on failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visitorCurrency]);
+
   const amountValidation = useMemo(() => {
     if (otherAmountInput.trim() !== '') return validateTipRoomAmount(otherAmountInput);
     if (selectedPreset != null) return validateTipRoomAmount(selectedPreset);
@@ -126,6 +164,11 @@ export function TipRoomClient({
 
   const tipAmount = amountValidation.ok ? amountValidation.amount : 0;
   const amountLabel = useMemo(() => `£${tipAmount.toFixed(2)}`, [tipAmount]);
+
+  const approxLabel = useMemo(() => {
+    if (!localRate || !amountValidation.ok) return null;
+    return formatApproxLocalAmount(tipAmount, localRate.currency, localRate.factor);
+  }, [localRate, amountValidation.ok, tipAmount]);
 
   const selectPreset = (p: number) => {
     setSelectedPreset(p);
@@ -305,6 +348,9 @@ export function TipRoomClient({
               {otherAmountInput.trim() !== '' && amountValidation.ok === false ? (
                 <p className="mt-1.5 text-xs text-red-400">{amountValidation.error}</p>
               ) : null}
+              {approxLabel ? (
+                <p className="mt-1.5 text-xs text-gray-500">Approx. {approxLabel} at today&apos;s rate</p>
+              ) : null}
             </div>
 
             <div className="flex justify-center gap-2">
@@ -339,7 +385,7 @@ export function TipRoomClient({
                     Preparing…
                   </span>
                 ) : (
-                  `Pay ${amountLabel}`
+                  `Pay ${amountLabel}${approxLabel ? ` (≈ ${approxLabel})` : ''}`
                 )}
               </button>
             ) : amountValidation.ok ? (
@@ -353,6 +399,11 @@ export function TipRoomClient({
             ) : (
               <p className="text-sm text-gray-500">Enter a valid amount to continue.</p>
             )}
+            {approxLabel ? (
+              <p className="text-xs text-gray-600">
+                You will be charged in GBP. The local amount is approximate and your bank&apos;s rate may differ slightly.
+              </p>
+            ) : null}
           </div>
         ) : stripeJs ? (
           <Elements stripe={stripeJs} options={{ clientSecret, appearance: { theme: 'night' } }}>
